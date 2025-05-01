@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统实现与功能展示 - Slide 7</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js"></script>
+    <style>
+        /* --- 基础和响应式布局 CSS --- */
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            min-height: 100vh;
+            background-color: #1a237e;
+        }
+
+        .slide {
+            width: 100%;
+            min-height: 100vh;
+            position: relative;
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #01579b 100%);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+            /* Allow scroll */
+        }
+
+        .grid-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            z-index: 1;
+        }
+
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            animation: float 15s infinite ease-in-out;
+        }
+
+        .content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            padding: clamp(25px, 4vw, 50px);
+            /* Responsive padding */
+            width: 95%;
+            max-width: 1400px;
+            align-items: center;
+            margin: auto 0;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0) translateX(0);
+            }
+
+            25% {
+                transform: translateY(-20px) translateX(10px);
+            }
+
+            50% {
+                transform: translateY(0) translateX(20px);
+            }
+
+            75% {
+                transform: translateY(20px) translateX(10px);
+            }
+        }
+
+        .title {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: clamp(1rem, 2.5vw, 1.2rem);
+            padding-bottom: clamp(0.5rem, 1.5vw, 0.8rem);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.8s ease-in-out;
+            text-align: center;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .main-container {
+            display: flex;
+            /* flex: 1; */
+            width: 100%;
+            gap: clamp(20px, 3vw, 30px);
+            margin-top: clamp(10px, 2vw, 20px);
+            align-items: stretch;
+            /* Sections stretch */
+        }
+
+        .section {
+            flex: 1;
+            min-width: 0;
+            /* Allow shrinking */
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: clamp(15px, 2.5vw, 20px);
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        .section-title {
+            font-size: clamp(1.3rem, 2.5vw, 1.5rem);
+            font-weight: 600;
+            margin-bottom: clamp(10px, 2vw, 15px);
+            color: #90caf9;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .section-title i {
+            margin-right: clamp(10px, 2vw, 15px);
+            font-size: clamp(1.4rem, 2.6vw, 1.6rem);
+        }
+
+        /* Architecture Section */
+        .architecture-diagram {
+            /* flex: 1; */
+            /* Removed flex 1 to allow natural height */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            /* Center diagram if space allows */
+        }
+
+        .diagram-container {
+            width: 100%;
+            overflow: visible;
+            /* Allow mermaid svg to potentially overflow if needed */
+            background-color: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: clamp(10px, 2vw, 15px);
+            display: flex;
+            /* Center mermaid diagram */
+            justify-content: center;
+            align-items: center;
+            margin-bottom: clamp(15px, 2.5vh, 20px);
+            /* Space below diagram */
+        }
+
+        .mermaid svg {
+            max-width: 100%;
+            /* Ensure SVG scales down */
+            height: auto;
+            /* Maintain aspect ratio */
+        }
+
+        /* Feature Item (Now potentially used in right panel) */
+        .feature-points-container {
+            /* Added container for spacing */
+            margin-top: clamp(15px, 3vh, 25px);
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            /* Optional separator line */
+            padding-top: clamp(15px, 3vh, 25px);
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: clamp(8px, 1.5vh, 12px);
+            width: 100%;
+        }
+
+        .feature-icon {
+            width: clamp(24px, 3.5vw, 28px);
+            height: clamp(24px, 3.5vw, 28px);
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .feature-icon i {
+            font-size: clamp(0.7rem, 1.2vw, 0.8rem);
+        }
+
+        .feature-text {
+            flex: 1;
+            font-size: clamp(0.85rem, 1.7vw, 0.95rem);
+            line-height: 1.5;
+        }
+
+        .feature-text strong {
+            color: #bbdefb;
+            font-weight: 500;
+        }
+
+        /* Interface Section */
+        .interface-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: clamp(10px, 2vw, 15px);
+            /* Removed flex: 1, let content determine height */
+            align-content: flex-start;
+        }
+
+        .interface-card {
+            /* Default to 1 column on smallest */
+            flex: 1 1 100%;
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: clamp(10px, 2vw, 15px);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .interface-card:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .interface-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: clamp(40px, 6vw, 50px);
+            height: clamp(40px, 6vw, 50px);
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        .interface-icon i {
+            font-size: clamp(1.5rem, 2.8vw, 1.8rem);
+            color: #e3f2fd;
+        }
+
+        .interface-title {
+            font-size: clamp(1rem, 2vw, 1.1rem);
+            font-weight: 600;
+            color: #e3f2fd;
+            margin-bottom: 10px;
+        }
+
+        .interface-desc {
+            font-size: clamp(0.8rem, 1.6vw, 0.9rem);
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.4;
+            margin-bottom: 10px;
+            /* Space before mockup */
+        }
+
+        .interface-mockup {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            margin-top: auto;
+            /* Push to bottom */
+            padding: 10px;
+            position: relative;
+            overflow: hidden;
+            min-height: 100px;
+        }
+
+        .mockup-element {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            height: clamp(10px, 2vh, 15px);
+            margin-bottom: clamp(5px, 1vh, 8px);
+            width: 90%;
+        }
+
+        .mockup-element.short {
+            width: 60%;
+        }
+
+        .mockup-element.btn {
+            width: 40%;
+            background-color: #4fc3f7;
+        }
+
+        .mockup-chart {
+            width: 80%;
+            height: clamp(50px, 8vh, 70px);
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mockup-bar {
+            position: absolute;
+            bottom: 0;
+            width: 15%;
+            background-color: #4fc3f7;
+            border-radius: 3px 3px 0 0;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- Media Queries --- */
+        @media (max-width: 992px) {
+
+            /* Stack main columns */
+            .slide {
+                align-items: flex-start;
+                padding-top: clamp(40px, 8vh, 80px);
+                padding-bottom: 80px;
+            }
+
+            .content {
+                margin: 0;
+            }
+
+            .main-container {
+                flex-direction: column;
+                align-items: normal;
+            }
+
+            .section {
+                flex: none;
+                width: 100%;
+            }
+
+            .architecture-diagram {
+                justify-content: center;
+            }
+
+            /* Center diagram better when stacked */
+        }
+
+        @media (min-width: 641px) {
+
+            /* 2 Columns for interface cards on medium screens */
+            .interface-card {
+                flex-basis: calc(50% - clamp(10px, 2vw, 15px) / 2);
+                /* Adjust basis considering gap */
+            }
+        }
+
+        @media (min-width: 1201px) {
+
+            /* 3 Columns for interface cards on large screens */
+            .interface-card {
+                flex-basis: calc(33.33% - clamp(10px, 2vw, 15px) * 2 / 3);
+                /* Adjust basis considering gap */
+            }
+        }
+
+
+        /* --- START: Navigation Button CSS --- */
+        .slide-navigation {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .nav-button:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .nav-button.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .nav-button.hidden {
+            display: none;
+        }
+
+        /* --- END: Navigation Button CSS --- */
+    </style>
+</head>
+
+<body>
+    <div class="slide">
+        <div class="grid-pattern"></div>
+        <div class="particles">
+            <div class="particle" style="width: 15px; height: 15px; top: 15%; left: 10%; animation-delay: 0s;"></div>
+            <div class="particle" style="width: 10px; height: 10px; top: 25%; left: 20%; animation-delay: 1s;"></div>
+            <div class="particle" style="width: 20px; height: 20px; top: 30%; left: 70%; animation-delay: 2s;"></div>
+            <div class="particle" style="width: 12px; height: 12px; top: 65%; left: 45%; animation-delay: 3s;"></div>
+        </div>
+
+        <div class="content">
+            <h1 class="title">系统实现与功能展示</h1>
+
+            <div class="main-container">
+                <div class="section" style="animation-delay: 0.2s;">
+                    <div class="section-title">
+                        <i class="fas fa-sitemap"></i> 系统架构概述
+                    </div>
+                    <div class="architecture-diagram">
+                        <div class="diagram-container">
+                            <div class="mermaid" style="background: transparent; color: white;">
+                                flowchart TD
+                                A[数据源\nWeibo API/爬虫] -->|原始数据| B(数据采集模块);
+                                B -->|结构化数据| C(数据处理模块);
+                                C -->|清洗/标准化| D(数据分析模块);
+                                D -->|分析结果| E(可视化模块);
+                                subgraph 数据存储与访问
+                                F[(MySQL数据库)];
+                                end
+                                B -.->|存储| F;
+                                C -.->|读/写| F;
+                                D -.->|读取| F;
+                                E -.->|读取| F;
+
+                                style A fill:#4fc3f7,stroke:#fff,color:#000;
+                                style B fill:#1e88e5,stroke:#fff,color:#fff;
+                                style C fill:#1e88e5,stroke:#fff,color:#fff;
+                                style D fill:#1e88e5,stroke:#fff,color:#fff;
+                                style E fill:#1e88e5,stroke:#fff,color:#fff;
+                                style F fill:#0d47a1,stroke:#fff,color:#fff;
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section" style="animation-delay: 0.4s;">
+                    <div class="section-title">
+                        <i class="fas fa-desktop"></i> 系统界面展示
+                    </div>
+                    <div class="interface-preview">
+                        <div class="interface-card">
+                            <div class="interface-icon"><i class="fas fa-sign-in-alt"></i></div>
+                            <div class="interface-title">登录界面</div>
+                            <div class="interface-desc">提供用户认证功能，支持多种登录方式，确保系统安全。</div>
+                            <div class="interface-mockup">
+                                <div class="mockup-element"></div>
+                                <div class="mockup-element short"></div>
+                                <div class="mockup-element"></div>
+                                <div class="mockup-element btn"></div>
+                            </div>
+                        </div>
+                        <div class="interface-card">
+                            <div class="interface-icon"><i class="fas fa-search"></i></div>
+                            <div class="interface-title">数据输入与查询</div>
+                            <div class="interface-desc">支持自定义数据输入和多条件查询，操作简便直观。</div>
+                            <div class="interface-mockup">
+                                <div class="mockup-element short"></div>
+                                <div style="display: flex; width: 90%; gap: 10px;">
+                                    <div class="mockup-element" style="width: 70%; margin-bottom: 0;"></div>
+                                    <div class="mockup-element btn" style="width: 30%; margin-bottom: 0;"></div>
+                                </div>
+                                <div class="mockup-element"></div>
+                                <div class="mockup-element"></div>
+                            </div>
+                        </div>
+                        <div class="interface-card">
+                            <div class="interface-icon"><i class="fas fa-chart-pie"></i></div>
+                            <div class="interface-title">数据分析结果</div>
+                            <div class="interface-desc">通过图表和表格形式展示舆情数据，支持交互操作。</div>
+                            <div class="interface-mockup">
+                                <div class="mockup-chart">
+                                    <div class="mockup-bar" style="height: 60%; left: 10%;"></div>
+                                    <div class="mockup-bar" style="height: 40%; left: 30%;"></div>
+                                    <div class="mockup-bar" style="height: 75%; left: 50%;"></div>
+                                    <div class="mockup-bar" style="height: 30%; left: 70%;"></div>
+                                </div>
+                                <div class="mockup-element short" style="margin-top: 10px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="feature-points-container">
+                        <div class="feature-item">
+                            <div class="feature-icon"><i class="fas fa-layer-group"></i></div>
+                            <div class="feature-text"><strong
+                                    style="color: #bbdefb;">模块化架构：</strong>数据采集、处理、分析和可视化模块相互独立，便于维护和扩展。</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon"><i class="fas fa-database"></i></div>
+                            <div class="feature-text"><strong
+                                    style="color: #bbdefb;">数据存储与管理：</strong>采用MySQL关系型数据库，支持大规模数据存储、高效索引和查询。</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon"><i class="fas fa-server"></i></div>
+                            <div class="feature-text"><strong
+                                    style="color: #bbdefb;">分布式部署：</strong>支持多节点部署，提高系统处理能力和可靠性，确保高可用性。</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-navigation">
+        <a href="6.html" class="nav-button prev-button">上一页</a>
+        <a href="8.html" class="nav-button next-button">下一页</a>
+    </div>
+    <script>
+        // Initialize Mermaid *after* DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            try { // Add try-catch for Mermaid initialization
+                mermaid.initialize({
+                    startOnLoad: true,
+                    theme: 'base', // Use 'base' and define variables for better control
+                    themeVariables: {
+                        background: 'transparent', // Make diagram background transparent
+                        primaryColor: '#0d47a1', // Node background
+                        primaryTextColor: '#ffffff', // Node text color
+                        primaryBorderColor: '#90caf9', // Node border
+                        lineColor: '#90caf9', // Arrow color
+                        secondaryColor: '#01579b',
+                        tertiaryColor: 'rgba(255, 255, 255, 0.1)',
+                        fontSize: '13px' // Adjust font size if needed
+                    },
+                    flowchart: { // Specific flowchart settings
+                        htmlLabels: true // Allow HTML in labels if needed
+                    }
+                });
+            } catch (e) {
+                console.error("Mermaid initialization failed:", e);
+            }
+
+            // --- Particle Generation ---
+            const particlesContainer = document.querySelector('.particles');
+            if (particlesContainer) {
+                for (let i = 0; i < 12; i++) {
+                    const particle = document.createElement('div'); particle.className = 'particle';
+                    const size = Math.floor(Math.random() * 12) + 5; const top = Math.floor(Math.random() * 100); const left = Math.floor(Math.random() * 100); const delay = Math.random() * 10;
+                    particle.style.width = `${size}px`; particle.style.height = `${size}px`; particle.style.top = `${top}%`; particle.style.left = `${left}%`; particle.style.animationDelay = `${delay}s`;
+                    particlesContainer.appendChild(particle);
+                }
+            }
+        });
+    </script>
+
+    <script>
+        // Define previous and next slide URLs
+        const prevSlideURL = '6.html'; // Previous slide is 6.html
+        const nextSlideURL = '8.html'; // Next slide is 8.html
+        // const nextSlideURL = null; // *** Uncomment this line and comment the one above if this IS the LAST slide ***
+
+        // Navigation function
+        function navigateTo(url) { if (url) { window.location.href = url; } }
+
+        // Keyboard event listener
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'ArrowLeft' || event.keyCode === 37) { navigateTo(prevSlideURL); }
+            else if (event.key === 'ArrowRight' || event.keyCode === 39) { navigateTo(nextSlideURL); }
+        });
+
+        // Button click listeners
+        const prevButton = document.querySelector('.prev-button');
+        const nextButton = document.querySelector('.next-button');
+        if (prevButton) { prevButton.addEventListener('click', (e) => { e.preventDefault(); navigateTo(prevSlideURL); }); }
+        if (nextButton) {
+            if (nextSlideURL) { nextButton.addEventListener('click', (e) => { e.preventDefault(); navigateTo(nextSlideURL); }); }
+            else { nextButton.classList.add('disabled'); nextButton.href = '#'; }
+        }
+    </script>
+</body>
+
+</html>

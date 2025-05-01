@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>项目介绍 - Slide 3</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* --- 基础和响应式布局 CSS --- */
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            min-height: 100vh;
+            background-color: #1a237e;
+        }
+
+        .slide {
+            width: 100%;
+            min-height: 100vh;
+            position: relative;
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #01579b 100%);
+            overflow: hidden;
+            /* Hidden initially, but allow scroll on small screens if needed */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* Allow vertical scroll if content overflows on small screens */
+            overflow-y: auto;
+        }
+
+        .grid-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            z-index: 1;
+        }
+
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            animation: float 15s infinite ease-in-out;
+        }
+
+        .content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            padding: clamp(30px, 5vw, 60px);
+            /* Responsive padding */
+            width: 95%;
+            /* Slightly wider to accommodate padding */
+            max-width: 1400px;
+            /* Allow slightly wider max for side-by-side */
+            /* Center content, let height be determined by content */
+            align-items: center;
+            /* Center title */
+            margin: auto 0;
+            /* Vertical centering fallback if align-items doesn't work as expected */
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0) translateX(0);
+            }
+
+            25% {
+                transform: translateY(-20px) translateX(10px);
+            }
+
+            50% {
+                transform: translateY(0) translateX(20px);
+            }
+
+            75% {
+                transform: translateY(20px) translateX(10px);
+            }
+        }
+
+        .title {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            /* Responsive font size */
+            font-weight: 700;
+            margin-bottom: clamp(1rem, 3vw, 1.5rem);
+            padding-bottom: clamp(0.5rem, 1.5vw, 0.8rem);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.8s ease-in-out;
+            text-align: center;
+            width: 100%;
+            max-width: 900px;
+            /* Limit title width */
+        }
+
+        .sections-container {
+            display: flex;
+            gap: clamp(20px, 3vw, 40px);
+            /* Responsive gap */
+            /* flex: 1; */
+            /* Removed, let content determine height */
+            width: 100%;
+            /* Take full width of content area */
+            margin-top: clamp(10px, 2vw, 20px);
+            /* Add some space below title */
+        }
+
+        .section {
+            flex: 1;
+            /* Each section tries to take equal space */
+            min-width: 0;
+            /* Allow flex items to shrink properly */
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: clamp(15px, 2.5vw, 25px);
+            /* Responsive padding */
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        .section-title {
+            font-size: clamp(1.3rem, 2.5vw, 1.6rem);
+            /* Responsive */
+            font-weight: 600;
+            margin-bottom: clamp(10px, 2vw, 15px);
+            color: #90caf9;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+            /* Prevent title from shrinking oddly */
+        }
+
+        .section-title i {
+            margin-right: clamp(10px, 2vw, 15px);
+            font-size: clamp(1.5rem, 2.8vw, 1.8rem);
+            /* Responsive */
+        }
+
+        .section-content {
+            flex: 1;
+            /* Takes remaining space in the section */
+        }
+
+        .point {
+            margin-bottom: clamp(12px, 2.2vw, 18px);
+            /* Responsive */
+            display: flex;
+            align-items: flex-start;
+            /* Align items to the top */
+        }
+
+        .point-icon {
+            flex-shrink: 0;
+            width: clamp(24px, 4vw, 28px);
+            /* Responsive */
+            height: clamp(24px, 4vw, 28px);
+            /* Responsive */
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: clamp(10px, 2vw, 15px);
+            margin-top: 2px;
+            /* Align slightly better with text */
+        }
+
+        .point-icon i {
+            font-size: clamp(0.7rem, 1.5vw, 0.8rem);
+            /* Smaller icons inside */
+        }
+
+        .point-text {
+            flex: 1;
+            line-height: 1.6;
+            /* Increased line-height for readability */
+            font-size: clamp(0.9rem, 1.8vw, 1.0rem);
+            /* Responsive base text */
+        }
+
+        .point-text strong {
+            color: #bbdefb;
+            font-weight: 500;
+        }
+
+        /* Animation for sections */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- Media Query for smaller screens --- */
+        @media (max-width: 992px) {
+
+            /* Adjust breakpoint as needed */
+            .slide {
+                /* Ensure alignment starts from top on smaller screens when scrolling */
+                align-items: flex-start;
+                padding-top: clamp(40px, 8vh, 80px);
+                /* Add padding when scrolling might occur */
+                padding-bottom: 80px;
+                /* Space for nav buttons when scrolled */
+            }
+
+            .content {
+                /* No margin needed if slide handles padding/scrolling */
+                margin: 0;
+            }
+
+            .sections-container {
+                flex-direction: column;
+                /* Stack sections vertically */
+            }
+
+            .section {
+                flex: none;
+                /* Reset flex property */
+                width: 100%;
+                /* Ensure section takes full width */
+            }
+        }
+
+        /* --- START: Navigation Button CSS --- */
+        .slide-navigation {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .nav-button:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .nav-button.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .nav-button.hidden {
+            display: none;
+        }
+
+        /* --- END: Navigation Button CSS --- */
+    </style>
+</head>
+
+<body>
+    <div class="slide">
+        <div class="grid-pattern"></div>
+        <div class="particles">
+            <div class="particle" style="width: 15px; height: 15px; top: 15%; left: 10%; animation-delay: 0s;"></div>
+            <div class="particle" style="width: 10px; height: 10px; top: 25%; left: 20%; animation-delay: 1s;"></div>
+            <div class="particle" style="width: 20px; height: 20px; top: 30%; left: 70%; animation-delay: 2s;"></div>
+            <div class="particle" style="width: 12px; height: 12px; top: 65%; left: 45%; animation-delay: 3s;"></div>
+            <div class="particle" style="width: 18px; height: 18px; top: 70%; left: 85%; animation-delay: 4s;"></div>
+        </div>
+
+        <div class="content">
+            <h1 class="title">项目介绍</h1>
+
+            <div class="sections-container">
+                <div class="section" style="animation-delay: 0.2s;">
+                    <div class="section-title">
+                        <i class="fas fa-book-open"></i> 项目背景
+                    </div>
+                    <div class="section-content">
+                        <div class="point">
+                            <div class="point-icon"><i class="fas fa-chart-line"></i></div>
+                            <div class="point-text">
+                                <strong>微博舆情分析的重要性：</strong> 作为信息传播的重要平台，企业可通过舆情分析掌握产品口碑，政府可借此了解民意，优化公共服务。
+                            </div>
+                        </div>
+                        <div class="point">
+                            <div class="point-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="point-text">
+                                <strong>当前数据挑战：</strong> 微博每天产生海量数据，信息类型多样化（文字、图片、视频等），传统人工监测方式已无法满足需求。
+                            </div>
+                        </div>
+                        <div class="point">
+                            <div class="point-icon"><i class="fas fa-database"></i></div>
+                            <div class="point-text">
+                                <strong>舆情监测需求：</strong> 需要处理大量复杂数据，急需高效、准确的自动化舆情分析系统来满足实时监测和数据挖掘需求。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section" style="animation-delay: 0.4s;">
+                    <div class="section-title">
+                        <i class="fas fa-bullseye"></i> 系统目标
+                    </div>
+                    <div class="section-content">
+                        <div class="point">
+                            <div class="point-icon"><i class="fas fa-download"></i></div>
+                            <div class="point-text">
+                                <strong>高效获取微博舆情数据：</strong> 确保数据采集的实时性和完整性，为后续分析提供可靠数据基础。
+                            </div>
+                        </div>
+                        <div class="point">
+                            <div class="point-icon"><i class="fas fa-cogs"></i></div>
+                            <div class="point-text">
+                                <strong>处理与分析数据：</strong> 运用先进技术手段，包括自然语言处理和机器学习，挖掘数据背后的价值，为决策提供有力支持。
+                            </div>
+                        </div>
+                        <div class="point">
+                            <div class="point-icon"><i class="fas fa-chart-pie"></i></div>
+                            <div class="point-text">
+                                <strong>通过数据可视化帮助决策：</strong> 直观展示舆情态势，使决策者快速理解舆情动态，做出科学决策。
+                            </div>
+                        </div>
+                        <div class="point">
+                            <div class="point-icon"><i class="fas fa-clock"></i></div>
+                            <div class="point-text">
+                                <strong>实时监测与预警：</strong> 建立舆情预警机制，及时发现潜在风险，提前制定应对策略。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-navigation">
+        <a href="2.html" class="nav-button prev-button">上一页</a>
+        <a href="4.html" class="nav-button next-button">下一页</a>
+    </div>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const particlesContainer = document.querySelector('.particles');
+            if (particlesContainer) {
+                for (let i = 0; i < 12; i++) { // Adjust particle count if desired
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    const size = Math.floor(Math.random() * 12) + 5;
+                    const top = Math.floor(Math.random() * 100);
+                    const left = Math.floor(Math.random() * 100);
+                    const delay = Math.random() * 10; // float delay
+
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    particle.style.top = `${top}%`;
+                    particle.style.left = `${left}%`;
+                    particle.style.animationDelay = `${delay}s`;
+
+                    particlesContainer.appendChild(particle);
+                }
+            }
+        });
+    </script>
+
+    <script>
+        // Define previous and next slide URLs
+        const prevSlideURL = '2.html'; // Previous slide is 2.html
+        const nextSlideURL = '4.html'; // Next slide is 4.html
+        // const nextSlideURL = null; // *** Uncomment this line and comment the one above if this IS the LAST slide ***
+
+        // Navigation function
+        function navigateTo(url) {
+            if (url) {
+                window.location.href = url;
+            }
+        }
+
+        // Keyboard event listener
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'ArrowLeft' || event.keyCode === 37) { // Left arrow
+                navigateTo(prevSlideURL);
+            } else if (event.key === 'ArrowRight' || event.keyCode === 39) { // Right arrow
+                navigateTo(nextSlideURL);
+            }
+        });
+
+        // Button click listeners
+        const prevButton = document.querySelector('.prev-button');
+        const nextButton = document.querySelector('.next-button');
+
+        if (prevButton) {
+            prevButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigateTo(prevSlideURL);
+            });
+        }
+
+        // Only add listener and enable next button if nextSlideURL is set
+        if (nextButton) {
+            if (nextSlideURL) {
+                nextButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    navigateTo(nextSlideURL);
+                });
+            } else {
+                // Disable the button if it's the last slide
+                nextButton.classList.add('disabled');
+                nextButton.href = '#';
+            }
+        }
+    </script>
+</body>
+
+</html>

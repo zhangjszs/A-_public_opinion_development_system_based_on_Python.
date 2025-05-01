@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据可视化 - Slide 6</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* --- 基础和响应式布局 CSS --- */
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            min-height: 100vh;
+            background-color: #1a237e;
+        }
+
+        .slide {
+            width: 100%;
+            min-height: 100vh;
+            position: relative;
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #01579b 100%);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+            /* Allow scroll */
+        }
+
+        .grid-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            z-index: 1;
+        }
+
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            animation: float 15s infinite ease-in-out;
+        }
+
+        .content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            padding: clamp(25px, 4vw, 40px);
+            /* Responsive padding */
+            width: 95%;
+            max-width: 1400px;
+            align-items: center;
+            margin: auto 0;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0) translateX(0);
+            }
+
+            25% {
+                transform: translateY(-20px) translateX(10px);
+            }
+
+            50% {
+                transform: translateY(0) translateX(20px);
+            }
+
+            75% {
+                transform: translateY(20px) translateX(10px);
+            }
+        }
+
+        .title {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: clamp(0.8rem, 2vw, 1rem);
+            padding-bottom: clamp(0.5rem, 1.5vw, 0.8rem);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.8s ease-in-out;
+            text-align: center;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .main-container {
+            display: flex;
+            /* flex: 1; */
+            width: 100%;
+            gap: clamp(15px, 2.5vw, 20px);
+            /* Responsive gap */
+            margin-top: clamp(10px, 2vw, 15px);
+        }
+
+        .left-panel,
+        .right-panel {
+            flex: 1;
+            min-width: 0;
+            /* Allow shrinking */
+            display: flex;
+            flex-direction: column;
+            gap: clamp(15px, 2.5vw, 20px);
+            /* Responsive gap */
+        }
+
+        .viz-card {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: clamp(12px, 2vw, 15px);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        .viz-card:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        .card-icon {
+            width: clamp(32px, 5vw, 36px);
+            height: clamp(32px, 5vw, 36px);
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .card-icon i {
+            font-size: clamp(1rem, 2vw, 1.2rem);
+        }
+
+        .card-title {
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            font-weight: 600;
+            color: #90caf9;
+        }
+
+        .chart-container {
+            flex: 1;
+            position: relative;
+            margin-top: 10px;
+            min-height: clamp(150px, 20vh, 200px);
+            /* Responsive min-height */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #sentimentChart,
+        #trendChart,
+        #regionChart {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* Visualization Goals Card */
+        .goal-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: clamp(8px, 1.5vh, 12px);
+        }
+
+        .goal-icon {
+            width: clamp(24px, 3.5vw, 28px);
+            height: clamp(24px, 3.5vw, 28px);
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .goal-icon i {
+            font-size: clamp(0.7rem, 1.2vw, 0.8rem);
+        }
+
+        .goal-text {
+            font-size: clamp(0.85rem, 1.7vw, 0.95rem);
+            line-height: 1.5;
+        }
+
+        .goal-text strong {
+            color: #bbdefb;
+            font-weight: 500;
+        }
+
+        /* Visualization Tools Card */
+        .section-title {
+            font-size: clamp(0.9rem, 1.8vw, 1rem);
+            font-weight: 600;
+            margin-bottom: 5px;
+            margin-top: clamp(5px, 1vh, 15px);
+            color: #e3f2fd;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title i {
+            margin-right: 10px;
+            font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+        }
+
+        .tools-flex {
+            display: flex;
+            flex-wrap: wrap;
+            gap: clamp(6px, 1.2vw, 10px);
+            margin-top: 5px;
+        }
+
+        .tool-item {
+            display: flex;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: clamp(4px, 0.8vh, 6px) clamp(10px, 1.8vw, 15px);
+            transition: all 0.2s ease;
+        }
+
+        .tool-item:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .tool-icon {
+            font-size: clamp(1rem, 1.8vw, 1.2rem);
+            margin-right: 8px;
+        }
+
+        .tool-name {
+            font-size: clamp(0.8rem, 1.6vw, 0.9rem);
+            font-weight: 500;
+        }
+
+        /* Chart Cards (Right Panel) */
+        .chart-card-content {
+            /* Container for charts inside card */
+            display: flex;
+            flex: 1;
+            gap: clamp(10px, 2vw, 15px);
+        }
+
+        .chart-card-content .chart-container {
+            flex: 1;
+            /* Default equal flex */
+        }
+
+        #trendChartContainer {
+            flex: 1.5;
+        }
+
+        /* Give trend chart more space */
+        #regionChartContainer {
+            flex: 1.5;
+        }
+
+        /* Give region chart more space */
+
+        /* Word Cloud */
+        .word-cloud-container {
+            /* Renamed outer container */
+            flex: 1;
+            /* Take space next to region chart */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .word-cloud {
+            background-color: rgba(255, 255, 255, 0.05);
+            /* Less prominent background */
+            border-radius: 12px;
+            /* Match card radius */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(10px, 2vw, 15px);
+            height: 100%;
+            /* Fill container height */
+            width: 100%;
+        }
+
+        .word-cloud-content {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            /* Keep position relative */
+            /* Remove flex display, let absolute positioning handle layout */
+        }
+
+        .word {
+            position: absolute;
+            padding: 2px clamp(4px, 1vw, 8px);
+            border-radius: 10px;
+            background-color: rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            /* Prevent long words wrapping */
+            /* Responsive font size */
+            font-size: clamp(8px, 1.8vw, 14px);
+            /* Base size adjustment */
+        }
+
+        /* Example specific word size adjustments (optional, use JS for better clouds) */
+        .word.large {
+            font-size: clamp(14px, 3vw, 22px);
+        }
+
+        .word.medium {
+            font-size: clamp(11px, 2.2vw, 18px);
+        }
+
+        .word.small {
+            font-size: clamp(9px, 1.8vw, 16px);
+        }
+
+        .word:hover {
+            transform: scale(1.1);
+            background-color: rgba(255, 255, 255, 0.25);
+            z-index: 10;
+            /* Bring hovered word to front */
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- Media Queries --- */
+        @media (max-width: 992px) {
+
+            /* Stack main columns */
+            .slide {
+                align-items: flex-start;
+                padding-top: clamp(40px, 8vh, 80px);
+                padding-bottom: 80px;
+            }
+
+            .content {
+                margin: 0;
+            }
+
+            .main-container {
+                flex-direction: column;
+                align-items: normal;
+            }
+
+            .left-panel,
+            .right-panel {
+                flex: none;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+
+            /* Stack charts within cards if needed */
+            .chart-card-content {
+                flex-direction: column;
+                /* Ensure charts have enough height when stacked */
+                min-height: 350px;
+                /* Adjust as needed */
+            }
+
+            .chart-card-content .chart-container {
+                min-height: 160px;
+                /* Minimum height per chart when stacked */
+            }
+
+            #trendChartContainer,
+            #regionChartContainer,
+            .word-cloud-container {
+                flex: none;
+                /* Reset flex factor */
+                width: 100%;
+                /* Full width when stacked */
+            }
+
+            .word-cloud {
+                min-height: 160px;
+            }
+
+            /* Ensure word cloud has height */
+        }
+
+
+        /* --- START: Navigation Button CSS --- */
+        .slide-navigation {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .nav-button:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .nav-button.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .nav-button.hidden {
+            display: none;
+        }
+
+        /* --- END: Navigation Button CSS --- */
+    </style>
+</head>
+
+<body>
+    <div class="slide">
+        <div class="grid-pattern"></div>
+        <div class="particles">
+            <div class="particle" style="width: 15px; height: 15px; top: 15%; left: 10%; animation-delay: 0s;"></div>
+            <div class="particle" style="width: 10px; height: 10px; top: 25%; left: 20%; animation-delay: 1s;"></div>
+            <div class="particle" style="width: 20px; height: 20px; top: 30%; left: 70%; animation-delay: 2s;"></div>
+            <div class="particle" style="width: 12px; height: 12px; top: 65%; left: 45%; animation-delay: 3s;"></div>
+        </div>
+
+        <div class="content">
+            <h1 class="title">数据可视化</h1>
+
+            <div class="main-container">
+                <div class="left-panel">
+                    <div class="viz-card" style="animation-delay: 0.1s;">
+                        <div class="card-header">
+                            <div class="card-icon"><i class="fas fa-bullseye fa-lg" style="color: #e3f2fd;"></i></div>
+                            <div class="card-title">可视化目标</div>
+                        </div>
+                        <div class="goal-item">
+                            <div class="goal-icon"><i class="fas fa-eye"></i></div>
+                            <div class="goal-text"><strong
+                                    style="color: #bbdefb;">直观展示舆情数据：</strong>通过可视化图表直观呈现舆情数据，使用户快速了解舆情动态和变化趋势。</div>
+                        </div>
+                        <div class="goal-item">
+                            <div class="goal-icon"><i class="fas fa-chart-pie"></i></div>
+                            <div class="goal-text"><strong
+                                    style="color: #bbdefb;">展示情感分布与话题趋势：</strong>展示正面、负面、中性情感的占比，热门话题的发展趋势，帮助理解公众情绪。
+                            </div>
+                        </div>
+                        <div class="goal-item">
+                            <div class="goal-icon"><i class="fas fa-tachometer-alt"></i></div>
+                            <div class="goal-text"><strong
+                                    style="color: #bbdefb;">支持决策与实时监控：</strong>提供交互式图表和实时更新的数据面板，支持决策者快速响应舆情变化。</div>
+                        </div>
+                    </div>
+                    <div class="viz-card" style="animation-delay: 0.2s;">
+                        <div class="card-header">
+                            <div class="card-icon"><i class="fas fa-tools fa-lg" style="color: #e3f2fd;"></i></div>
+                            <div class="card-title">可视化工具与技术</div>
+                        </div>
+                        <div class="section-title"><i class="fab fa-python"></i> Python可视化库</div>
+                        <div class="tools-flex">
+                            <div class="tool-item">
+                                <div class="tool-icon"><i class="fas fa-chart-line"></i></div>
+                                <div class="tool-name">Matplotlib</div>
+                            </div>
+                            <div class="tool-item">
+                                <div class="tool-icon"><i class="fas fa-chart-area"></i></div>
+                                <div class="tool-name">Seaborn</div>
+                            </div>
+                            <div class="tool-item">
+                                <div class="tool-icon"><i class="fas fa-paint-brush"></i></div>
+                                <div class="tool-name">Pyecharts</div>
+                            </div>
+                        </div>
+                        <div class="section-title"><i class="fas fa-hand-pointer"></i> 交互式图表</div>
+                        <div class="tools-flex">
+                            <div class="tool-item">
+                                <div class="tool-icon"><i class="fas fa-chart-scatter"></i></div>
+                                <div class="tool-name">Plotly</div>
+                            </div>
+                            <div class="tool-item">
+                                <div class="tool-icon"><i class="fas fa-chart-bar"></i></div>
+                                <div class="tool-name">Bokeh</div>
+                            </div>
+                            <div class="tool-item">
+                                <div class="tool-icon"><i class="fas fa-globe"></i></div>
+                                <div class="tool-name">Dash</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="right-panel">
+                    <div class="viz-card" style="animation-delay: 0.3s;">
+                        <div class="card-header">
+                            <div class="card-icon"><i class="fas fa-smile fa-lg" style="color: #e3f2fd;"></i></div>
+                            <div class="card-title">情感分布图 & 热度趋势图</div>
+                        </div>
+                        <div class="chart-card-content">
+                            <div class="chart-container">
+                                <canvas id="sentimentChart"></canvas>
+                            </div>
+                            <div id="trendChartContainer" class="chart-container">
+                                <canvas id="trendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="viz-card" style="animation-delay: 0.4s;">
+                        <div class="card-header">
+                            <div class="card-icon"><i class="fas fa-map-marked-alt fa-lg" style="color: #e3f2fd;"></i>
+                            </div>
+                            <div class="card-title">地区热度对比图 & 词云图</div>
+                        </div>
+                        <div class="chart-card-content">
+                            <div id="regionChartContainer" class="chart-container">
+                                <canvas id="regionChart"></canvas>
+                            </div>
+                            <div class="word-cloud-container">
+                                <div class="word-cloud">
+                                    <div class="word-cloud-content" id="wordCloud">
+                                        <span class="word large"
+                                            style="top: 40%; left: 50%; color: #ff9800; transform: translate(-50%, -50%);">热门话题</span>
+                                        <span class="word small"
+                                            style="top: 25%; left: 30%; color: #4fc3f7; transform: translate(-50%, -50%);">用户体验</span>
+                                        <span class="word medium"
+                                            style="top: 60%; left: 35%; color: #81c784; transform: translate(-50%, -50%);">产品质量</span>
+                                        <span class="word medium"
+                                            style="top: 30%; left: 70%; color: #ba68c8; transform: translate(-50%, -50%);">服务态度</span>
+                                        <span class="word small"
+                                            style="top: 75%; left: 65%; color: #ffb74d; transform: translate(-50%, -50%);">价格优惠</span>
+                                        <span class="word medium"
+                                            style="top: 55%; left: 15%; color: #4dd0e1; transform: translate(-50%, -50%);">市场反应</span>
+                                        <span class="word"
+                                            style="top: 18%; left: 50%; color: #aed581; transform: translate(-50%, -50%);">物流速度</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-navigation">
+        <a href="5.html" class="nav-button prev-button">上一页</a>
+        <a href="7.html" class="nav-button next-button">下一页</a>
+    </div>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            // --- Particle Generation ---
+            const particlesContainer = document.querySelector('.particles');
+            if (particlesContainer) {
+                for (let i = 0; i < 12; i++) {
+                    const particle = document.createElement('div'); particle.className = 'particle';
+                    const size = Math.floor(Math.random() * 12) + 5; const top = Math.floor(Math.random() * 100); const left = Math.floor(Math.random() * 100); const delay = Math.random() * 10;
+                    particle.style.width = `${size}px`; particle.style.height = `${size}px`; particle.style.top = `${top}%`; particle.style.left = `${left}%`; particle.style.animationDelay = `${delay}s`;
+                    particlesContainer.appendChild(particle);
+                }
+            }
+
+            // --- Chart Initialization ---
+            const chartOptions = (titleText) => ({
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'rgba(255, 255, 255, 0.7)', font: { size: 10 } } },
+                    x: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: 'rgba(255, 255, 255, 0.7)', font: { size: 10 } } }
+                },
+                plugins: {
+                    legend: { display: true, position: 'bottom', labels: { color: 'rgba(255, 255, 255, 0.8)', font: { size: 10 }, boxWidth: 15, padding: 10 } },
+                    title: { display: !!titleText, text: titleText, color: 'rgba(255, 255, 255, 0.9)', font: { size: 12 } }
+                }
+            });
+
+            // Sentiment Chart (Doughnut)
+            const sentimentCtx = document.getElementById('sentimentChart')?.getContext('2d');
+            if (sentimentCtx) {
+                new Chart(sentimentCtx, {
+                    type: 'doughnut',
+                    data: { labels: ['正面', '负面', '中性'], datasets: [{ data: [42, 28, 30], backgroundColor: ['rgba(76, 175, 80, 0.8)', 'rgba(244, 67, 54, 0.8)', 'rgba(33, 150, 243, 0.8)'], borderColor: ['rgba(76, 175, 80, 1)', 'rgba(244, 67, 54, 1)', 'rgba(33, 150, 243, 1)'], borderWidth: 1 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: 'rgba(255, 255, 255, 0.8)', font: { size: 10 }, boxWidth: 12 } }, title: { display: false } } }
+                });
+            }
+
+            // Trend Chart (Line)
+            const trendCtx = document.getElementById('trendChart')?.getContext('2d');
+            if (trendCtx) {
+                new Chart(trendCtx, {
+                    type: 'line',
+                    data: { labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月'], datasets: [{ label: '话题A', data: [65, 59, 80, 81, 56, 55, 72], borderColor: 'rgba(255, 99, 132, 1)', backgroundColor: 'rgba(255, 99, 132, 0.2)', tension: 0.3, fill: true, pointRadius: 2, pointHoverRadius: 4 }, { label: '话题B', data: [28, 48, 40, 19, 86, 27, 90], borderColor: 'rgba(54, 162, 235, 1)', backgroundColor: 'rgba(54, 162, 235, 0.2)', tension: 0.3, fill: true, pointRadius: 2, pointHoverRadius: 4 }] },
+                    options: chartOptions() // Use common options
+                });
+            }
+
+            // Region Chart (Bar)
+            const regionCtx = document.getElementById('regionChart')?.getContext('2d');
+            if (regionCtx) {
+                new Chart(regionCtx, {
+                    type: 'bar',
+                    data: { labels: ['北京', '上海', '广州', '深圳', '成都', '杭州'], datasets: [{ label: '关注度', data: [65, 59, 80, 81, 56, 55], backgroundColor: ['rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)', 'rgba(255, 206, 86, 0.7)', 'rgba(75, 192, 192, 0.7)', 'rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)'], borderWidth: 0 }] },
+                    options: { ...chartOptions(), indexAxis: 'y', plugins: { legend: { display: false }, title: { display: false } } } // Horizontal bar, no legend/title
+                });
+            }
+
+            // --- Word Cloud Animation ---
+            const wordCloudContainer = document.getElementById('wordCloud');
+            if (wordCloudContainer) {
+                const words = wordCloudContainer.querySelectorAll('.word');
+                words.forEach(word => {
+                    // Simple random movement simulation
+                    setInterval(() => {
+                        try { // Add try-catch for safety if element gets removed
+                            const rect = wordCloudContainer.getBoundingClientRect();
+                            const wordRect = word.getBoundingClientRect();
+                            const currentTop = parseFloat(word.style.top) || 50; // Default to center if unset
+                            const currentLeft = parseFloat(word.style.left) || 50;
+
+                            // Calculate movement delta (percentage)
+                            let deltaX = (Math.random() * 2 - 1) * 1.5; // Max 1.5% move X
+                            let deltaY = (Math.random() * 2 - 1) * 1.5; // Max 1.5% move Y
+
+                            let newLeft = currentLeft + deltaX;
+                            let newTop = currentTop + deltaY;
+
+                            // Boundary checks (simple percentage based)
+                            newLeft = Math.max(10, Math.min(90, newLeft));
+                            newTop = Math.max(10, Math.min(90, newTop));
+
+                            word.style.left = `${newLeft}%`;
+                            word.style.top = `${newTop}%`;
+                        } catch (e) {
+                            // Ignore errors if element is gone
+                        }
+                    }, 2000 + Math.random() * 4000); // Random interval
+                });
+            }
+        });
+    </script>
+
+    <script>
+        // Define previous and next slide URLs
+        const prevSlideURL = '5.html'; // Previous slide is 5.html
+        const nextSlideURL = '7.html'; // Next slide is 7.html
+        // const nextSlideURL = null; // *** Uncomment this line and comment the one above if this IS the LAST slide ***
+
+        // Navigation function
+        function navigateTo(url) { if (url) { window.location.href = url; } }
+
+        // Keyboard event listener
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'ArrowLeft' || event.keyCode === 37) { navigateTo(prevSlideURL); }
+            else if (event.key === 'ArrowRight' || event.keyCode === 39) { navigateTo(nextSlideURL); }
+        });
+
+        // Button click listeners
+        const prevButton = document.querySelector('.prev-button');
+        const nextButton = document.querySelector('.next-button');
+        if (prevButton) { prevButton.addEventListener('click', (e) => { e.preventDefault(); navigateTo(prevSlideURL); }); }
+        if (nextButton) {
+            if (nextSlideURL) { nextButton.addEventListener('click', (e) => { e.preventDefault(); navigateTo(nextSlideURL); }); }
+            else { nextButton.classList.add('disabled'); nextButton.href = '#'; }
+        }
+    </script>
+</body>
+
+</html>

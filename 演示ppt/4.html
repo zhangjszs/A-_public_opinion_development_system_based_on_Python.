@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据采集与处理 - Slide 4</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* --- 基础和响应式布局 CSS --- */
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            min-height: 100vh;
+            background-color: #1a237e;
+        }
+
+        .slide {
+            width: 100%;
+            min-height: 100vh;
+            position: relative;
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #01579b 100%);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+            /* Allow scroll */
+        }
+
+        .grid-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            z-index: 1;
+        }
+
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            animation: float 15s infinite ease-in-out;
+        }
+
+        .content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            padding: clamp(30px, 5vw, 50px);
+            /* Responsive padding */
+            width: 95%;
+            max-width: 1400px;
+            align-items: center;
+            margin: auto 0;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0) translateX(0);
+            }
+
+            25% {
+                transform: translateY(-20px) translateX(10px);
+            }
+
+            50% {
+                transform: translateY(0) translateX(20px);
+            }
+
+            75% {
+                transform: translateY(20px) translateX(10px);
+            }
+        }
+
+        .title {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: clamp(1rem, 2.5vw, 1.2rem);
+            padding-bottom: clamp(0.5rem, 1.5vw, 0.8rem);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.8s ease-in-out;
+            text-align: center;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .content-container {
+            display: flex;
+            /* flex: 1; */
+            width: 100%;
+            gap: clamp(20px, 3vw, 30px);
+            margin-top: clamp(10px, 2vw, 20px);
+        }
+
+        .section {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: clamp(15px, 2.5vw, 20px);
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        .section-title {
+            font-size: clamp(1.3rem, 2.5vw, 1.5rem);
+            font-weight: 600;
+            margin-bottom: clamp(10px, 2vw, 15px);
+            color: #90caf9;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .section-title i {
+            margin-right: clamp(10px, 2vw, 12px);
+            font-size: clamp(1.4rem, 2.6vw, 1.6rem);
+        }
+
+        /* Data Collection Section Specifics */
+        .data-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: clamp(10px, 2vw, 15px);
+        }
+
+        .data-icon {
+            flex-shrink: 0;
+            width: clamp(32px, 5vw, 36px);
+            height: clamp(32px, 5vw, 36px);
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: clamp(10px, 2vw, 15px);
+        }
+
+        .data-icon i {
+            font-size: clamp(0.8rem, 1.8vw, 1rem);
+            /* Adjusted icon size */
+        }
+
+        .data-text {
+            flex: 1;
+        }
+
+        .data-title {
+            font-weight: 500;
+            color: #bbdefb;
+            margin-bottom: 3px;
+            font-size: clamp(0.9rem, 1.8vw, 1.0rem);
+        }
+
+        .data-desc {
+            font-size: clamp(0.8rem, 1.6vw, 0.9rem);
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Data Processing Section Specifics */
+        .flow-diagram {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            width: 100%;
+            /* Diagram takes full width */
+        }
+
+        .process-row {
+            display: flex;
+            width: 100%;
+            margin-bottom: clamp(10px, 2vw, 15px);
+            justify-content: space-around;
+            /* Use space-around for better spacing */
+            position: relative;
+            align-items: stretch;
+            /* Make steps same height */
+        }
+
+        /* Arrow Connector - Hide on small screens where rows might stack */
+        .process-row:not(:last-child):after {
+            content: '';
+            position: absolute;
+            bottom: calc(clamp(10px, 2vw, 15px) / -2 - 4px);
+            /* Position between rows */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid rgba(255, 255, 255, 0.3);
+            transition: opacity 0.3s ease;
+        }
+
+        .process-step {
+            flex: 1;
+            /* Each step takes equal space */
+            max-width: 200px;
+            /* Limit max width */
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: clamp(8px, 1.5vw, 12px);
+            margin: 0 clamp(3px, 1vw, 6px);
+            text-align: center;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            /* Center content vertically */
+        }
+
+        .process-step:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-3px);
+        }
+
+        .process-step i {
+            font-size: clamp(1.5rem, 2.8vw, 1.8rem);
+            margin-bottom: 8px;
+            color: #bbdefb;
+        }
+
+        .process-step-title {
+            font-size: clamp(0.85rem, 1.8vw, 0.95rem);
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: #e3f2fd;
+        }
+
+        .process-step-desc {
+            font-size: clamp(0.75rem, 1.5vw, 0.85rem);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- Media Queries --- */
+        @media (max-width: 992px) {
+
+            /* Stack main sections */
+            .slide {
+                align-items: flex-start;
+                padding-top: clamp(40px, 8vh, 80px);
+                padding-bottom: 80px;
+            }
+
+            .content {
+                margin: 0;
+            }
+
+            .content-container {
+                flex-direction: column;
+            }
+
+            .section {
+                flex: none;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+
+            /* Stack process steps within rows */
+            .process-row {
+                flex-direction: column;
+                margin-bottom: 0;
+                /* No margin needed when steps stack */
+                align-items: center;
+                /* Center steps when stacked */
+            }
+
+            .process-step {
+                flex: none;
+                /* Reset flex */
+                width: 80%;
+                /* Make steps wider when stacked */
+                max-width: 300px;
+                /* Limit width */
+                margin-bottom: clamp(10px, 2vw, 15px);
+                /* Add margin between stacked steps */
+                margin-left: 0;
+                margin-right: 0;
+            }
+
+            /* Hide arrow connector when rows/steps stack */
+            .process-row:not(:last-child):after {
+                opacity: 0;
+            }
+        }
+
+        /* --- START: Navigation Button CSS --- */
+        .slide-navigation {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .nav-button:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .nav-button.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .nav-button.hidden {
+            display: none;
+        }
+
+        /* --- END: Navigation Button CSS --- */
+    </style>
+</head>
+
+<body>
+    <div class="slide">
+        <div class="grid-pattern"></div>
+        <div class="particles">
+            <div class="particle" style="width: 15px; height: 15px; top: 15%; left: 10%; animation-delay: 0s;"></div>
+            <div class="particle" style="width: 10px; height: 10px; top: 25%; left: 20%; animation-delay: 1s;"></div>
+            <div class="particle" style="width: 20px; height: 20px; top: 30%; left: 70%; animation-delay: 2s;"></div>
+            <div class="particle" style="width: 12px; height: 12px; top: 65%; left: 45%; animation-delay: 3s;"></div>
+        </div>
+
+        <div class="content">
+            <h1 class="title">数据采集与处理</h1>
+
+            <div class="content-container">
+                <div class="section" style="animation-delay: 0.2s;">
+                    <div class="section-title">
+                        <i class="fas fa-spider"></i> 数据来源与采集方法
+                    </div>
+                    <div class="data-item">
+                        <div class="data-icon"><i class="fas fa-code"></i></div>
+                        <div class="data-text">
+                            <div class="data-title">微博数据爬取</div>
+                            <div class="data-desc">使用Scrapy框架支持多线程和分布式爬取，提高采集效率；或通过微博API接口获取稳定数据源。</div>
+                        </div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-icon"><i class="far fa-comment"></i></div>
+                        <div class="data-text">
+                            <div class="data-title">微博内容</div>
+                            <div class="data-desc">舆情分析的核心数据，反映用户观点和态度。</div>
+                        </div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-icon"><i class="fas fa-reply-all"></i></div>
+                        <div class="data-text">
+                            <div class="data-title">评论数据</div>
+                            <div class="data-desc">深入了解用户对微博内容的看法，补充和丰富舆情信息。</div>
+                        </div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-icon"><i class="fas fa-retweet"></i></div>
+                        <div class="data-text">
+                            <div class="data-title">转发数据</div>
+                            <div class="data-desc">体现微博的传播范围和影响力，是衡量舆情热度的重要指标。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section" style="animation-delay: 0.4s;">
+                    <div class="section-title">
+                        <i class="fas fa-cogs"></i> 数据预处理
+                    </div>
+                    <div class="flow-diagram">
+                        <div class="process-row">
+                            <div class="process-step">
+                                <i class="fas fa-broom"></i>
+                                <div class="process-step-title">数据清洗</div>
+                                <div class="process-step-desc">去重、去噪、填补缺失值</div>
+                            </div>
+                            <div class="process-step">
+                                <i class="fas fa-ruler-combined"></i>
+                                <div class="process-step-title">数据标准化</div>
+                                <div class="process-step-desc">格式统一、时间戳处理</div>
+                            </div>
+                        </div>
+                        <div class="process-row">
+                            <div class="process-step">
+                                <i class="far fa-smile"></i>
+                                <div class="process-step-title">情感分析</div>
+                                <div class="process-step-desc">正负中性情感倾向识别</div>
+                            </div>
+                            <div class="process-step">
+                                <i class="fas fa-hashtag"></i>
+                                <div class="process-step-title">关键词提取</div>
+                                <div class="process-step-desc">话题分析与热点识别</div>
+                            </div>
+                        </div>
+                        <div class="process-row">
+                            <div class="process-step">
+                                <i class="fas fa-brain"></i>
+                                <div class="process-step-title">数据增强</div>
+                                <div class="process-step-desc">文本特征提取与扩展</div>
+                            </div>
+                            <div class="process-step">
+                                <i class="fas fa-database"></i>
+                                <div class="process-step-title">数据存储</div>
+                                <div class="process-step-desc">结构化数据入库与索引</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-navigation">
+        <a href="3.html" class="nav-button prev-button">上一页</a>
+        <a href="5.html" class="nav-button next-button">下一页</a>
+    </div>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const particlesContainer = document.querySelector('.particles');
+            if (particlesContainer) {
+                for (let i = 0; i < 12; i++) { // Particle count
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    const size = Math.floor(Math.random() * 12) + 5;
+                    const top = Math.floor(Math.random() * 100);
+                    const left = Math.floor(Math.random() * 100);
+                    const delay = Math.random() * 10; // float delay
+
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    particle.style.top = `${top}%`;
+                    particle.style.left = `${left}%`;
+                    particle.style.animationDelay = `${delay}s`;
+
+                    particlesContainer.appendChild(particle);
+                }
+            }
+        });
+    </script>
+
+    <script>
+        // Define previous and next slide URLs
+        const prevSlideURL = '3.html'; // Previous slide is 3.html
+        const nextSlideURL = '5.html'; // Next slide is 5.html
+        // const nextSlideURL = null; // *** Uncomment this line and comment the one above if this IS the LAST slide ***
+
+        // Navigation function
+        function navigateTo(url) {
+            if (url) {
+                window.location.href = url;
+            }
+        }
+
+        // Keyboard event listener
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'ArrowLeft' || event.keyCode === 37) { // Left arrow
+                navigateTo(prevSlideURL);
+            } else if (event.key === 'ArrowRight' || event.keyCode === 39) { // Right arrow
+                navigateTo(nextSlideURL);
+            }
+        });
+
+        // Button click listeners
+        const prevButton = document.querySelector('.prev-button');
+        const nextButton = document.querySelector('.next-button');
+
+        if (prevButton) {
+            prevButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigateTo(prevSlideURL);
+            });
+        }
+
+        // Only add listener and enable next button if nextSlideURL is set
+        if (nextButton) {
+            if (nextSlideURL) {
+                nextButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    navigateTo(nextSlideURL);
+                });
+            } else {
+                // Disable the button if it's the last slide
+                nextButton.classList.add('disabled');
+                nextButton.href = '#';
+            }
+        }
+    </script>
+</body>
+
+</html>

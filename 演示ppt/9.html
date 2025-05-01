@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>总结与展望 - Slide 9</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* --- 基础和响应式布局 CSS --- */
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            min-height: 100vh;
+            background-color: #1a237e;
+        }
+
+        .slide {
+            width: 100%;
+            min-height: 100vh;
+            position: relative;
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #01579b 100%);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+            /* Allow scroll */
+        }
+
+        .grid-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            z-index: 1;
+        }
+
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            animation: float 15s infinite ease-in-out;
+        }
+
+        .content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            padding: clamp(25px, 4vw, 50px);
+            /* Responsive padding */
+            width: 95%;
+            max-width: 1400px;
+            align-items: center;
+            margin: auto 0;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0) translateX(0);
+            }
+
+            25% {
+                transform: translateY(-20px) translateX(10px);
+            }
+
+            50% {
+                transform: translateY(0) translateX(20px);
+            }
+
+            75% {
+                transform: translateY(20px) translateX(10px);
+            }
+        }
+
+        .title {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: clamp(1rem, 2.5vw, 1.2rem);
+            padding-bottom: clamp(0.5rem, 1.5vw, 0.8rem);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.8s ease-in-out;
+            text-align: center;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .sections-container {
+            display: flex;
+            width: 100%;
+            gap: clamp(20px, 3vw, 30px);
+            margin-top: clamp(10px, 2vw, 20px);
+            align-items: stretch;
+            /* Sections stretch */
+        }
+
+        .section {
+            flex: 1;
+            min-width: 0;
+            /* Allow shrinking */
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: clamp(15px, 2.5vw, 20px);
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        .section-title {
+            font-size: clamp(1.3rem, 2.5vw, 1.5rem);
+            font-weight: 600;
+            margin-bottom: clamp(10px, 2vw, 15px);
+            color: #90caf9;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .section-title i {
+            margin-right: clamp(10px, 2vw, 15px);
+            font-size: clamp(1.4rem, 2.6vw, 1.6rem);
+        }
+
+        /* Project Results Section */
+        .chart-container {
+            min-height: clamp(160px, 22vh, 200px);
+            /* Adjusted height */
+            margin-bottom: clamp(10px, 2vh, 15px);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+            /* Allow chart container to grow */
+        }
+
+        #resultsChart {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .achievement-card {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: clamp(10px, 2vw, 15px);
+            margin-bottom: clamp(10px, 2vh, 15px);
+            transition: all 0.3s ease;
+        }
+
+        .achievement-card:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .achievement-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .achievement-icon {
+            width: clamp(36px, 5vw, 40px);
+            height: clamp(36px, 5vw, 40px);
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .achievement-icon i {
+            font-size: clamp(1.4rem, 2.5vw, 1.6rem);
+            color: #e3f2fd;
+        }
+
+        .achievement-title {
+            font-size: clamp(1rem, 2vw, 1.1rem);
+            font-weight: 600;
+            color: #e3f2fd;
+        }
+
+        .achievement-desc {
+            font-size: clamp(0.85rem, 1.7vw, 0.95rem);
+            color: rgba(255, 255, 255, 0.85);
+            line-height: 1.5;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 4px;
+            animation: progress-fill 1.5s ease-in-out forwards;
+        }
+
+        /* Future Improvements Section */
+        .future-item {
+            display: flex;
+            padding: clamp(10px, 2vw, 15px);
+            margin-bottom: clamp(10px, 2vh, 15px);
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            align-items: flex-start;
+            /* Align icon top */
+        }
+
+        .future-item:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .future-icon {
+            width: clamp(40px, 6vw, 50px);
+            height: clamp(40px, 6vw, 50px);
+            background: linear-gradient(135deg, #4fc3f7 0%, #2196f3 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: clamp(10px, 2vw, 15px);
+            flex-shrink: 0;
+        }
+
+        .future-icon i {
+            font-size: clamp(1.5rem, 2.8vw, 1.8rem);
+            color: white;
+        }
+
+        .future-content {
+            flex: 1;
+        }
+
+        .future-title {
+            font-size: clamp(1rem, 2vw, 1.1rem);
+            font-weight: 600;
+            color: #e3f2fd;
+            margin-bottom: 8px;
+        }
+
+        .future-desc {
+            font-size: clamp(0.85rem, 1.7vw, 0.95rem);
+            color: rgba(255, 255, 255, 0.85);
+            line-height: 1.5;
+        }
+
+        .future-desc ul {
+            /* Basic list styling */
+            list-style-type: disc;
+            /* Changed from circle for better visibility */
+            margin-left: 20px;
+            margin-top: 5px;
+            padding-left: 5px;
+            /* Add some padding */
+        }
+
+        .future-desc ul li {
+            margin-bottom: 4px;
+        }
+
+        /* Spacing between list items */
+
+        @keyframes progress-fill {
+            from {
+                width: 0%;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- Media Queries --- */
+        @media (max-width: 992px) {
+
+            /* Stack main columns */
+            .slide {
+                align-items: flex-start;
+                padding-top: clamp(40px, 8vh, 80px);
+                padding-bottom: 80px;
+            }
+
+            .content {
+                margin: 0;
+            }
+
+            .sections-container {
+                flex-direction: column;
+                align-items: normal;
+            }
+
+            .section {
+                flex: none;
+                width: 100%;
+            }
+
+            .chart-container {
+                min-height: 200px;
+            }
+
+            /* Ensure chart height */
+        }
+
+        /* --- START: Navigation Button CSS --- */
+        .slide-navigation {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .nav-button:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .nav-button.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .nav-button.hidden {
+            display: none;
+        }
+
+        /* --- END: Navigation Button CSS --- */
+    </style>
+</head>
+
+<body>
+    <div class="slide">
+        <div class="grid-pattern"></div>
+        <div class="particles">
+            <div class="particle" style="width: 15px; height: 15px; top: 15%; left: 10%; animation-delay: 0s;"></div>
+            <div class="particle" style="width: 10px; height: 10px; top: 25%; left: 20%; animation-delay: 1s;"></div>
+            <div class="particle" style="width: 20px; height: 20px; top: 30%; left: 70%; animation-delay: 2s;"></div>
+            <div class="particle" style="width: 12px; height: 12px; top: 65%; left: 45%; animation-delay: 3s;"></div>
+        </div>
+
+        <div class="content">
+            <h1 class="title">总结与展望</h1>
+
+            <div class="sections-container">
+                <div class="section" style="animation-delay: 0.2s;">
+                    <div class="section-title">
+                        <i class="fas fa-award"></i> 项目成果
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="resultsChart"></canvas>
+                    </div>
+                    <div class="achievement-card">
+                        <div class="achievement-header">
+                            <div class="achievement-icon"><i class="fas fa-tachometer-alt"></i></div>
+                            <div class="achievement-title">数据处理效率提升</div>
+                        </div>
+                        <div class="achievement-desc">系统通过优化处理流程和算法，大规模数据处理时间减少65%以上。</div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 88%; background-color: #4fc3f7;"></div>
+                        </div>
+                    </div>
+                    <div class="achievement-card">
+                        <div class="achievement-header">
+                            <div class="achievement-icon"><i class="fas fa-smile"></i></div>
+                            <div class="achievement-title">情感分析准确度</div>
+                        </div>
+                        <div class="achievement-desc">情感分析模型准确度达到87% (F1: 85.8%)，为舆情分析提供可靠支持。</div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 87%; background-color: #7986cb;"></div>
+                        </div>
+                    </div>
+                    <div class="achievement-card">
+                        <div class="achievement-header">
+                            <div class="achievement-icon"><i class="fas fa-chart-pie"></i></div>
+                            <div class="achievement-title">可视化效果直观</div>
+                        </div>
+                        <div class="achievement-desc">多样化图表直观展示舆情数据，用户可快速了解态势，提高决策效率。</div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 92%; background-color: #81c784;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section" style="animation-delay: 0.4s;">
+                    <div class="section-title">
+                        <i class="fas fa-rocket"></i> 未来改进方向
+                    </div>
+                    <div class="future-item">
+                        <div class="future-icon"><i class="fas fa-database"></i></div>
+                        <div class="future-content">
+                            <div class="future-title">增加更多数据源</div>
+                            <div class="future-desc">
+                                <p>引入新闻网站、其他社交媒体等，丰富舆情分析维度。</p>
+                                <ul>
+                                    <li>集成主流新闻媒体API。</li>
+                                    <li>整合跨平台社交数据。</li>
+                                    <li>建立统一获取标准。</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="future-item">
+                        <div class="future-icon"><i class="fas fa-bolt"></i></div>
+                        <div class="future-content">
+                            <div class="future-title">提升系统的实时性</div>
+                            <div class="future-desc">
+                                <p>优化架构与流程，实现近实时数据更新与预警。</p>
+                                <ul>
+                                    <li>引入流处理与消息队列。</li>
+                                    <li>采用分布式实时计算框架。</li>
+                                    <li>实现数据增量处理。</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="future-item">
+                        <div class="future-icon"><i class="fas fa-brain"></i></div>
+                        <div class="future-content">
+                            <div class="future-title">优化分析模型</div>
+                            <div class="future-desc">
+                                <p>引入更先进算法，持续提升情感分析等任务准确度。</p>
+                                <ul>
+                                    <li>探索BERT等预训练模型应用。</li>
+                                    <li>引入多模态情感分析能力。</li>
+                                    <li>建立自适应学习机制。</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-navigation">
+        <a href="8.html" class="nav-button prev-button">上一页</a>
+        <a href="10.html" class="nav-button next-button">下一页</a>
+    </div>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            // --- Particle Generation ---
+            const particlesContainer = document.querySelector('.particles');
+            if (particlesContainer) {
+                for (let i = 0; i < 12; i++) {
+                    const particle = document.createElement('div'); particle.className = 'particle';
+                    const size = Math.floor(Math.random() * 12) + 5; const top = Math.floor(Math.random() * 100); const left = Math.floor(Math.random() * 100); const delay = Math.random() * 10;
+                    particle.style.width = `${size}px`; particle.style.height = `${size}px`; particle.style.top = `${top}%`; particle.style.left = `${left}%`; particle.style.animationDelay = `${delay}s`;
+                    particlesContainer.appendChild(particle);
+                }
+            }
+
+            // --- Results Radar Chart ---
+            const resultsCtx = document.getElementById('resultsChart')?.getContext('2d');
+            if (resultsCtx) {
+                new Chart(resultsCtx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['处理效率', '情感准确度', '可视化效果', '系统稳定性', '实时性', '用户体验'],
+                        datasets: [
+                            { label: '项目初始', data: [45, 60, 50, 70, 40, 55], fill: true, backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgba(54, 162, 235, 0.8)', pointBackgroundColor: 'rgba(54, 162, 235, 1)', pointBorderColor: '#fff', pointHoverBackgroundColor: '#fff', pointHoverBorderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1.5 },
+                            { label: '项目当前', data: [88, 87, 92, 85, 75, 90], fill: true, backgroundColor: 'rgba(75, 192, 192, 0.2)', borderColor: 'rgba(75, 192, 192, 0.8)', pointBackgroundColor: 'rgba(75, 192, 192, 1)', pointBorderColor: '#fff', pointHoverBackgroundColor: '#fff', pointHoverBorderColor: 'rgba(75, 192, 192, 1)', borderWidth: 1.5 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
+                                grid: { color: 'rgba(255, 255, 255, 0.2)' },
+                                pointLabels: { color: 'rgba(255, 255, 255, 0.8)', font: { size: 10 } },
+                                ticks: { backdropColor: 'transparent', color: 'rgba(255, 255, 255, 0.6)', font: { size: 8 }, stepSize: 20 } // Adjusted stepSize
+                            }
+                        },
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: 'rgba(255, 255, 255, 0.8)', font: { size: 10 }, boxWidth: 15, padding: 10 } },
+                            title: { display: true, text: '项目成果对比', color: 'rgba(255, 255, 255, 0.9)', font: { size: 12 } }
+                        }
+                    }
+                });
+            } else {
+                console.error("Canvas element #resultsChart not found.");
+            }
+        });
+    </script>
+
+    <script>
+        // Define previous and next slide URLs
+        const prevSlideURL = '8.html'; // Previous slide is 8.html
+        const nextSlideURL = '10.html'; // *** 修改这里：指向下一页的文件名 ***
+        // const nextSlideURL = null; // *** 如果这确实是最后一页，才用 null ***
+
+        // Navigation function
+        function navigateTo(url) { if (url) { window.location.href = url; } }
+
+        // Keyboard event listener
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'ArrowLeft' || event.keyCode === 37) { navigateTo(prevSlideURL); }
+            else if (event.key === 'ArrowRight' || event.keyCode === 39) { navigateTo(nextSlideURL); } // 现在可以跳转了
+        });
+
+        // Button click listeners
+        const prevButton = document.querySelector('.prev-button');
+        const nextButton = document.querySelector('.next-button');
+        if (prevButton) { prevButton.addEventListener('click', (e) => { e.preventDefault(); navigateTo(prevSlideURL); }); }
+        if (nextButton) {
+            if (nextSlideURL) { // 现在条件满足了
+                nextButton.addEventListener('click', (e) => { e.preventDefault(); navigateTo(nextSlideURL); });
+            }
+            else {
+                nextButton.classList.add('disabled'); // 不会执行到这里了
+                nextButton.href = '#';
+            }
+        }
+    </script>
+</body>
+
+</html>

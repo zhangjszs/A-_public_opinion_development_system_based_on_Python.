@@ -4,322 +4,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>致谢 - Slide 10</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
-        rel="stylesheet">
+    <title>致谢 - Slide 10 (Themed & Split Title)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+          integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Roboto:wght@300;400;700;900&display=swap"
+          rel="stylesheet">
     <style>
-        /* --- 基础和响应式布局 CSS --- */
+        /* --- Theme Variables --- */
+        :root {
+            /* Edge Blue Palette */
+            --edge-blue: #00A1F1;
+            --edge-blue-dark: #007CDD;
+            --edge-gradient-end: #00D1ED;
+            --edge-style-gradient: linear-gradient(90deg, var(--edge-blue), var(--edge-gradient-end), var(--edge-blue));
+
+            /* Light Mode Base Colors */
+            --bg-color: #FFFFFF;
+            --text-color-base: #1F2937; /* gray-800 */
+            --text-color-muted: #4B5563; /* gray-600 */
+            --text-color-caption: #6B7280; /* gray-500 */
+            --card-border-color: #E5E7EB; /* gray-200 - Used for title border */
+
+            /* Chrome Dark Gray for Title Split */
+            --chrome-dark-gray: #303134;
+        }
+
+        /* Base styling */
         body {
-            font-family: 'Noto Sans SC', sans-serif;
+            font-family: 'Noto Sans SC', 'Roboto', sans-serif;
             margin: 0;
             padding: 0;
-            overflow: hidden;
             min-height: 100vh;
-            background-color: #1a237e;
+            background-color: var(--bg-color); /* Light background */
+            color: var(--text-color-base); /* Default dark text */
+            overflow-x: hidden;
         }
 
-        .slide {
-            width: 100%;
-            min-height: 100vh;
-            position: relative;
-            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #01579b 100%);
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow-y: auto;
-            /* Allow scroll if content is too long */
-        }
-
-        .grid-pattern {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-            background-size: 30px 30px;
-            z-index: 1;
-        }
-
-        .particles {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 50%;
-            animation: float 15s infinite ease-in-out;
-        }
-
-        .content {
-            position: relative;
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-            color: white;
-            padding: clamp(30px, 6vh, 60px);
-            /* Responsive padding */
-            width: 90%;
-            max-width: 900px;
-            /* Limit width for better readability */
-            align-items: center;
+        /* --- Main Title Styles --- */
+        .main-title {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-weight: 900;
+            font-size: clamp(2.8rem, 6vw, 4.5rem);
+            line-height: 1.15;
+            margin-bottom: clamp(2rem, 5vw, 4rem);
             text-align: center;
-            margin: auto;
-            /* Center content vertically and horizontally */
+            border-bottom: 2px solid var(--card-border-color); /* Lighter border */
+            padding-bottom: clamp(1rem, 2.5vw, 2rem);
+            /* text-shadow: 0 1px 2px rgba(0,0,0,0.1); Optional subtle shadow for light mode */
+            color: inherit; /* Let spans control color */
         }
 
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translateY(0) translateX(0);
+        /* --- Gradient Animation --- */
+        @keyframes gradient-animation {
+            0% {
+                background-position: 0% 50%;
             }
-
-            25% {
-                transform: translateY(-20px) translateX(10px);
-            }
-
             50% {
-                transform: translateY(0) translateX(20px);
+                background-position: 100% 50%;
             }
-
-            75% {
-                transform: translateY(20px) translateX(10px);
+            100% {
+                background-position: 0% 50%;
             }
         }
 
-        .title {
-            font-size: clamp(2rem, 5vw, 2.8rem);
-            font-weight: 700;
-            margin-bottom: clamp(1.5rem, 4vh, 2.5rem);
-            padding-bottom: clamp(0.5rem, 1.5vh, 0.8rem);
-            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            animation: fadeIn 0.8s ease-in-out;
-            width: auto;
-            /* Don't force full width */
-            display: inline-block;
-            /* Allow centering */
+        /* --- Title Split Styling --- */
+        .title-black-part {
+            color: var(--chrome-dark-gray); /* Use specific dark gray */
         }
 
-        .acknowledgements {
-            animation: fadeIn 0.8s ease-in-out 0.2s forwards;
-            /* Delayed fade in */
-            opacity: 0;
-            /* Start hidden */
-            width: 100%;
+        .title-gradient-part {
+            background: var(--edge-style-gradient);
+            background-size: 200% auto;
+            animation: gradient-animation 4s linear infinite;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
         }
 
-        .ack-item {
-            margin-bottom: clamp(1rem, 3vh, 1.8rem);
-            font-size: clamp(1rem, 2.2vw, 1.2rem);
-            line-height: 1.7;
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        .ack-item i {
-            /* Icon styling */
-            margin-right: 10px;
-            color: #90caf9;
-            /* Light blue icon color */
-            width: 20px;
-            /* Fixed width for alignment */
-            text-align: center;
-        }
-
-        .ack-item strong {
-            /* Highlight names/groups */
-            color: #bbdefb;
-            /* Lighter blue highlight */
-            font-weight: 500;
-        }
-
-        .project-link-container {
-            margin-top: clamp(2rem, 5vh, 3rem);
-            animation: fadeIn 0.8s ease-in-out 0.4s forwards;
-            /* Delayed fade in */
-            opacity: 0;
-            /* Start hidden */
-        }
-
-        .project-link-label {
-            font-size: clamp(0.9rem, 1.8vw, 1rem);
-            margin-bottom: 15px;
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-        .project-link-button {
-            display: inline-block;
-            background-color: #4fc3f7;
-            /* A different highlight color */
-            color: #01579b;
-            /* Dark text on light button */
-            padding: clamp(10px, 1.8vh, 12px) clamp(20px, 3vw, 30px);
-            border-radius: 25px;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: clamp(1rem, 2vw, 1.1rem);
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .project-link-button:hover {
-            background-color: #81d4fa;
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-        }
-
-        .project-link-button i {
-            margin-right: 8px;
-        }
-
-
-        @keyframes fadeIn {
+        /* --- General Animation --- */
+        @keyframes fadeInUp {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(30px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
 
-        /* --- START: Navigation Button CSS --- */
-        .slide-navigation {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-            display: flex;
-            gap: 20px;
+        .animate-fadeInUp {
+            opacity: 0;
+            animation: fadeInUp 0.8s ease-out forwards;
         }
 
+        /* --- Acknowledgement Item Styling (Light Mode) --- */
+        .ack-item {
+            color: var(--text-color-muted); /* Darker muted text */
+            line-height: 1.8;
+        }
+
+        .ack-item i {
+            color: var(--edge-blue); /* Use Edge Blue Icon */
+            width: 1.5em;
+            text-align: center;
+            margin-right: 0.5rem;
+        }
+
+        .ack-item strong {
+            color: var(--text-color-base); /* Dark text for names */
+            font-weight: 600;
+        }
+
+        /* --- Project Link --- */
+        .project-link-label {
+            color: var(--text-color-caption); /* Muted caption color */
+        }
+
+        /* Project button uses .nav-button styles */
+
+
+        /* --- Navigation Styles (Light Mode - Blue) --- */
+        .slide-navigation {
+        }
+
+        /* Positioning handled by Tailwind */
         .nav-button {
             display: inline-block;
-            padding: 10px 20px;
-            background-color: rgba(255, 255, 255, 0.2);
+            padding: 10px 25px;
+            background-color: var(--edge-blue); /* Edge Blue background */
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 5px;
+            border: none;
+            border-radius: 8px;
             text-decoration: none;
             font-size: 1rem;
+            font-weight: 500;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 161, 241, 0.2); /* Blue shadow */
         }
 
-        .nav-button:hover {
-            background-color: rgba(255, 255, 255, 0.4);
+        .nav-button:hover:not(.disabled) {
+            background-color: var(--edge-blue-dark); /* Darker blue hover */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 161, 241, 0.3); /* Stronger blue shadow */
         }
 
         .nav-button.disabled {
-            opacity: 0.5;
+            background-color: #adb5bd; /* Lighter gray disabled */
+            color: #6c757d; /* Darker text disabled */
+            opacity: 0.7;
             cursor: not-allowed;
             pointer-events: none;
+            box-shadow: none;
+            transform: none;
         }
-
-        .nav-button.hidden {
-            display: none;
-        }
-
-        /* --- END: Navigation Button CSS --- */
     </style>
 </head>
 
-<body>
-    <div class="slide">
-        <div class="grid-pattern"></div>
-        <div class="particles">
-            <div class="particle" style="width: 15px; height: 15px; top: 15%; left: 10%; animation-delay: 0s;"></div>
-            <div class="particle" style="width: 10px; height: 10px; top: 25%; left: 20%; animation-delay: 1s;"></div>
-            <div class="particle" style="width: 20px; height: 20px; top: 30%; left: 70%; animation-delay: 2s;"></div>
-            <div class="particle" style="width: 12px; height: 12px; top: 65%; left: 45%; animation-delay: 3s;"></div>
+<body class="bg-white">
+<div class="slide min-h-screen flex items-center justify-center p-6 md:p-12">
+
+    <div class="content w-full max-w-4xl mx-auto text-center">
+        <h1 class="main-title animate-fadeInUp">
+            <span class="title-black-part">致</span><span class="title-gradient-part">谢</span>
+        </h1>
+
+        <div class="acknowledgements space-y-5 md:space-y-6 animate-fadeInUp" style="animation-delay: 0.2s;">
+            <p class="ack-item text-lg md:text-xl">
+                <i class="fas fa-user-tie fa-fw"></i>衷心感谢我们的两位指导老师 <strong>田俐</strong>老师和<strong>梅宇</strong>老师
+                ，在项目研究和系统开发过程中给予的悉心指导和宝贵建议。
+            </p>
+            <p class="ack-item text-lg md:text-xl">
+                <i class="fas fa-users fa-fw"></i>感谢团队成员 <strong>章崇文、赵子越、廖海清、谢成扬等</strong>
+                的共同努力和协作，你们的支持是项目顺利完成的关键。
+            </p>
+            <p class="ack-item text-lg md:text-xl">
+                <i class="fas fa-hands-helping fa-fw"></i>感谢 <strong>比赛主办方</strong> 提供宝贵的平台
+            </p>
+            <p class="ack-item text-lg md:text-xl">
+                <i class="fas fa-heart fa-fw"></i>同时感谢所有关注、支持和参与测试的朋友们！
+            </p>
         </div>
 
-        <div class="content">
-            <h1 class="title">致 谢</h1>
-
-            <div class="acknowledgements">
-                <p class="ack-item">
-                    <i class="fas fa-user-tie"></i>衷心感谢我的指导老师 <strong>[指导老师姓名]</strong> 教授，在项目研究和系统开发过程中给予的悉心指导和宝贵建议。
-                </p>
-                <p class="ack-item">
-                    <i class="fas fa-users"></i>感谢团队成员 <strong>[成员1姓名]、[成员2姓名]、[更多成员...]</strong>
-                    的共同努力和协作，你们的支持是项目顺利完成的关键。
-                </p>
-                <p class="ack-item">
-                    <i class="fas fa-hands-helping"></i>感谢 <strong>[比赛主办方名称]</strong> 提供宝贵的竞赛平台，以及
-                    <strong>[技术支持方/个人名称]</strong> 在技术实现方面提供的支持与帮助。
-                </p>
-                <p class="ack-item">
-                    <i class="fas fa-heart"></i>同时感谢所有关注、支持和参与测试的朋友们！
-                </p>
-            </div>
-
-            <div class="project-link-container">
-                <p class="project-link-label">项目地址与更多信息，请访问：</p>
-                <a href="[您的项目地址URL，例如GitHub链接]" target="_blank" class="project-link-button">
-                    <i class="fab fa-github"></i> 查看项目
-                </a>
-            </div>
-
+        <div class="project-link-container mt-12 md:mt-16 animate-fadeInUp" style="animation-delay: 0.4s;">
+            <p class="project-link-label text-base text-gray-500 mb-4">项目地址与更多信息，请访问：</p> <a
+                href="https://github.com/zhangjszs/A-_public_opinion_development_system_based_on_Python." target="_blank"
+                class="project-link-button nav-button inline-flex items-center px-8 py-3 text-lg">
+            <i class="fab fa-github mr-2"></i> 查看项目
+        </a>
         </div>
+
     </div>
-    <div class="slide-navigation">
-        <a href="9.html" class="nav-button prev-button">上一页</a>
-        <a href="#" class="nav-button next-button disabled">结束</a>
-    </div>
-    <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            // --- Particle Generation ---
-            const particlesContainer = document.querySelector('.particles');
-            if (particlesContainer) {
-                for (let i = 0; i < 12; i++) {
-                    const particle = document.createElement('div'); particle.className = 'particle';
-                    const size = Math.floor(Math.random() * 12) + 5; const top = Math.floor(Math.random() * 100); const left = Math.floor(Math.random() * 100); const delay = Math.random() * 10;
-                    particle.style.width = `${size}px`; particle.style.height = `${size}px`; particle.style.top = `${top}%`; particle.style.left = `${left}%`; particle.style.animationDelay = `${delay}s`;
-                    particlesContainer.appendChild(particle);
-                }
-            }
-        });
-    </script>
+</div>
 
-    <script>
-        // Define previous and next slide URLs
-        const prevSlideURL = '9.html'; // Previous slide is 9.html
-        const nextSlideURL = null;     // Set to null - THIS IS THE LAST SLIDE
-        // const nextSlideURL = 'FIRST_SLIDE.html'; // Example: Loop back to start?
+<div class="slide-navigation fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 flex gap-5">
+    <a href="9.html" class="nav-button prev-button">上一页</a>
+    <a href="#" class="nav-button next-button disabled">结束</a></div>
 
-        // Navigation function
-        function navigateTo(url) { if (url) { window.location.href = url; } }
+<script>
+    // Navigation Script (Final Slide Logic - unchanged)
+    const prevSlideURL = '9.html';
+    const nextSlideURL = null;
 
-        // Keyboard event listener
-        document.addEventListener('keydown', function (event) {
-            if (event.key === 'ArrowLeft' || event.keyCode === 37) { navigateTo(prevSlideURL); }
-            else if (event.key === 'ArrowRight' || event.keyCode === 39) { navigateTo(nextSlideURL); } // Will do nothing if nextSlideURL is null
-        });
-
-        // Button click listeners
-        const prevButton = document.querySelector('.prev-button');
-        const nextButton = document.querySelector('.next-button');
-        if (prevButton) { prevButton.addEventListener('click', (e) => { e.preventDefault(); navigateTo(prevSlideURL); }); }
-        if (nextButton) {
-            if (nextSlideURL) { nextButton.addEventListener('click', (e) => { e.preventDefault(); navigateTo(nextSlideURL); }); }
-            else { nextButton.classList.add('disabled'); nextButton.href = '#'; } // Ensure button is disabled visually
+    function navigateTo(url) {
+        if (url) {
+            window.location.href = url;
         }
-    </script>
-</body>
+    }
 
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowLeft' || event.keyCode === 37) {
+            navigateTo(prevSlideURL);
+        }
+    });
+    const prevButton = document.querySelector('.prev-button');
+    const nextButton = document.querySelector('.next-button');
+    if (prevButton) {
+        prevButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo(prevSlideURL);
+        });
+    }
+    if (nextButton) {
+        nextButton.classList.add('disabled');
+        nextButton.href = '#';
+        nextButton.onclick = (e) => e.preventDefault();
+    }
+</script>
+</body>
 </html>

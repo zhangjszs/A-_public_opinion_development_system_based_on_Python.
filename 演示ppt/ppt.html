@@ -4,344 +4,308 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>基于Python微博舆情分析系统 - Slide 1</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
-        rel="stylesheet">
+    <title>基于Python微博舆情分析系统 - Slide 1 (Light Mode - Blue Animated)</title>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+          integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap"
+          rel="stylesheet">
     <style>
-        /* 基础重置和字体设置 */
+        /* --- Theme Variables --- */
+        :root {
+            /* Edge Blue Palette */
+            --edge-blue: #00A1F1;
+            --edge-blue-dark: #007CDD;
+            --edge-gradient-end: #00D1ED;
+            /* Gradient for text animation (Blue -> Cyan -> Blue) */
+            /* 这就是你描述的“平面颜色渐变块” */
+            --edge-style-gradient: linear-gradient(90deg, var(--edge-blue), var(--edge-gradient-end), var(--edge-blue));
+
+            /* Light Mode Base Colors */
+            --bg-color: #FFFFFF;
+            --text-color-base: #1F2937; /* gray-800 */
+            --text-color-muted: #4B5563; /* gray-600 */
+            --text-color-caption: #6B7280; /* gray-500 */
+            --card-bg-color: #F9FAFB; /* gray-50 */
+            --card-border-color: #E5E7EB; /* gray-200 */
+        }
+
+        /* --- Base Body Styles --- */
         body {
+            background-color: var(--bg-color);
+            color: var(--text-color-base); /* Default dark text */
             font-family: 'Noto Sans SC', sans-serif;
             margin: 0;
             padding: 0;
-            overflow: hidden;
-            /* 防止body本身滚动 */
             min-height: 100vh;
-            /* 确保body至少占满视口高度 */
-            background-color: #1a237e;
-            /* 备用背景色 */
-        }
-
-        .slide {
-            width: 100%;
-            /* 占满宽度 */
-            min-height: 100vh;
-            /* 最小高度为视口高度 */
-            position: relative;
-            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #01579b 100%);
-            overflow: hidden;
-            /* 隐藏内部溢出内容 */
             display: flex;
-            /* 使用flex布局 */
+        }
+
+        /* --- Utility Classes (Edge Blue) --- */
+        .text-edge-blue {
+            color: var(--edge-blue);
+        }
+
+        .border-edge-blue {
+            border-color: var(--edge-blue);
+        }
+
+        /* --- Layout Containers --- */
+        .slide-container {
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
             justify-content: center;
-            /* 水平居中 */
             align-items: center;
-            /* 垂直居中 */
-        }
-
-        .grid-pattern {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image:
-                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-            background-size: 30px 30px;
-            z-index: 1;
-        }
-
-        .particles {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            z-index: 1;
-            pointer-events: none;
-            /* 粒子不应干扰交互 */
-        }
-
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 50%;
-            animation: float 15s infinite ease-in-out;
-        }
-
-        /* 内容容器 */
-        .content {
             position: relative;
-            z-index: 2;
+            overflow: hidden;
+            padding: 2rem;
+        }
+
+        .content-wrapper {
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: white;
-            /* 响应式内边距 */
-            padding: clamp(20px, 5vw, 40px);
             text-align: center;
             max-width: 1200px;
-            /* 最大宽度限制 */
             width: 90%;
-            /* 宽度 */
+            z-index: 2;
         }
 
-        /* 粒子浮动动画 */
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translateY(0) translateX(0);
-            }
-
-            25% {
-                transform: translateY(-20px) translateX(10px);
-            }
-
-            50% {
-                transform: translateY(0) translateX(20px);
-            }
-
-            75% {
-                transform: translateY(20px) translateX(10px);
-            }
-        }
-
-        .main-title {
-            /* 响应式字体大小 */
-            font-size: clamp(2.5rem, 6vw + 1rem, 4.5rem);
-            font-weight: 700;
-            margin-bottom: clamp(0.5rem, 2vw, 1rem);
-            /* 响应式下边距 */
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            animation: fadeIn 1.2s ease-in-out;
-        }
-
-        .subtitle {
-            /* 响应式字体大小 */
-            font-size: clamp(1.1rem, 3vw + 0.5rem, 1.8rem);
-            font-weight: 300;
-            margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
-            /* 响应式下边距 */
-            opacity: 0.9;
-            animation: fadeIn 1.2s ease-in-out 0.3s forwards;
-            opacity: 0;
-            /* 动画起始透明度 */
-        }
-
-        /* 内容淡入动画 */
-        @keyframes fadeIn {
+        /* --- Initial Animation --- */
+        @keyframes fadeSlideUp {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(30px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
 
-        .icon-container {
-            display: flex;
-            flex-wrap: wrap;
-            /* 允许换行 */
-            justify-content: center;
-            gap: clamp(20px, 4vw, 40px);
-            /* 响应式间距 */
-            margin-top: clamp(20px, 4vw, 30px);
-            /* 响应式上边距 */
-            animation: fadeIn 1.2s ease-in-out 0.6s forwards;
-            opacity: 0;
-            /* 动画起始透明度 */
-            width: 100%;
+        /* Apply base fade-slide-up to elements */
+        #main-title, #sub-title, .feature-card {
+            opacity: 0; /* Start hidden */
+            animation: fadeSlideUp 0.7s ease-out forwards; /* Base animation */
         }
 
-        .feature-icon {
+        /* Specific delays are set inline via style attribute */
+
+        /* --- Animated Gradient Text --- */
+        /* 这个类实现了你描述的效果：将文字作为“浮动的框架”，显示下方移动的渐变色块 */
+        .animated-gradient-text {
+            /* 1. 定义背景为渐变色 (这就是“颜色渐变块”) */
+            background: var(--edge-style-gradient);
+            /* 2. 让背景宽度是文字宽度的两倍，这样才有移动的空间 */
+            background-size: 200% auto;
+            /* 3. 将背景裁剪成文字的形状 (这就是“框取一部分”) */
+            background-clip: text;
+            -webkit-background-clip: text; /* 兼容 Webkit 内核浏览器 */
+            /* 4. 将文字本身的颜色设为透明，这样才能透过文字看到背景的渐变色 */
+            -webkit-text-fill-color: transparent;
+            color: transparent; /* Fallback */
+            /* 5. 应用两个动画： */
+            /* gradient-animation: 让背景渐变动起来 (这就是“移动色块”) */
+            /* fadeSlideUp:      让元素渐入并上滑出现 */
+            animation: gradient-animation 4s linear infinite, fadeSlideUp 0.7s ease-out forwards;
+        }
+
+        /* 定义渐变动画：改变背景的位置 */
+        @keyframes gradient-animation {
+            0% {
+                background-position: 0% 50%;
+            }
+            /* 渐变背景在最左边 */
+            50% {
+                background-position: 100% 50%;
+            }
+            /* 渐变背景移动到最右边 */
+            100% {
+                background-position: 0% 50%;
+            }
+            /* 渐变背景回到最左边，形成循环 */
+        }
+
+        /* --- Feature Cards (Light Mode) --- */
+        .feature-card {
+            background-color: var(--card-bg-color);
+            border: 1px solid var(--card-border-color);
+            border-radius: 0.75rem;
+            padding: 1.75rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            min-width: 160px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            text-align: center;
-            width: clamp(100px, 15vw, 150px);
-            /* 响应式宽度 */
-            margin-bottom: 15px;
-            /* 换行时的垂直间距 */
+            gap: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); /* Subtle shadow for light */
+            /* Delay is set inline via style attribute */
         }
 
-        .feature-icon i {
-            font-size: clamp(2rem, 5vw, 3rem);
-            /* 响应式图标大小 */
-            margin-bottom: clamp(10px, 2vw, 15px);
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--edge-blue); /* Highlight border */
+            /* Updated shadow for blue accent */
+            box-shadow: 0 10px 15px -3px rgba(0, 161, 241, 0.1), 0 4px 6px -2px rgba(0, 161, 241, 0.05);
         }
 
-        .feature-text {
-            font-size: clamp(0.85rem, 2vw, 1rem);
-            /* 响应式文本大小 */
-            font-weight: 500;
+        /* Feature card text colors adjusted for light mode */
+        .feature-card .text-lg {
+            color: var(--text-color-base);
         }
 
-        /* --- START: 导航按钮 CSS --- */
+        /* Darker text */
+        .feature-card .text-sm {
+            color: var(--text-color-caption);
+        }
+
+        /* Muted caption */
+
+        /* --- Navigation Styles (Light Mode - Blue) --- */
         .slide-navigation {
             position: fixed;
-            /* 固定位置 */
             bottom: 20px;
-            /* 距离底部 */
             left: 50%;
-            /* 水平居中 */
             transform: translateX(-50%);
-            /* 精确居中 */
             z-index: 100;
-            /* 确保在顶层 */
             display: flex;
             gap: 20px;
-            /* 按钮间距 */
         }
 
         .nav-button {
             display: inline-block;
-            padding: 10px 20px;
-            background-color: rgba(255, 255, 255, 0.2);
-            /* 半透明背景 */
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 5px;
+            padding: 10px 25px;
+            background-color: var(--edge-blue); /* Use solid blue */
+            color: white; /* Text on blue */
+            border: none;
+            border-radius: 8px;
             text-decoration: none;
             font-size: 1rem;
+            font-weight: 500;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 161, 241, 0.2); /* Subtle blue shadow */
         }
 
         .nav-button:hover {
-            background-color: rgba(255, 255, 255, 0.4);
+            background-color: var(--edge-blue-dark); /* Darker blue on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 161, 241, 0.3);
         }
 
-        /* 禁用状态按钮样式 */
         .nav-button.disabled {
-            opacity: 0.5;
+            background-color: #adb5bd; /* Lighter gray for disabled */
+            color: #6c757d; /* Darker gray text for disabled */
+            opacity: 0.7;
             cursor: not-allowed;
             pointer-events: none;
-            /* 阻止点击事件 */
+            box-shadow: none;
+            transform: none;
         }
 
-        /* 隐藏按钮样式 (如果需要) */
-        .nav-button.hidden {
-            display: none;
-        }
-
-        /* --- END: 导航按钮 CSS --- */
     </style>
 </head>
 
 <body>
-    <div class="slide">
-        <div class="grid-pattern"></div>
-        <div class="particles">
-            <div class="particle" style="width: 15px; height: 15px; top: 15%; left: 10%; animation-delay: 0s;"></div>
-            <div class="particle" style="width: 10px; height: 10px; top: 25%; left: 20%; animation-delay: 1s;"></div>
-            <div class="particle" style="width: 20px; height: 20px; top: 30%; left: 70%; animation-delay: 2s;"></div>
-            <div class="particle" style="width: 12px; height: 12px; top: 65%; left: 45%; animation-delay: 3s;"></div>
-            <div class="particle" style="width: 18px; height: 18px; top: 70%; left: 85%; animation-delay: 4s;"></div>
-            <div class="particle" style="width: 14px; height: 14px; top: 85%; left: 25%; animation-delay: 5s;"></div>
-            <div class="particle" style="width: 16px; height: 16px; top: 45%; left: 15%; animation-delay: 6s;"></div>
-            <div class="particle" style="width: 10px; height: 10px; top: 15%; left: 60%; animation-delay: 7s;"></div>
-            <div class="particle" style="width: 22px; height: 22px; top: 50%; left: 80%; animation-delay: 8s;"></div>
-        </div>
+<div class="slide-container">
+    <div class="content-wrapper">
 
-        <div class="content">
-            <h1 class="main-title">基于Python微博舆情分析系统</h1>
-            <p class="subtitle">Python-based Weibo Public Opinion Analysis System</p>
-            <div class="icon-container">
-                <div class="feature-icon">
-                    <i class="fas fa-chart-line"></i>
-                    <div class="feature-text">舆情分析</div>
-                </div>
-                <div class="feature-icon">
-                    <i class="fab fa-python"></i>
-                    <div class="feature-text">Python技术</div>
-                </div>
-                <div class="feature-icon">
-                    <i class="fas fa-database"></i>
-                    <div class="feature-text">数据处理</div>
-                </div>
-                <div class="feature-icon">
-                    <i class="fas fa-chart-pie"></i>
-                    <div class="feature-text">可视化展示</div>
-                </div>
-            </div>
+        <h1 id="main-title"
+            class="animated-gradient-text text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-3 md:mb-4 tracking-tight whitespace-nowrap"
+            style="animation-delay: 0.2s;">
+            基于Python微博舆情分析系统
+        </h1>
+
+        <p id="sub-title"
+           class="animated-gradient-text text-lg md:text-xl lg:text-2xl font-light mb-8 md:mb-12"
+           style="animation-delay: 0.4s;">
+            Python-based Weibo Public Opinion Analysis System
+        </p>
+
+        <div class="flex flex-wrap justify-center gap-8 md:gap-10 lg:gap-12">
+            <div class="feature-card" style="animation-delay: 0.6s;">
+                <i class="fa-solid fa-chart-line text-5xl text-edge-blue"></i>
+                <div class="text-lg font-semibold">舆情分析</div>
+                <span class="text-sm text-color-caption">Analysis</span></div>
+            <div class="feature-card" style="animation-delay: 0.75s;">
+                <i class="fa-brands fa-python text-5xl text-edge-blue"></i>
+                <div class="text-lg font-semibold">Python技术</div>
+                <span class="text-sm text-color-caption">Technology</span></div>
+            <div class="feature-card" style="animation-delay: 0.9s;">
+                <i class="fa-solid fa-database text-5xl text-edge-blue"></i>
+                <div class="text-lg font-semibold">数据处理</div>
+                <span class="text-sm text-color-caption">Processing</span></div>
+            <div class="feature-card" style="animation-delay: 1.05s;">
+                <i class="fa-solid fa-chart-pie text-5xl text-edge-blue"></i>
+                <div class="text-lg font-semibold">可视化展示</div>
+                <span class="text-sm text-color-caption">Visualization</span></div>
         </div>
     </div>
-    <div class="slide-navigation">
-        <a href="index.html" class="nav-button prev-button">返回首页</a>
-        <a href="2.html" class="nav-button next-button">下一页</a>
-    </div>
-    <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            const particlesContainer = document.querySelector('.particles');
-            if (particlesContainer) {
-                for (let i = 0; i < 15; i++) {
-                    const particle = document.createElement('div');
-                    particle.className = 'particle';
-                    const size = Math.floor(Math.random() * 12) + 5;
-                    const top = Math.floor(Math.random() * 100);
-                    const left = Math.floor(Math.random() * 100);
-                    const delay = Math.random() * 10; // Use float delay
+</div>
 
-                    particle.style.width = `${size}px`;
-                    particle.style.height = `${size}px`;
-                    particle.style.top = `${top}%`;
-                    particle.style.left = `${left}%`;
-                    particle.style.animationDelay = `${delay}s`;
+<div class="slide-navigation">
+    <a href="index.html" class="nav-button prev-button">返回首页</a>
+    <a href="2.html" class="nav-button next-button">下一页</a>
+</div>
 
-                    particlesContainer.appendChild(particle);
-                }
-            } else {
-                console.error("Particles container not found!");
-            }
-        });
-    </script>
+<script>
+    // --- Initial animation logic is handled purely by CSS ---
 
-    <script>
-        // 定义上一页和下一页的URL
-        const prevSlideURL = 'index.html'; // *** 修改: 指向上一个文件 (首页) ***
-        const nextSlideURL = '2.html';   // 下一页是 2.html
+    // --- Navigation Script ---
+    const prevSlideURL = 'index.html'; // Update if needed - Link to previous page or null
+    const nextSlideURL = '2.html'; // Update if needed - Link to next page or null
 
-        // 跳转函数
-        function navigateTo(url) {
-            if (url) { // 只有当URL有效时才跳转
-                window.location.href = url;
-            }
+    function navigateTo(url) {
+        if (url) {
+            window.location.href = url;
         }
+    }
 
-        // 监听键盘事件
-        document.addEventListener('keydown', function (event) {
-            if (event.key === 'ArrowLeft' || event.keyCode === 37) { // 左箭头
-                navigateTo(prevSlideURL); // 现在可以返回首页
-            } else if (event.key === 'ArrowRight' || event.keyCode === 39) { // 右箭头
-                navigateTo(nextSlideURL);
-            }
-        });
+    // Keyboard navigation
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowLeft' || event.keyCode === 37) {
+            navigateTo(prevSlideURL);
+        } else if (event.key === 'ArrowRight' || event.keyCode === 39) {
+            navigateTo(nextSlideURL);
+        }
+    });
 
-        // 为按钮添加点击事件监听
-        const prevButton = document.querySelector('.prev-button');
-        const nextButton = document.querySelector('.next-button');
+    // Button click navigation and disabling
+    const prevButton = document.querySelector('.prev-button');
+    const nextButton = document.querySelector('.next-button');
 
-        if (prevButton) {
+    if (prevButton) {
+        if (prevSlideURL) {
             prevButton.addEventListener('click', (e) => {
-                e.preventDefault(); // 阻止默认的href跳转
-                navigateTo(prevSlideURL); // 使用JS跳转
+                e.preventDefault();
+                navigateTo(prevSlideURL);
             });
+        } else {
+            // If no previous URL, disable the button
+            prevButton.classList.add('disabled');
+            prevButton.removeAttribute('href'); // Remove link for disabled state
+            prevButton.style.cursor = 'not-allowed';
         }
+    }
 
-        if (nextButton) {
+    if (nextButton) {
+        if (nextSlideURL) {
             nextButton.addEventListener('click', (e) => {
-                e.preventDefault(); // 阻止默认的href跳转
-                navigateTo(nextSlideURL); // 使用JS跳转
+                e.preventDefault();
+                navigateTo(nextSlideURL);
             });
+        } else {
+            // If no next URL, disable the button
+            nextButton.classList.add('disabled');
+            nextButton.removeAttribute('href'); // Remove link for disabled state
+            nextButton.style.cursor = 'not-allowed';
         }
-    </script>
+    }
+</script>
 </body>
-
 </html>

@@ -2,6 +2,11 @@ import requests
 import csv
 import os
 import numpy as np
+from datetime import datetime
+import time
+import random
+from config import HEADERS, DEFAULT_TIMEOUT, get_random_headers, get_working_proxy
+
 def init():
     if not os.path.exists('navData.csv'):
         with open('navData.csv','w',encoding='utf8',newline='') as csvfile:
@@ -18,19 +23,29 @@ def wirterRow(row):
             wirter.writerow(row)
 
 def get_html(url):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0',
-        # !!! 注意：这里的 Cookie 仍然是硬编码的，它会过期 !!!
-        'Cookie': 'SINAGLOBAL=7212852614896.057.1722674779243; SCF=AuBnnYbv5UcU0Em9mzgayCIUin7u9gaSXe7Ioo3XKiTjesfDU7n5afCo3g09azYPzLTX9x6dK2qs4urCz3KBY5I.; ULV=1745148345761:2:1:1:8580936394154.282.1745148345707:1722674779248; ALF=1748825965; SUB=_2A25FERo9DeRhGeFH7VUS8ifNzDWIHXVmbxP1rDV8PUJbkNAbLXXxkW1NermJZJ4oG_qYcot386edQQEqXeartDJB; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5gY88XPngQwoKk7GKTwF4N5JpX5KMhUgL.FoM4SoM0eo.pS0.2dJLoI74u9PiNIg4kwJyydJM0eBtt; XSRF-TOKEN=4IduUp1z6lRefdbAuQyhC3RY; WBPSESS=8G8AF24XAkAMrmj4hJ1fCQvT1QD_5RQLPq1djskul-iggxBxpl5AZwMnh13peZyNequrw75T8HrnT0OflTyTplk5PfP9ZCxYZ1BJcD65eYugkVLCh1e4xHaLtlyG3cDtJQhUX3Ors_3-bzKDforO2g=='
-    }
+    # 使用随机headers和代理
+    headers = get_random_headers()
+    proxy = get_working_proxy()
+    
     params = {
         'is_new_segment':1,
         'fetch_hot':1
     }
-    response = requests.get(url,headers=headers,params=params)
-    if response.status_code == 200:
-        return response.json()
-    else:
+    try:
+        response = requests.get(
+            url, 
+            headers=headers, 
+            params=params, 
+            proxies=proxy,
+            timeout=DEFAULT_TIMEOUT
+        )
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"请求失败，状态码: {response.status_code}")
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"请求异常: {e}")
         return None
 
 def parse_json(response):
@@ -44,6 +59,23 @@ def parse_json(response):
             gid,
             containerid,
         ])
+
+def get_json(url, id):
+    # 使用导入的 HEADERS，删除原来的 headers 定义
+    params = {
+        'is_show_bulletin': 2,
+        'id': id
+    }
+    try:
+        response = requests.get(url, headers=HEADERS, params=params, timeout=DEFAULT_TIMEOUT)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"Error: Request failed for ID {id} with status code {response.status_code}")
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"Error: Request exception for ID {id}: {e}")
+        return None
 
 if __name__ == '__main__':
     url = 'https://weibo.com/ajax/feed/allGroups'

@@ -3,40 +3,136 @@ from spiderComments import start as commentsStart
 import os
 from sqlalchemy import create_engine
 import pandas as pd
-engine = create_engine('mysql+pymysql://root:123456@127.0.0.1/wb?charset=utf8mb4')
+import logging
+import time
+
+# 配置日志
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# 优化的数据库引擎配置
+engine = create_engine(
+    'mysql+pymysql://root:123456@127.0.0.1/wb?charset=utf8mb4',
+    pool_size=5,
+    max_overflow=10,
+    pool_recycle=3600,
+    pool_pre_ping=True,
+    echo=False
+)
 
 def save_to_sql():
+    """优化的数据保存函数"""
+    article_file = './articleData.csv'
+    comments_file = './commentsData.csv'
+    
     try:
-        articleOldPd = pd.read_sql('select * from article', engine)
-        articleNewPd = pd.read_csv('./articleData.csv')
-        concatPd = pd.concat([articleNewPd,articleOldPd],join='inner')
-        concatPd = concatPd.drop_duplicates(subset='id', keep='last')
-        concatPd.to_sql('article',con=engine, if_exists='replace',index=False)
-
-        commentOldPd = pd.read_sql('select * from comments', engine)
-        commentNewPd = pd.read_csv('./commentsData.csv')
-        concatCommentPd = pd.concat([commentNewPd, commentOldPd], join='inner')
-        concatCommentPd = concatCommentPd.drop_duplicates(subset='content', keep='last')
-        concatCommentPd.to_sql('comments',con=engine, if_exists='replace',index=False)
-    except:
-        articleNewPd = pd.read_csv('./articleData.csv')
-        commentNewPd = pd.read_csv('./commentsData.csv')
-        articleNewPd.to_sql('article', con=engine, if_exists='replace',index=False)
-        commentNewPd.to_sql('comments', con=engine, if_exists='replace',index=False)
-
-    os.remove('./articleData.csv')
-    os.remove('./commentsData.csv')
-
-
+        # 检查文件是否存在
+        if not os.path.exists(article_file):
+            logger.warning(f"文章数据文件不存在: {article_file}")
+            return
+            
+        if not os.path.exists(comments_file):
+            logger.warning(f"评论数据文件不存在: {comments_file}")
+            return
+        
+        logger.info("开始读取爬取的数据文件...")
+        
+        # 读取新数据
+        articleNewDf = pd.read_csv(article_file)
+        commentNewDf = pd.read_csv(comments_file)
+        
+        logger.info(f"读取到 {len(articleNewDf)} 条文章数据，{len(commentNewDf)} 条评论数据")
+        
+        # 处理文章数据
+        try:
+            logger.info("正在处理文章数据...")
+            articleOldDf = pd.read_sql('SELECT * FROM article', engine)
+            
+            if not articleOldDf.empty:
+                # 合并数据并去重
+                concatDf = pd.concat([articleNewDf, articleOldDf], ignore_index=True)
+                concatDf = concatDf.drop_duplicates(subset='id', keep='first')
+                logger.info(f"合并后文章数据: {len(concatDf)} 条")
+            else:
+                concatDf = articleNewDf
+                logger.info("数据库为空，直接插入新数据")
+            
+            # 批量插入，提升性能
+            concatDf.to_sql('article', con=engine, if_exists='replace', index=False, chunksize=1000)
+            logger.info("文章数据保存成功")
+            
+        except Exception as e:
+            logger.warning(f"文章数据合并失败，直接插入新数据: {e}")
+            articleNewDf.to_sql('article', con=engine, if_exists='replace', index=False, chunksize=1000)
+        
+        # 处理评论数据
+        try:
+            logger.info("正在处理评论数据...")
+            commentOldDf = pd.read_sql('SELECT * FROM comments', engine)
+            
+            if not commentOldDf.empty:
+                # 合并数据并去重（基于内容去重）
+                concatCommentDf = pd.concat([commentNewDf, commentOldDf], ignore_index=True)
+                concatCommentDf = concatCommentDf.drop_duplicates(subset='content', keep='first')
+                logger.info(f"合并后评论数据: {len(concatCommentDf)} 条")
+            else:
+                concatCommentDf = commentNewDf
+                logger.info("评论表为空，直接插入新数据")
+            
+            # 批量插入，提升性能
+            concatCommentDf.to_sql('comments', con=engine, if_exists='replace', index=False, chunksize=1000)
+            logger.info("评论数据保存成功")
+            
+        except Exception as e:
+            logger.warning(f"评论数据合并失败，直接插入新数据: {e}")
+            commentNewDf.to_sql('comments', con=engine, if_exists='replace', index=False, chunksize=1000)
+        
+        logger.info("数据保存完成")
+        
+    except Exception as e:
+        logger.error(f"数据保存过程发生错误: {e}")
+        raise e
+    
+    finally:
+        # 清理临时文件
+        try:
+            if os.path.exists(article_file):
+                os.remove(article_file)
+                logger.info(f"已删除临时文件: {article_file}")
+                
+            if os.path.exists(comments_file):
+                os.remove(comments_file)
+                logger.info(f"已删除临时文件: {comments_file}")
+        except Exception as e:
+            logger.warning(f"删除临时文件失败: {e}")
 
 def main():
-    print('正在爬取文章内容...')
-    contentStart(5,1)
-    print('正在爬取评论内容...')
-    commentsStart()
-    print('爬取完毕正在存储中...')
-    save_to_sql()
-
+    """主函数 - 添加错误处理和日志"""
+    start_time = time.time()
+    logger.info("开始执行微博数据爬取任务")
+    
+    try:
+        # 爬取文章内容
+        logger.info('开始爬取文章内容...')
+        contentStart(2, 1)  # 爬取2个类型，每个类型1页
+        logger.info('文章内容爬取完成')
+        
+        # 爬取评论内容
+        logger.info('开始爬取评论内容...')
+        commentsStart()
+        logger.info('评论内容爬取完成')
+        
+        # 保存到数据库
+        logger.info('开始保存数据到数据库...')
+        save_to_sql()
+        logger.info('数据保存完成')
+        
+        end_time = time.time()
+        logger.info(f"爬取任务完成，总耗时: {end_time - start_time:.2f} 秒")
+        
+    except Exception as e:
+        logger.error(f"爬取任务执行失败: {e}")
+        raise e
 
 if __name__ == '__main__':
     main()

@@ -1,10 +1,12 @@
 import json
-from .query import querys
+from .query import querys, query_dataframe
+from .cache import cache_result
 import pandas as pd
 import re
 import sys
 sys.path.append('model')
 
+# 城市列表保持不变
 cityList = [
                 {'province': '北京', 'city': ['北京市']},
                 {'province': '天津', 'city': ['天津市']},
@@ -70,29 +72,95 @@ cityList = [
                 {'province': '澳门特别行政区', 'city': ['澳门', '离岛']}
             ]
 
+@cache_result(timeout=600, use_file_cache=True)  # 缓存10分钟，使用文件缓存
 def getAllData():
-    allData = querys('select * from article',[],'select')
-    return allData
+    """获取所有文章数据 - 使用DataFrame优化"""
+    try:
+        # 使用pandas直接查询，性能更好
+        df = query_dataframe('SELECT * FROM article ORDER BY created_at DESC')
+        return df.values.tolist()  # 保持向后兼容
+    except Exception as e:
+        print(f"获取文章数据失败: {e}")
+        # 降级到原始查询方式
+        return querys('select * from article', [], 'select')
 
+@cache_result(timeout=1800, use_file_cache=True)  # 缓存30分钟，词频数据变化较少
 def getAllCiPingTotal():
+    """获取词频统计数据"""
     data = []
-    df = pd.read_csv('./model/comment_1_fenci_qutingyongci_cipin.csv',encoding='utf-8')
-    for i in df.values:
-        try:
-            data.append([
-                re.search('[\u4e00-\u9fa5]+', str(i)).group(),
-                re.search('\d+', str(i)).group()
-            ])
-        except:
-            continue
+    try:
+        df = pd.read_csv('./model/comment_1_fenci_qutingyongci_cipin.csv', encoding='utf-8')
+        for i in df.values:
+            try:
+                chinese_text = re.search(r'[\u4e00-\u9fa5]+', str(i))
+                number_text = re.search(r'\d+', str(i))
+                if chinese_text and number_text:
+                    data.append([chinese_text.group(), int(number_text.group())])
+            except:
+                continue
+    except Exception as e:
+        print(f"读取词频文件失败: {e}")
     return data
 
+@cache_result(timeout=300, use_file_cache=True)  # 缓存5分钟
 def getAllCommentsData():
-    allCommentsData = querys('select * from comments',[],'select')
-    return allCommentsData
+    """获取所有评论数据 - 使用DataFrame优化"""
+    try:
+        # 只查询必要字段，提升性能
+        df = query_dataframe('''
+            SELECT articleId, created_at, like_counts, region, content, 
+                   authorName, authorGender, authorAddress, authorAvatar 
+            FROM comments 
+            ORDER BY created_at DESC 
+            LIMIT 1000
+        ''')  # 限制返回数量，避免内存溢出
+        return df.values.tolist()
+    except Exception as e:
+        print(f"获取评论数据失败: {e}")
+        return querys('select * from comments', [], 'select')
 
+@cache_result(timeout=600)  # 缓存10分钟
 def getAllUserData():
-    return  querys('select * from user',[],'select')
+    """获取所有用户数据"""
+    return querys('select * from user', [], 'select')
+
+# 新增：优化版本的数据获取函数
+@cache_result(timeout=300)
+def getArticleDataFrame():
+    """直接返回文章数据的DataFrame"""
+    return query_dataframe('SELECT * FROM article ORDER BY created_at DESC')
+
+@cache_result(timeout=300)
+def getCommentsDataFrame():
+    """直接返回评论数据的DataFrame"""
+    return query_dataframe('''
+        SELECT articleId, created_at, like_counts, region, content, 
+               authorName, authorGender, authorAddress, authorAvatar 
+        FROM comments 
+        ORDER BY created_at DESC 
+        LIMIT 1000
+    ''')
+
+@cache_result(timeout=600)
+def getTopArticlesByLikes(limit=10):
+    """获取点赞最多的文章"""
+    return query_dataframe(f'''
+        SELECT * FROM article 
+        ORDER BY likeNum DESC 
+        LIMIT {limit}
+    ''')
+
+@cache_result(timeout=600)
+def getArticlesByDateRange(start_date, end_date):
+    """按日期范围获取文章"""
+    return query_dataframe('''
+        SELECT * FROM article 
+        WHERE created_at BETWEEN %s AND %s 
+        ORDER BY created_at DESC
+    ''', params=[start_date, end_date])
+
+if __name__ == '__main__':
+    print(getAllCiPingTotal())
 
 if __name__ == '__main__':
     print(getAllCiPingTotal())

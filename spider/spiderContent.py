@@ -3,7 +3,10 @@ import requests
 import csv
 import os
 import re
+import random
 from datetime import datetime
+from config import HEADERS, DEFAULT_TIMEOUT, DEFAULT_DELAY, get_random_headers, get_working_proxy
+
 def init():
     if not os.path.exists('articleData.csv'):
         with open('articleData.csv','w',encoding='utf8',newline='') as csvfile:
@@ -30,16 +33,32 @@ def wirterRow(row):
             wirter = csv.writer(csvfile)
             wirter.writerow(row)
 
-def get_json(url,params):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0',
-        # !!! 注意：这里的 Cookie 仍然是硬编码的，它会过期 !!!
-        'Cookie': 'SINAGLOBAL=7212852614896.057.1722674779243; SCF=AuBnnYbv5UcU0Em9mzgayCIUin7u9gaSXe7Ioo3XKiTjesfDU7n5afCo3g09azYPzLTX9x6dK2qs4urCz3KBY5I.; ULV=1745148345761:2:1:1:8580936394154.282.1745148345707:1722674779248; ALF=1748825965; SUB=_2A25FERo9DeRhGeFH7VUS8ifNzDWIHXVmbxP1rDV8PUJbkNAbLXXxkW1NermJZJ4oG_qYcot386edQQEqXeartDJB; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5gY88XPngQwoKk7GKTwF4N5JpX5KMhUgL.FoM4SoM0eo.pS0.2dJLoI74u9PiNIg4kwJyydJM0eBtt; XSRF-TOKEN=4IduUp1z6lRefdbAuQyhC3RY; WBPSESS=8G8AF24XAkAMrmj4hJ1fCQvT1QD_5RQLPq1djskul-iggxBxpl5AZwMnh13peZyNequrw75T8HrnT0OflTyTplk5PfP9ZCxYZ1BJcD65eYugkVLCh1e4xHaLtlyG3cDtJQhUX3Ors_3-bzKDforO2g=='
-    }
-    response = requests.get(url,headers=headers,params=params)
-    if response.status_code == 200:
-        return response.json()
-    else:
+def get_json(url, params):
+    # 使用随机headers和代理
+    headers = get_random_headers()
+    proxy = get_working_proxy()
+    
+    try:
+        response = requests.get(
+            url, 
+            headers=headers, 
+            params=params, 
+            proxies=proxy,
+            timeout=DEFAULT_TIMEOUT
+        )
+        if response.status_code == 200:
+            try:
+                return response.json()
+            except ValueError as e:
+                print(f"JSON解析失败: {e}")
+                print(f"响应内容: {response.text[:200]}...")
+                return None
+        else:
+            print(f"请求失败，状态码: {response.status_code}")
+            print(f"响应内容: {response.text[:200]}...")
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"请求异常: {e}")
         return None
 
 def parse_json(response,type):
@@ -88,14 +107,23 @@ def start(typeNum=2,pageNum=2):
     articleUrl = 'https://weibo.com/ajax/feed/hottimeline'
     init()
     typeNumCount = 0
-    with open('./navData.csv','r',encoding='utf8') as readerFile:
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    nav_path = os.path.join(base_dir, 'navData.csv')
+    with open(nav_path,'r',encoding='utf8') as readerFile:
         reader = csv.reader(readerFile)
         next(reader)
         for nav in reader:
             if typeNumCount > typeNum:return
             for page in range(0,pageNum):
-                time.sleep(2)
+                # 处理DEFAULT_DELAY - 如果是元组则取随机值，否则直接使用
+                if isinstance(DEFAULT_DELAY, tuple):
+                    delay = random.uniform(DEFAULT_DELAY[0], DEFAULT_DELAY[1])
+                else:
+                    delay = DEFAULT_DELAY
+                time.sleep(delay)
                 print('正在爬取类型：' + nav[0] + '中的第' + str(page + 1) + '页数据')
+                
+                # 根据博客优化：动态参数处理
                 params = {
                     'group_id':nav[1],
                     'containerid':nav[2],
@@ -103,7 +131,22 @@ def start(typeNum=2,pageNum=2):
                     'count':10,
                     'extparam':'discover|new_feed'
                 }
+                
+                # 第一页需要特殊参数since_id=0和refresh=0
+                if page == 0:
+                    params['since_id'] = '0'
+                    params['refresh'] = '0'
+                else:
+                    # 后续页面使用refresh=2
+                    params['refresh'] = '2'
+                
                 response = get_json(articleUrl,params)
+                if response is None:
+                    print(f'请求失败，跳过类型：{nav[0]} 第{page + 1}页')
+                    continue
+                if 'statuses' not in response:
+                    print(f'响应格式异常，跳过类型：{nav[0]} 第{page + 1}页，响应：{response}')
+                    continue
                 parse_json(response['statuses'],nav[0])
             typeNumCount += 1
 

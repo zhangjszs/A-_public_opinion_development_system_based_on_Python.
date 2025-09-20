@@ -8,8 +8,12 @@ from datetime import datetime
 from config import HEADERS, DEFAULT_TIMEOUT, DEFAULT_DELAY, get_random_headers, get_working_proxy
 
 def init():
-    if not os.path.exists('articleData.csv'):
-        with open('articleData.csv','w',encoding='utf8',newline='') as csvfile:
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+    os.makedirs(data_dir, exist_ok=True)
+    article_path = os.path.join(data_dir, 'articleData.csv')
+    
+    if not os.path.exists(article_path):
+        with open(article_path,'w',encoding='utf8',newline='') as csvfile:
             wirter = csv.writer(csvfile)
             wirter.writerow([
                 'id',
@@ -29,7 +33,10 @@ def init():
             ])
 
 def wirterRow(row):
-        with open('articleData.csv','a',encoding='utf8',newline='') as csvfile:
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+    article_path = os.path.join(data_dir, 'articleData.csv')
+    
+    with open(article_path,'a',encoding='utf8',newline='') as csvfile:
             wirter = csv.writer(csvfile)
             wirter.writerow(row)
 
@@ -107,8 +114,8 @@ def start(typeNum=2,pageNum=2):
     articleUrl = 'https://weibo.com/ajax/feed/hottimeline'
     init()
     typeNumCount = 0
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    nav_path = os.path.join(base_dir, 'navData.csv')
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    nav_path = os.path.join(base_dir, 'data', 'navData.csv')
     with open(nav_path,'r',encoding='utf8') as readerFile:
         reader = csv.reader(readerFile)
         next(reader)

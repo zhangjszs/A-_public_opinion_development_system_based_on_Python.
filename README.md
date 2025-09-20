@@ -2,7 +2,47 @@
 
 ## 📖 项目简介 (Project Overview)
 
-本项目是一个基于 Python 技术栈构建的微博话题舆情分析与可视化管理系统。旨在通过自动化的数据采集、处理、分析和可视化流程，帮助用户监测特定微博话题的舆情动态、用户情感倾向、热点关键词等，为相关决策提供数据支持。
+本项目是一个基于 Python 技术栈构建的微博话题```
+基于python微博舆情分析可视化系统/
+├── 📄 README.md                    # 项目说明文档
+├── 📄 app.py                       # Flask应用主入口
+├── 📄 requirements.txt             # Python依赖包列表
+├── 📄 environment.yml              # Conda环境配置
+├── 📄 LICENSE.md                   # MIT许可证文件
+├── 📄 .gitignore                   # Git忽略文件配置
+├── 📁 docs/                        # 项目文档目录
+│   ├── 📄 API.md                   # API接口文档
+│   ├── 📄 DEPLOYMENT.md            # 部署指南
+│   ├── 📄 DEVELOPMENT.md           # 开发指南
+│   ├── 📄 CONTRIBUTING.md          # 贡献指南
+│   ├── 📄 CHANGELOG.md             # 变更日志
+│   ├── 📄 DOCUMENTATION_SUMMARY.md # 文档优化总结
+│   └── 📄 配置过程.md               # 中文配置指南
+├── 📁 tests/                       # 测试文件目录
+│   ├── 📄 test_cookie.py            # Cookie测试脚本
+│   ├── 📄 test_db.py                # 数据库测试脚本
+│   ├── 📄 test_spider_system.py     # 爬虫系统测试脚本
+│   ├── 📄 test_weibo_minimal.py     # 微博最小化测试脚本
+│   ├── 📄 check_database.py         # 数据库检查脚本
+│   ├── 📄 fix_403_error.py          # 403错误修复脚本
+│   └── 📄 fix_403_quick.py          # 快速修复脚本
+├── 📁 data/                        # 数据文件目录
+│   ├── 📄 articleData.csv           # 文章数据存储
+│   └── 📄 navData.csv               # 导航数据存储
+├── 📁 scripts/                     # 工具脚本目录
+│   ├── 📄 dem.py                    # 数据统计演示脚本
+│   └── 📄 word_cloud_picture.py     # 词云图生成脚本
+├── 📁 config/                      # 配置文件目录
+│   └── 📄 safe_spider_config.txt    # 爬虫安全配置
+├── 📁 logs/                        # 日志文件目录
+│   ├── 📄 app.log                   # 应用运行日志
+│   ├── 📄 model_pipeline.log        # 模型处理日志
+│   └── 📄 weibo_spider.log          # 爬虫运行日志
+├── 📁 数据库/                      # 数据库相关文件
+│   ├── 📄 new.sql                  # 数据库初始化脚本
+│   ├── 📄 user.sql                 # 用户表结构
+│   ├── 📄 article.sql              # 文章表结构
+│   └── 📄 comments.sql             # 评论表结构。旨在通过自动化的数据采集、处理、分析和可视化流程，帮助用户监测特定微博话题的舆情动态、用户情感倾向、热点关键词等，为相关决策提供数据支持。
 
 <!-- 该项目是为参加 **[2025年中国大学生计算机设计大赛 大数据实践赛]** 而开发的作品。 -->
 
@@ -136,16 +176,164 @@
 * 训练好的模型被保存为 `best_sentiment_model.pkl`，供应用调用。
 * **重要提示**: 根据 `target.csv` 数据集和朴素贝叶斯模型的测试结果，当前模型的准确性有待提高，主要受限于数据不平衡。部署前建议优先选择交叉验证中表现更好的模型（如逻辑回归）进行训练评估，或进行数据增强/模型优化。
 
-## 📁 项目结构 (Project Structure )
-## 🤝 贡献 (Contributing )
+## 📁 项目结构 (Project Structure)
+
+```
+基于python微博舆情分析可视化系统/
+├── 📄 README.md                    # 项目说明文档
+├── 📄 配置过程.md                   # 部署配置指南
+├── 📄 requirements.txt             # Python依赖包列表
+├── 📄 environment.yml              # Conda环境配置
+├── 📄 .gitignore                   # Git忽略文件配置
+├── 🗂️ 数据库/                      # 数据库相关文件
+│   ├── 📄 new.sql                  # 数据库初始化脚本
+│   ├── 📄 user.sql                 # 用户表结构
+│   ├── 📄 article.sql              # 文章表结构
+│   └── 📄 comments.sql             # 评论表结构
+├── 🗂️ model/                       # 机器学习模型模块
+│   ├── 📄 improved_index.py        # 数据预处理模块
+│   ├── 📄 improved_yuqing.py       # 情感分析模块
+│   ├── 📄 improved_ciPingTotal.py  # 词频分析模块
+│   ├── 📄 model_pipeline.py        # 模型处理流水线
+│   ├── 📄 model_examples.py        # 模型使用示例
+│   ├── 📄 trainModel.py            # 模型训练脚本
+│   ├── 📄 MODEL_FIX_SUMMARY.md     # 模型修复总结
+│   ├── 📄 best_sentiment_model.pkl # 训练好的情感分析模型
+│   ├── 📄 target.csv               # 训练数据集
+│   ├── 📄 stopWords.txt            # 停用词列表
+│   ├── 📄 comment_1_fenci.txt      # 分词结果文件
+│   └── 📄 comment_1_fenci_qutingyongci_cipin.csv # 词频统计结果
+├── 🗂️ spider/                      # 网络爬虫模块
+│   ├── 📄 main.py                  # 爬虫主程序
+│   ├── 📄 config.py                # 爬虫配置管理
+│   ├── 📄 improved_config.py       # 改进的爬虫配置
+│   ├── 📄 spiderMaster.py          # 爬虫控制器
+│   ├── 📄 spiderContent.py         # 文章内容爬取
+│   ├── 📄 spiderComments.py        # 评论数据爬取
+│   ├── 📄 spiderNav.py             # 导航数据爬取
+│   ├── 📄 spiderUserInfo.py        # 用户信息爬取
+│   ├── 📄 proxy_fetcher.py         # 代理获取工具
+│   ├── 📄 articleData.csv          # 文章数据存储
+│   ├── 📄 commentsData.csv         # 评论数据存储
+│   ├── 📄 userInfo.csv             # 用户信息存储
+│   └── 📄 navData.csv              # 导航数据存储
+├── 🗂️ utils/                       # 工具模块
+│   ├── 📄 query.py                 # 数据库查询工具
+│   ├── 📄 cache.py                 # 缓存管理模块
+│   ├── 📄 cache_optimized.py       # 优化缓存系统
+│   ├── 📄 getHomeData.py           # 首页数据获取
+│   ├── 📄 getPublicData.py         # 公共数据获取
+│   ├── 📄 getTableData.py          # 表格数据获取
+│   ├── 📄 getEchartsData.py        # 图表数据获取
+│   └── 📄 errorResponse.py         # 错误响应处理
+├── 🗂️ views/                       # 视图模块
+│   ├── 📄 page/                    # 页面视图
+│   └── 📄 user/                    # 用户管理视图
+├── 🗂️ static/                      # 静态资源
+│   ├── 📄 css/                     # 样式文件
+│   ├── 📄 js/                      # JavaScript文件
+│   ├── 📄 font/                    # 字体文件
+│   ├── 📄 image/                   # 图片资源
+│   └── 📄 picture/                 # 图片存储
+├── 🗂️ templates/                   # HTML模板
+│   ├── 📄 404.html                 # 404错误页面
+│   ├── 📄 error.html               # 错误页面
+│   └── 📄 *.html                   # 其他页面模板
+├── 🗂️ cache/                       # 缓存文件目录
+├── 🗂️ logs/                        # 日志文件目录
+├── 🗂️ 演示ppt/                     # 项目演示文件
+├── 📄 app.py                       # Flask应用主入口
+├── 📄 dem.py                       # 演示脚本
+├── 📄 word_cloud_picture.py        # 词云图生成脚本
+└── 📄 *.py                         # 其他Python脚本
+```
+## 🤝 贡献 (Contributing)
 
 欢迎对本项目提出改进意见或贡献代码！你可以通过以下方式参与：
 
-1.  Fork 本仓库
-2.  创建你的 Feature 分支 (`git checkout -b feature/AmazingFeature`)
-3.  提交你的更改 (`git commit -m 'Add some AmazingFeature'`)
-4.  将更改推送到分支 (`git push origin feature/AmazingFeature`)
-5.  打开一个 Pull Request
-# 📄 许可证 (License - 可选)
+### 开发流程
+1. **Fork 本仓库**
+2. **创建你的 Feature 分支**
+   ```bash
+   git checkout -b feature/AmazingFeature
+   ```
+3. **提交你的更改**
+   ```bash
+   git commit -m 'Add some AmazingFeature'
+   ```
+4. **将更改推送到分支**
+   ```bash
+   git push origin feature/AmazingFeature
+   ```
+5. **打开一个 Pull Request**
 
-本项目采用 [选择一个许可证，MIT] 许可证。详情请见 `LICENSE` 文件。
+### 代码规范
+- 遵循 PEP 8 Python 代码规范
+- 使用有意义的变量和函数名
+- 添加必要的注释和文档字符串
+- 提交前进行代码格式化
+
+### 问题反馈
+- 使用 GitHub Issues 报告问题
+- 提供详细的错误信息和复现步骤
+- 建议功能时请说明使用场景
+
+### 📚 相关文档
+- [详细贡献指南](docs/CONTRIBUTING.md) - 完整的贡献指南和开发规范
+- [API 文档](docs/API.md) - 完整的 API 接口文档
+- [部署指南](docs/DEPLOYMENT.md) - 详细的部署和生产环境配置
+- [开发指南](docs/DEVELOPMENT.md) - 开发者环境设置和开发流程
+- [变更日志](docs/CHANGELOG.md) - 项目版本更新历史
+
+## 📄 许可证 (License)
+
+本项目采用 [MIT](LICENSE.md) 许可证。详情请见 `LICENSE.md` 文件。
+
+## 📞 联系方式 (Contact)
+
+- **项目维护者**: [您的姓名]
+- **邮箱**: [您的邮箱]
+- **GitHub**: [您的GitHub用户名]
+
+## 🙏 致谢 (Acknowledgments)
+
+感谢以下开源项目和工具的支持：
+- Flask - Web 框架
+- scikit-learn - 机器学习库
+- jieba - 中文分词库
+- pandas - 数据处理库
+- ECharts - 数据可视化库
+
+---
+
+## 🚀 快速开始 (Quick Start)
+
+如果您是首次使用，建议按以下步骤快速启动项目：
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/zhangjszs/A-_public_opinion_development_system_based_on_Python.git
+cd A-_public_opinion_development_system_based_on_Python
+
+# 2. 创建虚拟环境
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
+
+# 3. 安装依赖
+pip install -r requirements.txt
+
+# 4. 配置数据库（请先创建MySQL数据库）
+# 编辑 utils/query.py 中的数据库连接信息
+
+# 5. 启动应用
+python app.py
+```
+
+然后在浏览器中访问 `http://127.0.0.1:5000` 即可开始使用！
+
+---
+
+**⭐ 如果这个项目对你有帮助，请给它一个 Star！**

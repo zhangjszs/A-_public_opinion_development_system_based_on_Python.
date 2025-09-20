@@ -114,15 +114,26 @@ def test_csv_files():
         'navData.csv'
     ]
     
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    
     for file_name in data_files:
-        file_path = os.path.join('spider', file_name) if os.path.exists(os.path.join('spider', file_name)) else file_name
+        # 首先检查data文件夹
+        data_file_path = os.path.join(base_dir, 'data', file_name)
+        # 然后检查spider文件夹
+        spider_file_path = os.path.join(base_dir, 'spider', file_name)
         
-        if os.path.exists(file_path):
+        file_path = None
+        if os.path.exists(data_file_path):
+            file_path = data_file_path
+        elif os.path.exists(spider_file_path):
+            file_path = spider_file_path
+        
+        if file_path:
             try:
                 with open(file_path, 'r', encoding='utf8') as f:
                     reader = csv.reader(f)
                     rows = list(reader)
-                    print(f"✅ {file_name} - {len(rows)-1} 条数据记录")
+                    print(f"✅ {file_name} - {len(rows)-1} 条数据记录 (位置: {os.path.relpath(file_path, base_dir)})")
             except Exception as e:
                 print(f"❌ {file_name} - 读取错误: {e}")
         else:

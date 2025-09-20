@@ -3,7 +3,7 @@ import os
 
 # --- 配置 ---
 # 请确保这个路径与您之前脚本中使用的路径完全一致
-csv_file_path = r'spider/navData.csv'
+csv_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'navData.csv')
 # --- 配置结束 ---
 
 type_count = 0

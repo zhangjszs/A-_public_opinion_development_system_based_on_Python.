@@ -22,8 +22,9 @@ engine = create_engine(
 
 def save_to_sql():
     """优化的数据保存函数"""
-    article_file = './articleData.csv'
-    comments_file = './commentsData.csv'
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    article_file = os.path.join(base_dir, 'data', 'articleData.csv')
+    comments_file = os.path.join(base_dir, 'data', 'commentsData.csv')
     
     try:
         # 检查文件是否存在

@@ -19,8 +19,12 @@ class UserInfoSpider:
         
     def init_user_csv(self):
         """初始化用户信息CSV文件"""
-        if not os.path.exists('userInfo.csv'):
-            with open('userInfo.csv', 'w', encoding='utf8', newline='') as csvfile:
+        data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+        os.makedirs(data_dir, exist_ok=True)
+        user_info_path = os.path.join(data_dir, 'userInfo.csv')
+        
+        if not os.path.exists(user_info_path):
+            with open(user_info_path, 'w', encoding='utf8', newline='') as csvfile:
                 writer = csv.writer(csvfile)
                 writer.writerow([
                     'user_id',            # 用户ID
@@ -43,7 +47,10 @@ class UserInfoSpider:
 
     def write_user_row(self, row):
         """写入用户数据到CSV"""
-        with open('userInfo.csv', 'a', encoding='utf8', newline='') as csvfile:
+        data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+        user_info_path = os.path.join(data_dir, 'userInfo.csv')
+        
+        with open(user_info_path, 'a', encoding='utf8', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(row)
 
@@ -235,8 +242,9 @@ class UserInfoSpider:
     def collect_user_ids_from_csv(self):
         """从现有CSV文件中收集用户ID"""
         # 从文章数据中收集用户ID
-        if os.path.exists('articleData.csv'):
-            with open('articleData.csv', 'r', encoding='utf8') as csvfile:
+        article_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'articleData.csv')
+        if os.path.exists(article_path):
+            with open(article_path, 'r', encoding='utf8') as csvfile:
                 reader = csv.reader(csvfile)
                 next(reader)  # 跳过标题行
                 for row in reader:
@@ -253,8 +261,11 @@ class UserInfoSpider:
                                 continue
         
         # 从评论数据中收集用户ID
-        if os.path.exists('commentsData.csv'):
-            with open('commentsData.csv', 'r', encoding='utf8') as csvfile:
+        data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+        comments_path = os.path.join(data_dir, 'commentsData.csv')
+        
+        if os.path.exists(comments_path):
+            with open(comments_path, 'r', encoding='utf8') as csvfile:
                 reader = csv.reader(csvfile)
                 next(reader)  # 跳过标题行
                 for row in reader:

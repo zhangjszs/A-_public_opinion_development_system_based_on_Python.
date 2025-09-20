@@ -72,10 +72,11 @@ SAFE_HEADERS = {
 }
 '''
     
-    with open('safe_spider_config.txt', 'w', encoding='utf-8') as f:
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'safe_spider_config.txt')
+    with open(config_path, 'w', encoding='utf-8') as f:
         f.write(safe_config_content)
     
-    print("✅ 安全配置已保存到: safe_spider_config.txt")
+    print(f"✅ 安全配置已保存到: {config_path}")
     return True
 
 def update_config_delay():

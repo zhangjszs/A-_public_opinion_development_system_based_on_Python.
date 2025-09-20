@@ -8,8 +8,12 @@ import random
 from config import HEADERS, DEFAULT_TIMEOUT, get_random_headers, get_working_proxy
 
 def init():
-    if not os.path.exists('navData.csv'):
-        with open('navData.csv','w',encoding='utf8',newline='') as csvfile:
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+    os.makedirs(data_dir, exist_ok=True)
+    nav_path = os.path.join(data_dir, 'navData.csv')
+    
+    if not os.path.exists(nav_path):
+        with open(nav_path,'w',encoding='utf8',newline='') as csvfile:
             wirter = csv.writer(csvfile)
             wirter.writerow([
                 'typeName',
@@ -18,7 +22,10 @@ def init():
             ])
 
 def wirterRow(row):
-        with open('navData.csv','a',encoding='utf8',newline='') as csvfile:
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+    nav_path = os.path.join(data_dir, 'navData.csv')
+    
+    with open(nav_path,'a',encoding='utf8',newline='') as csvfile:
             wirter = csv.writer(csvfile)
             wirter.writerow(row)
 

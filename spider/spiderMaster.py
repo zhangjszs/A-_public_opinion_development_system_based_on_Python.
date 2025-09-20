@@ -2,6 +2,7 @@ import threading
 import time
 import random
 import logging
+import os
 from threading import Lock
 from spiderContent import start as start_content
 from spiderComments import start as start_comments
@@ -21,7 +22,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('weibo_spider.log', encoding='utf-8'),
+        logging.FileHandler(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs', 'weibo_spider.log'), encoding='utf-8'),
         logging.StreamHandler()
     ]
 )

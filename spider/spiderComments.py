@@ -11,8 +11,12 @@ from jsonpath import jsonpath
 
 def init():
     # 根据博客优化：增加更多评论字段
-    if not os.path.exists('commentsData.csv'):
-        with open('commentsData.csv','w',encoding='utf8',newline='') as csvfile:
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+    os.makedirs(data_dir, exist_ok=True)
+    comments_path = os.path.join(data_dir, 'commentsData.csv')
+    
+    if not os.path.exists(comments_path):
+        with open(comments_path,'w',encoding='utf8',newline='') as csvfile:
             wirter = csv.writer(csvfile)
             wirter.writerow([
                 'comment_id',        # 评论ID
@@ -32,7 +36,10 @@ def init():
 
 def wirterRow(row):
     # (wirterRow 函数保持不变)
-    with open('commentsData.csv','a',encoding='utf8',newline='') as csvfile:
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+    comments_path = os.path.join(data_dir, 'commentsData.csv')
+    
+    with open(comments_path,'a',encoding='utf8',newline='') as csvfile:
         wirter = csv.writer(csvfile)
         wirter.writerow(row)
 
@@ -263,7 +270,7 @@ def process_comment(comment, articleId):
 def start():
     init()
     url = 'https://weibo.com/ajax/statuses/buildComments'
-    article_csv_path = './articleData.csv' # 将文件名定义为变量
+    article_csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'articleData.csv') # 更新为data目录下的路径
 
     if not os.path.exists(article_csv_path):
         print(f"Error: Input file not found at {article_csv_path}")

@@ -7,17 +7,24 @@
 作者：微博舆情分析系统
 """
 
-from pymysql import *
+from __future__ import annotations
+import atexit
+import threading
+import time
+import logging
+from typing import Optional, List, Dict, Any, Union
+
+import pymysql
+from pymysql import connect
 import pymysql.cursors
 from pymysql.constants import CLIENT
 from sqlalchemy import create_engine
 import pandas as pd
-import threading
-import time
-import logging
+
+# 导入统一配置模块
+from config.settings import Config
 
 # 配置日志记录器
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -27,8 +34,15 @@ class DatabasePool:
     提供高效的数据库连接管理和自动故障恢复
     """
     
-    def __init__(self, host='localhost', user='root', password='123456', 
-                 database='wb', port=3306, max_connections=10):
+    def __init__(
+        self,
+        host: str = None,
+        user: str = None,
+        password: str = None,
+        database: str = None,
+        port: int = None,
+        max_connections: int = None
+    ):
         """
         初始化数据库连接池
         
@@ -40,14 +54,22 @@ class DatabasePool:
             port: 数据库端口
             max_connections: 最大连接数
         """
+        # 从配置模块获取默认值
+        host = host or Config.DB_HOST
+        user = user or Config.DB_USER
+        password = password or Config.DB_PASSWORD
+        database = database or Config.DB_NAME
+        port = port or Config.DB_PORT
+        max_connections = max_connections or Config.DB_POOL_SIZE
+        
         # 数据库连接配置
-        self.config = {
+        self.config: Dict[str, Any] = {
             'host': host,
             'user': user,
             'password': password,
             'database': database,
             'port': port,
-            'charset': 'utf8mb4',                    # 支持emoji和特殊字符
+            'charset': Config.DB_CHARSET,            # 支持emoji和特殊字符
             'autocommit': True,                      # 自动提交事务
             'client_flag': CLIENT.MULTI_STATEMENTS,  # 支持多语句执行
             'cursorclass': pymysql.cursors.DictCursor # 返回字典格式结果
@@ -209,18 +231,18 @@ class DatabasePool:
             logger.info("所有数据库连接已关闭")
 
 
-# 全局连接池实例 - 单例模式
+# 全局连接池实例 - 单例模式（使用配置文件中的参数）
 db_pool = DatabasePool()
 
-# SQLAlchemy 引擎配置 - 用于pandas DataFrame操作
+# SQLAlchemy 引擎配置 - 用于pandas DataFrame操作（使用配置文件中的参数）
 engine = create_engine(
-    'mysql+pymysql://root:123456@localhost/wb?charset=utf8mb4',
-    pool_size=10,          # 基础连接池大小
-    max_overflow=20,       # 超出连接池大小的额外连接数
-    pool_recycle=3600,     # 连接回收时间（1小时）
-    pool_pre_ping=True,    # 使用前ping测试连接
-    pool_timeout=30,       # 获取连接的超时时间
-    echo=False             # 不打印SQL语句（生产环境）
+    Config.get_database_url(),
+    pool_size=Config.DB_POOL_SIZE,      # 基础连接池大小
+    max_overflow=20,                     # 超出连接池大小的额外连接数
+    pool_recycle=Config.DB_POOL_RECYCLE, # 连接回收时间
+    pool_pre_ping=True,                  # 使用前ping测试连接
+    pool_timeout=Config.DB_POOL_TIMEOUT, # 获取连接的超时时间
+    echo=Config.IS_DEVELOPMENT           # 开发环境打印SQL语句
 )
 
 
@@ -337,22 +359,54 @@ def get_database_stats():
 
 
 # 应用退出时的清理函数
-import atexit
-
-def cleanup_database():
+def cleanup_database() -> None:
     """应用退出时清理数据库连接池"""
     logger.info("正在关闭数据库连接池...")
     db_pool.close_all()
+    # 关闭备用连接
+    if _backup_connection['conn'] is not None:
+        try:
+            _backup_connection['conn'].close()
+        except:
+            pass
 
 # 注册退出时的清理函数
 atexit.register(cleanup_database)
 
-# 保持向后兼容的简单连接方式（用于紧急情况或特殊需求）
-try:
-    conn = connect(host='localhost', user='root', password='123456', database='wb', port=3306)
-    cursor = conn.cursor()
-    logger.info("备用数据库连接已建立")
-except Exception as e:
-    logger.warning(f"备用连接建立失败: {e}")
-    conn = None
-    cursor = None
+
+# ========== 备用连接（懒加载模式） ==========
+# 存储备用连接的字典，实现懒加载
+_backup_connection: Dict[str, Any] = {'conn': None, 'cursor': None}
+
+
+def get_backup_connection():
+    """
+    获取备用数据库连接（懒加载）
+    仅在首次调用时创建连接
+    
+    Returns:
+        tuple: (connection, cursor) 或 (None, None) 如果连接失败
+    """
+    if _backup_connection['conn'] is None:
+        try:
+            _backup_connection['conn'] = connect(
+                host=Config.DB_HOST,
+                user=Config.DB_USER,
+                password=Config.DB_PASSWORD,
+                database=Config.DB_NAME,
+                port=Config.DB_PORT
+            )
+            _backup_connection['cursor'] = _backup_connection['conn'].cursor()
+            logger.info("备用数据库连接已建立（懒加载）")
+        except Exception as e:
+            logger.warning(f"备用连接建立失败: {e}")
+            _backup_connection['conn'] = None
+            _backup_connection['cursor'] = None
+    
+    return _backup_connection['conn'], _backup_connection['cursor']
+
+
+# 向后兼容：提供 conn 和 cursor 变量（首次访问时懒加载）
+# 注意：推荐使用 get_backup_connection() 函数
+conn: Optional[pymysql.Connection] = None
+cursor = None

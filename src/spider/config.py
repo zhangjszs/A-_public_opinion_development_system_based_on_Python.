@@ -17,9 +17,21 @@ import requests
 import time
 import json
 import os
+import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
 import logging
+
+# 添加项目根目录到 Python 路径
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+# 导入统一配置模块
+try:
+    from config.settings import Config
+    USE_UNIFIED_CONFIG = True
+except ImportError:
+    USE_UNIFIED_CONFIG = False
+    Config = None
 
 # 配置日志记录器
 logging.basicConfig(level=logging.INFO)
@@ -36,14 +48,9 @@ class SpiderConfigManager:
         """初始化配置管理器"""
         
         # ===== 核心请求头配置 =====
-        # !!!重要提示!!!
-        # 请定期更新以下Cookie和User-Agent：
-        # 1. 访问 https://weibo.com 并登录
-        # 2. F12开发者工具 → Network → 复制请求头
-        # 3. 更新下面的Cookie值（关键）
         self.BASE_HEADERS = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
-            'Cookie': 'SCF=AqCRsFqi8WAJrUmJsIl2VW5wy0cNAmgxzPmVBKom1Y2_dhFsEAuNwmOs42nG9FqoaluPcFcpm0jfaAxrUgOIQSM.; XSRF-TOKEN=1h5takIcR4o8S-XoHMy-_iss; PC_TOKEN=381e9e398d; SUB=_2A25FyHk_DeRhGeBP7FoT9irFzT6IHXVmpPT3rDV8PUNbmtAbLWPjkW9NRSeoOZRWQmlb1AmSRr_dMYyHd9S1cwEO; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WWrjdM87V-QDpZZbG1A5myw5JpX5KzhUgL.FoqpS0nESoB4Soz2dJLoI05LxK-L1K5L12BLxK-LB-BL1KMLxK.L1hML12BLxKnLBKqL1h2LxK-L1K5L1KUNUNMt; ALF=02_1760794223; WBPSESS=9V-YExyHWqKmx5h49Sox-kf-XeX6_S703-gbU6Af-Yg2IOcoO0zVOpBVEtRgHPDtdCYzJiBAkRN0y8M6PXKgD3vaIz8QmwHbdTZGnF9qh4L10Xo4pZuSs59dd036b3UxQwwb2uXCTFIT2m8RarQhRA==',
+            'User-Agent': Config.WEIBO_USER_AGENT if Config else 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Cookie': Config.WEIBO_COOKIE if Config else '',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
             'Accept-Encoding': 'gzip, deflate, br',
@@ -83,15 +90,27 @@ class SpiderConfigManager:
         ]
         
         # ===== 代理配置 =====
-        self.USE_PROXY = True                    # 是否启用代理
-        self.PROXY_FILE = 'spider/working_proxies.json'  # 代理文件路径
+        # 从统一配置读取，如果可用
+        if USE_UNIFIED_CONFIG and Config:
+            self.USE_PROXY = Config.SPIDER_USE_PROXY
+            self.PROXY_FILE = os.path.join(Config.SPIDER_DIR, 'working_proxies.json')
+        else:
+            self.USE_PROXY = True
+            self.PROXY_FILE = 'spider/working_proxies.json'
+            
         self.working_proxies = []                # 可用代理列表
         self.proxy_lock = threading.Lock()       # 代理操作线程锁
         
         # ===== 请求参数配置 =====
-        self.DEFAULT_TIMEOUT = 45  # 增加到45秒               # 默认超时时间（秒）
-        self.DEFAULT_DELAY = (15, 30)  # 修改为15-30秒，避免403错误             # 请求间隔范围（秒）
-        self.MAX_RETRIES = 3                    # 最大重试次数
+        # 从统一配置读取，如果可用
+        if USE_UNIFIED_CONFIG and Config:
+            self.DEFAULT_TIMEOUT = Config.SPIDER_TIMEOUT
+            self.DEFAULT_DELAY = (Config.SPIDER_DELAY, Config.SPIDER_DELAY * 2)
+            self.MAX_RETRIES = Config.SPIDER_RETRIES
+        else:
+            self.DEFAULT_TIMEOUT = 45
+            self.DEFAULT_DELAY = (15, 30)
+            self.MAX_RETRIES = 3
         self.RETRY_DELAY = 5                    # 重试间隔（秒）
         
         # ===== 反反爬配置 =====
@@ -325,8 +344,13 @@ class SpiderConfigManager:
                     logger.debug(f"请求成功: {url[:80]}...")
                     return response
                 elif response.status_code == 403:
-                    logger.warning(f"请求被拒绝(403): 可能触发反爬机制")
-                    raise Exception("403 Forbidden - 反爬机制触发")
+                    logger.warning(f"请求被拒绝(403): 可能Cookie失效或触发反爬机制")
+                    logger.warning(">>> 请检查 spider/config.py 中的 Cookie 是否过期！ <<<")
+                    raise Exception("403 Forbidden - Cookie失效或反爬触发")
+                elif response.status_code == 302:
+                    logger.warning(f"请求被重定向(302): 可能Cookie失效导致跳转登录页")
+                    logger.warning(">>> 请检查 spider/config.py 中的 Cookie 是否过期！ <<<")
+                    raise Exception("302 Found - 可能需要更新Cookie")
                 elif response.status_code == 429:
                     logger.warning(f"请求频率过高(429): 需要降低请求频率")
                     raise Exception("429 Too Many Requests - 请求过于频繁")

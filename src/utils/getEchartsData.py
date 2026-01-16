@@ -5,6 +5,12 @@ from wordcloud import WordCloud, ImageColorGenerator
 from PIL import Image                   # 图片处理
 import numpy as np
 from snownlp import SnowNLP
+import os
+from config.settings import BASE_DIR
+
+def get_abs_path(rel_path):
+    return os.path.join(BASE_DIR, rel_path)
+
 
 def getTypeList():
     typeList = list(set([x[8] for x in getPublicData.getAllData()]))
@@ -128,7 +134,12 @@ def getCommetCharDataTwo():
     return resultData
 
 def stopwordslist():
-    stopwords = [line.strip() for line in open('./model/stopWords.txt',encoding='UTF-8').readlines()]
+    path = get_abs_path('model/stopWords.txt')
+    try:
+        stopwords = [line.strip() for line in open(path,encoding='UTF-8').readlines()]
+    except Exception as e:
+        print(f"Errors reading stopwords from {path}: {e}")
+        return []
     return stopwords
 
 def getContentCloud():
@@ -142,7 +153,8 @@ def getContentCloud():
     for word in cut:
         if word not in stopwords: newCut.append(word)
     string = ' '.join(newCut)
-    img = Image.open('./static/content.jpg')  # 打开遮罩图片
+    img_path = get_abs_path('static/content.jpg')
+    img = Image.open(img_path)  # 打开遮罩图片
     img_arr = np.array(img)  # 将图片转化为列表
     wc = WordCloud(
         width=1000, height=600,
@@ -163,7 +175,8 @@ def getContentCloud():
 
     # 输入词语图片到文件
 
-    plt.savefig('./static/contentCloud.jpg', dpi=500)
+    save_path = get_abs_path('static/contentCloud.jpg')
+    plt.savefig(save_path, dpi=500)
 
 def getCommentContentCloud():
     text = ''
@@ -176,7 +189,8 @@ def getCommentContentCloud():
     for word in cut:
         if word not in stopwords:newCut.append(word)
     string = ' '.join(newCut)
-    img = Image.open('./static/comment.jpg')  # 打开遮罩图片
+    img_path = get_abs_path('static/comment.jpg')
+    img = Image.open(img_path)  # 打开遮罩图片
     img_arr = np.array(img)  # 将图片转化为列表
     wc = WordCloud(
         width=1000, height=600,
@@ -197,7 +211,8 @@ def getCommentContentCloud():
 
     # 输入词语图片到文件
 
-    plt.savefig('./static/commentCloud.jpg', dpi=500)
+    save_path = get_abs_path('static/commentCloud.jpg')
+    plt.savefig(save_path, dpi=500)
 
 def getYuQingCharDataOne():
     hotWordList = getPublicData.getAllCiPingTotal()

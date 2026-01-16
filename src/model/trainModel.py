@@ -55,19 +55,11 @@ def load_data(csv_path: str | Path) -> pd.DataFrame:
         .reset_index(drop=True)
     )
 
-
-# -------------------------------------------------------------------
-# 朴素贝叶斯加权版（解决类别不平衡）
-# -------------------------------------------------------------------
-class WeightedMultinomialNB(MultinomialNB):
-    """在 fit 时对少数类自动加权"""
-
-    def fit(self, X, y):
-        classes = np.unique(y)
-        weights = compute_class_weight("balanced", classes=classes, y=y)
-        sample_weight = np.array([dict(zip(classes, weights))[label] for label in y])
-        return super().fit(X, y, sample_weight=sample_weight)
-
+try:
+    from model_utils import WeightedMultinomialNB
+except ImportError:
+    # Try relative import if running as module
+    from .model_utils import WeightedMultinomialNB
 
 # -------------------------------------------------------------------
 # 模型列表
@@ -150,7 +142,7 @@ def evaluate_models(
     plt.title(f"{n_splits}-Fold {scoring} Comparison")
     plt.ylabel(scoring)
     plt.tight_layout()
-    plt.show()
+    # plt.show()
 
     return results
 
@@ -182,18 +174,19 @@ def train_best_model(
     )
     plt.title(f"{model_name} Confusion Matrix")
     plt.tight_layout()
-    plt.show()
+    # plt.show()
 
     # ROC（仅二分类且支持 decision_function）
     if len(np.unique(y_test)) == 2 and hasattr(pipe, "decision_function"):
         RocCurveDisplay.from_predictions(y_test, pipe.decision_function(X_test))
         plt.title(f"{model_name} ROC Curve")
         plt.tight_layout()
-        plt.show()
+        # plt.show()
 
     # 保存模型
-    joblib.dump(pipe, "best_sentiment_model.pkl")
-    print("✅ 模型已保存为 best_sentiment_model.pkl")
+    output_path = Path(__file__).parent / "best_sentiment_model.pkl"
+    joblib.dump(pipe, output_path)
+    print(f"✅ 模型已保存为 {output_path}")
     return pipe
 
 
@@ -218,15 +211,23 @@ class SentimentPredictor:
 # 主流程
 # -------------------------------------------------------------------
 if __name__ == "__main__":
-    df = load_data("target.csv")
+    base_dir = Path(__file__).parent
+    df = load_data(base_dir / "target.csv")
     print("📊 标签分布:", Counter(df["label"]))
 
     # ① 交叉验证比较
-    evaluate_models(df, scoring="macro_f1")
+    results = evaluate_models(df, scoring="macro_f1")
 
-    # ② 训练最优模型（看上一步结果手动改名即可）
-    trained_pipe = train_best_model(df, model_name="NaiveBayes")
+    # ② 自动选择最优模型
+    # 计算每个模型的平均得分
+    mean_scores = {name: scores.mean() for name, scores in results.items()}
+    best_model_name = max(mean_scores, key=mean_scores.get)
+    print(f"\n🏆 最佳模型是: {best_model_name} (得分: {mean_scores[best_model_name]:.4f})")
 
-    # ③ 推理示例
+    # ③ 训练保存最优模型
+    trained_pipe = train_best_model(df, model_name=best_model_name)
+
+    # ④ 推理示例
     demo = "糟糕透了"
-    print("⛅ 预测结果:", SentimentPredictor.predict(demo))
+    prediction = SentimentPredictor.predict(demo)
+    print(f"⛅ 预测结果: {demo} => {prediction}")

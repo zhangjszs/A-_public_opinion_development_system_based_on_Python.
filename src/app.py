@@ -20,48 +20,70 @@ import time
 import logging
 from datetime import datetime
 
+# 导入统一配置模块
+from config.settings import Config
+
 # 确保日志目录存在
-os.makedirs('logs', exist_ok=True)
+os.makedirs(Config.LOG_DIR, exist_ok=True)
 
 # 配置日志系统
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=getattr(logging, Config.LOG_LEVEL, logging.INFO),
+    format=Config.LOG_FORMAT,
     handlers=[
-        logging.FileHandler('logs/app.log', encoding='utf-8'),
+        logging.FileHandler(os.path.join(Config.LOG_DIR, 'app.log'), encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
 
+# ===== 应用启动配置 =====
+def create_app_directories():
+    """创建应用必需的目录"""
+    # 使用配置中的目录
+    directories = [
+        Config.LOG_DIR,
+        Config.CACHE_DIR,
+        os.path.join(Config.STATIC_DIR, 'uploads')
+    ]
+
+    for directory in directories:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+            logger.info(f"创建目录: {directory}")
+
 # 创建Flask应用实例
 app = Flask(__name__)
 
 # ===== 应用配置 =====
-# 安全密钥配置（生产环境请使用更复杂的密钥）
-app.secret_key = 'This is a app.secret_Key , You Know ?'
+# 从环境变量加载安全密钥（使用 config/settings.py 统一管理）
+app.secret_key = Config.SECRET_KEY
 
-# 开发环境配置
-app.debug = True                                    # 开启调试模式（生产环境设为False）
-app.config['JSON_AS_ASCII'] = False                # 支持中文JSON响应
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 300      # 静态文件缓存时间（秒）
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 # 最大上传文件大小（16MB）
+# 根据环境变量设置调试模式
+app.debug = Config.DEBUG
+
+# 应用配置
+app.config['JSON_AS_ASCII'] = Config.JSON_AS_ASCII           # 支持中文JSON响应
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = Config.SEND_FILE_MAX_AGE_DEFAULT  # 静态文件缓存时间
+app.config['MAX_CONTENT_LENGTH'] = Config.MAX_CONTENT_LENGTH # 最大上传文件大小
 
 # Session配置
-app.config['PERMANENT_SESSION_LIFETIME'] = 3600    # Session有效期（1小时）
+app.config['PERMANENT_SESSION_LIFETIME'] = Config.PERMANENT_SESSION_LIFETIME
 
-logger.info("Flask应用配置加载完成")
+logger.info(f"Flask应用配置加载完成 [环境: {Config.FLASK_ENV}, 调试模式: {Config.DEBUG}]")
 
 # ===== 蓝图注册 =====
 # 导入并注册应用蓝图模块
 try:
     from views.page import page  # 页面视图蓝图
     from views.user import user  # 用户认证蓝图
+    from views.api import api    # API视图蓝图
     
     app.register_blueprint(page.pb)  # 注册页面蓝图
     app.register_blueprint(user.ub)  # 注册用户蓝图
+    app.register_blueprint(api.bp)   # 注册API蓝图
     
-    logger.info("蓝图注册完成: page, user")
+    logger.info("蓝图注册完成: page, user, api")
     
 except ImportError as e:
     logger.error(f"蓝图导入失败: {e}")
@@ -421,14 +443,7 @@ def catch_all(path):
 
 
 # ===== 应用启动配置 =====
-def create_app_directories():
-    """创建应用必需的目录"""
-    directories = ['logs', 'cache', 'static/uploads']
-    
-    for directory in directories:
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-            logger.info(f"创建目录: {directory}")
+
 
 def initialize_app():
     """初始化应用"""
@@ -458,9 +473,9 @@ if __name__ == '__main__':
         app.run(
             host='127.0.0.1',        # 监听地址（生产环境可设为0.0.0.0）
             port=5000,               # 监听端口
-            debug=True,              # 调试模式
+            debug=Config.DEBUG,      # 从配置读取调试模式
             threaded=True,           # 支持多线程
-            use_reloader=True        # 代码更改时自动重载
+            use_reloader=Config.IS_DEVELOPMENT  # 仅开发环境启用自动重载
         )
         
     except Exception as e:

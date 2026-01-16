@@ -1,23 +1,31 @@
 from spiderContent import start as contentStart
 from spiderComments import start as commentsStart
 import os
+import sys
+
+# 添加项目根目录到 Python 路径，以便导入 config 模块
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
 from sqlalchemy import create_engine
 import pandas as pd
 import logging
 import time
 
+# 导入统一配置模块
+from config.settings import Config
+
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# 优化的数据库引擎配置
+# 优化的数据库引擎配置（使用统一配置）
 engine = create_engine(
-    'mysql+pymysql://root:123456@127.0.0.1/wb?charset=utf8mb4',
+    Config.get_database_url(),
     pool_size=5,
     max_overflow=10,
-    pool_recycle=3600,
+    pool_recycle=Config.DB_POOL_RECYCLE,
     pool_pre_ping=True,
-    echo=False
+    echo=Config.IS_DEVELOPMENT
 )
 
 def save_to_sql():

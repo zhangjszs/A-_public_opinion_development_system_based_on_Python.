@@ -8,6 +8,10 @@ import numpy as np
 import jieba
 import os
 import time
+from config.settings import BASE_DIR
+
+def get_abs_path(rel_path):
+    return os.path.join(BASE_DIR, rel_path)
 
 @cache_result(timeout=300)  # 缓存5分钟
 def getHomeTopLikeCommentsData():
@@ -158,7 +162,7 @@ def getCommentsUserCratedNumEchartsData():
 def stopwordslist():
     """获取停用词列表"""
     try:
-        stopwords_path = './model/stopWords.txt'
+        stopwords_path = get_abs_path('model/stopWords.txt')
         if os.path.exists(stopwords_path):
             stopwords = [line.strip() for line in open(stopwords_path, encoding='UTF-8').readlines()]
             return stopwords
@@ -174,7 +178,7 @@ def getUserNameWordCloud():
     """生成用户名词云 - 优化版"""
     try:
         # 检查是否已有词云文件且较新
-        output_path = './static/authorNameCloud.jpg'
+        output_path = get_abs_path('static/authorNameCloud.jpg')
         if os.path.exists(output_path):
             # 如果文件存在且在30分钟内，直接返回
             if time.time() - os.path.getmtime(output_path) < 1800:  # 30分钟

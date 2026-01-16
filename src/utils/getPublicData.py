@@ -89,7 +89,8 @@ def getAllCiPingTotal():
     """获取词频统计数据"""
     data = []
     try:
-        df = pd.read_csv('./model/comment_1_fenci_qutingyongci_cipin.csv', encoding='utf-8')
+        csv_path = os.path.join(Config.MODEL_DIR, 'comment_1_fenci_qutingyongci_cipin.csv')
+        df = pd.read_csv(csv_path, encoding='utf-8')
         for i in df.values:
             try:
                 chinese_text = re.search(r'[\u4e00-\u9fa5]+', str(i))

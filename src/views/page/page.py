@@ -1,6 +1,10 @@
 from flask import Flask,session,render_template,redirect,Blueprint,request
 from utils import getHomeData,getTableData,getEchartsData
 from snownlp import SnowNLP
+import logging
+
+logger = logging.getLogger(__name__)
+
 pb = Blueprint('page',__name__,url_prefix='/page',template_folder='templates')
 
 @pb.route('/home')
@@ -28,11 +32,20 @@ def home():
 def tabelData():
     username = session.get('username')
     hotWordList = getTableData.getTableDataPageData()
-    defaultHotWord = hotWordList[0][0]
-    if request.args.get('hotWord'):defaultHotWord = request.args.get('hotWord')
-    defaultHotWordNum = 0
-    for hotWord in hotWordList:
-        if defaultHotWord == hotWord[0]:defaultHotWordNum=hotWord[1]
+    
+    # 检查hotWordList是否为空
+    if not hotWordList or len(hotWordList) == 0:
+        logger.warning("词频数据为空，使用默认值")
+        defaultHotWord = '微博'
+        defaultHotWordNum = 0
+        hotWordList = [['微博', 0]]
+    else:
+        defaultHotWord = hotWordList[0][0]
+        if request.args.get('hotWord'):defaultHotWord = request.args.get('hotWord')
+        defaultHotWordNum = 0
+        for hotWord in hotWordList:
+            if defaultHotWord == hotWord[0]:defaultHotWordNum=hotWord[1]
+    
     emotionValue = SnowNLP(defaultHotWord).sentiments
     if emotionValue > 0.5:
         emotionValue = '正面'

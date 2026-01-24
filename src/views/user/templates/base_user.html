@@ -228,6 +228,7 @@
                                     <p class="line-around text-secondary mb-0"></p>
                                 </div>
                                 <form method="POST" action="/user/login">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <div class="row">
                                         <div class="col-lg-12">
                                             <div class="form-group">

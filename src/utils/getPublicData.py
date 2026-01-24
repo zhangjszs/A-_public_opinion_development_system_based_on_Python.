@@ -3,8 +3,11 @@ from .query import querys, query_dataframe
 from .cache import cache_result
 import pandas as pd
 import re
+import logging
 import sys
 sys.path.append('model')
+
+logger = logging.getLogger(__name__)
 
 # 城市列表保持不变
 cityList = [
@@ -90,18 +93,27 @@ def getAllCiPingTotal():
     data = []
     try:
         csv_path = os.path.join(Config.MODEL_DIR, 'comment_1_fenci_qutingyongci_cipin.csv')
-        df = pd.read_csv(csv_path, encoding='utf-8')
-        for i in df.values:
-            try:
-                chinese_text = re.search(r'[\u4e00-\u9fa5]+', str(i))
-                number_text = re.search(r'\d+', str(i))
-                if chinese_text and number_text:
-                    data.append([chinese_text.group(), int(number_text.group())])
-            except:
-                continue
+        
+        # 读取文件内容
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # 使用正则表达式提取词频数据
+                # 格式：('哈哈', 157)
+                match = re.search(r'\(([^,]+),\s*(\d+)\)', line)
+                if match:
+                    word = match.group(1).strip().strip("'\"")
+                    count = int(match.group(2))
+                    data.append([word, count])
+        
+        logger.info(f"成功读取词频数据，共 {len(data)} 个词")
+        return data
     except Exception as e:
-        print(f"读取词频文件失败: {e}")
-    return data
+        logger.error(f"读取词频文件失败: {e}")
+        return []
 
 @cache_result(timeout=300, use_file_cache=True)  # 缓存5分钟
 def getAllCommentsData():

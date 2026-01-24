@@ -7,6 +7,9 @@ import numpy as np
 from snownlp import SnowNLP
 import os
 from config.settings import BASE_DIR
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_abs_path(rel_path):
     return os.path.join(BASE_DIR, rel_path)
@@ -61,49 +64,78 @@ def getArticleCharThreeData(defaultType):
                     break
     return xData, yData
 
-def getGeoCharDataTwo():
-    cityList = getPublicData.cityList
-    commentList = getPublicData.getAllCommentsData()
-    cityDic = {}
-    for comment in commentList:
-        if comment[3] == '无': continue
-        for j in cityList:
-            if j['province'].find(comment[3]) != -1:
-                if cityDic.get(j['province'], -1) == -1:
-                    cityDic[j['province']] = 1
-                else:
-                    cityDic[j['province']] += 1
-
-    cityDicList = []
-    for key, value in cityDic.items():
-        cityDicList.append({
-            'name': key,
-            'value': value
-        })
-    return cityDicList
-
-
 def getGeoCharDataOne():
-    cityList = getPublicData.cityList
-    articleList = getPublicData.getAllData()
-
-    cityDic = {}
-    for article in articleList:
-        if article[4] == '无':continue
-        for j in cityList:
-                if j['province'].find(article[4]) != -1:
-                    if cityDic.get(j['province'],-1) == -1:
+    """
+    获取评论地理分布数据
+    
+    Returns:
+        list: 城市分布列表
+    """
+    try:
+        cityList = getPublicData.cityList
+        commentList = getPublicData.getAllCommentsData()
+        
+        cityDic = {}
+        for comment in commentList:
+            if comment[3] == '无':
+                continue
+            for j in cityList:
+                if j['province'].find(comment[3]) != -1:
+                    if cityDic.get(j['province'], -1) == -1:
                         cityDic[j['province']] = 1
                     else:
                         cityDic[j['province']] += 1
 
-    cityDicList = []
-    for key, value in cityDic.items():
-        cityDicList.append({
-            'name': key,
-            'value': value
-        })
-    return cityDicList
+        cityDicList = []
+        for key, value in cityDic.items():
+            cityDicList.append({
+                'name': key,
+                'value': value
+            })
+        
+        logger.info(f"获取评论地理分布数据成功，共 {len(cityDicList)} 个省份")
+        return cityDicList
+        
+    except Exception as e:
+        logger.error(f"获取评论地理分布数据失败: {e}")
+        return []
+
+
+def getGeoCharDataTwo():
+    """
+    获取文章地理分布数据
+    
+    Returns:
+        list: 城市分布列表
+    """
+    try:
+        cityList = getPublicData.cityList
+        articleList = getPublicData.getAllData()
+        
+        cityDic = {}
+        for article in articleList:
+            if article[4] == '无':
+                continue
+            for j in cityList:
+                if j['province'].find(article[4]) != -1:
+                    if cityDic.get(j['province'], -1) == -1:
+                        cityDic[j['province']] = 1
+                    else:
+                        cityDic[j['province']] += 1
+        
+        cityDicList = []
+        for key, value in cityDic.items():
+            cityDicList.append({
+                'name': key,
+                'value': value
+            })
+        
+        logger.info(f"获取文章地理分布数据成功，共 {len(cityDicList)} 个省份")
+        return cityDicList
+        
+    except Exception as e:
+        logger.error(f"获取文章地理分布数据失败: {e}")
+        return []
 
 def getCommetCharDataOne():
     commentList = getPublicData.getAllCommentsData()

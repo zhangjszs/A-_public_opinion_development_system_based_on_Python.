@@ -8,6 +8,9 @@ import time # 1. 导入 time 模块
 import random # (可选) 导入 random 模块，用于随机延时
 import re
 from jsonpath import jsonpath
+import logging
+
+logger = logging.getLogger(__name__)
 
 def init():
     # 根据博客优化：增加更多评论字段
@@ -34,8 +37,8 @@ def init():
                 'comment_source'    # 评论来源（新增）
             ])
 
-def wirterRow(row):
-    # (wirterRow 函数保持不变)
+def writerRow(row):
+    # (writerRow 函数保持不变)
     data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
     comments_path = os.path.join(data_dir, 'commentsData.csv')
     
@@ -195,7 +198,7 @@ def process_simple_comment(comment_data, articleId):
         # 清理评论内容
         content = remove_html_tags(comment_data.get('text', '')) or "表情"
         
-        wirterRow([
+        writerRow([
             comment_data.get('comment_id', ''),     # comment_id
             articleId,                              # articleId  
             created_at,                             # created_at
@@ -219,10 +222,25 @@ def process_comment(comment, articleId):
     """处理每条评论的逻辑"""
     try:
         # 微博返回的日期格式通常是 "%a %b %d %H:%M:%S %z %Y"
-        created_at = datetime.strptime(comment['created_at'], "%a %b %d %H:%M:%S %z %Y").strftime("%Y-%m-%d %H:%M:%S") # 保留时分秒可能更有用
-    except (KeyError, ValueError) as e: # 捕获 KeyError 和日期格式错误 ValueError
-        print(f"Warning: Could not parse date for comment in article {articleId}: {e}. Raw date: {comment.get('created_at')}")
-        created_at = 'Unknown'
+        # 添加健壮的错误处理
+        created_at_raw = comment.get('created_at', '')
+        
+        if not created_at_raw:
+            logger.warning(f"评论缺少created_at字段: articleId={articleId}")
+            created_at = 'Unknown'
+        else:
+            try:
+                created_at = datetime.strptime(created_at_raw, "%a %b %d %H:%M:%S %z %Y").strftime("%Y-%m-%d %H:%M:%S")
+            except ValueError as e:
+                # 尝试其他可能的日期格式
+                try:
+                    created_at = datetime.strptime(created_at_raw, "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    logger.warning(f"无法解析日期格式: {created_at_raw} | articleId={articleId} | 错误: {e}")
+                    created_at = 'Unknown'
+            except KeyError as e:
+                logger.warning(f"日期字段缺失: articleId={articleId} | 错误: {e}")
+                created_at = 'Unknown'
 
     # 根据博客优化：提取更多字段
     comment_id = comment.get('id', '')
@@ -247,24 +265,24 @@ def process_comment(comment, articleId):
         content = comment.get('text', 'No content') # 备选 text
     
     # 根据博客优化：移除HTML标签
-    content = remove_html_tags(content) or "表情"
+        content = remove_html_tags(content) or "表情"
 
-    # 根据博客优化：写入更多字段
-    wirterRow([
-        comment_id,         # comment_id
-        articleId,          # articleId
-        created_at,         # created_at
-        like_counts,        # like_counts
-        region,             # region
-        content,            # content
-        authorName,         # authorName
-        authorGender,       # authorGender
-        authorAddress,      # authorAddress
-        authorAvatar,       # authorAvatar
-        user_id,            # user_id
-        reply_count,        # reply_count
-        comment_source      # comment_source
-    ])
+        # 根据博客优化：写入更多字段
+        writerRow([
+            comment_id,         # comment_id
+            articleId,          # articleId
+            created_at,         # created_at
+            like_counts,        # like_counts
+            region,             # region
+            content,            # content
+            authorName,         # authorName
+            authorGender,       # authorGender
+            authorAddress,      # authorAddress
+            authorAvatar,       # authorAvatar
+            user_id,            # user_id
+            reply_count,        # reply_count
+            comment_source      # comment_source
+        ])
 
 
 def start():

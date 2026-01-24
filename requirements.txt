@@ -12,3 +12,5 @@ Flask~=3.1.0
 SQLAlchemy~=2.0.40
 requests~=2.32.0
 Flask-DebugToolbar~=0.16.0
+bcrypt~=4.2.0
+Flask-WTF~=1.2.1

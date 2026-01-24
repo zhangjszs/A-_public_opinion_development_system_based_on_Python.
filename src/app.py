@@ -14,6 +14,7 @@
 """
 
 from flask import Flask, session, render_template, redirect, request, jsonify
+from flask_wtf.csrf import CSRFProtect
 import re
 import os
 import time
@@ -55,6 +56,15 @@ def create_app_directories():
 # 创建Flask应用实例
 app = Flask(__name__)
 
+# ===== CSRF保护配置 =====
+# 初始化CSRF保护
+csrf = CSRFProtect(app)
+
+# CSRF配置
+app.config['WTF_CSRF_ENABLED'] = True  # 启用CSRF保护
+app.config['WTF_CSRF_TIME_LIMIT'] = None  # CSRF令牌不过期
+app.config['WTF_CSRF_SSL_STRICT'] = False  # 非生产环境不强制HTTPS
+
 # ===== 应用配置 =====
 # 从环境变量加载安全密钥（使用 config/settings.py 统一管理）
 app.secret_key = Config.SECRET_KEY
@@ -69,6 +79,22 @@ app.config['MAX_CONTENT_LENGTH'] = Config.MAX_CONTENT_LENGTH # 最大上传文�
 
 # Session配置
 app.config['PERMANENT_SESSION_LIFETIME'] = Config.PERMANENT_SESSION_LIFETIME
+
+# ===== Session安全配置 =====
+# HttpOnly：防止JavaScript访问Cookie，防止XSS攻击
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+
+# Secure：仅通过HTTPS传输Cookie（生产环境必须启用）
+app.config['SESSION_COOKIE_SECURE'] = False  # 开发环境设为False，生产环境设为True
+
+# SameSite：防止CSRF攻击
+# 'Strict'：最严格，仅同站请求发送Cookie
+# 'Lax'：中等，允许导航请求发送Cookie
+# 'None'：最宽松，允许跨站请求发送Cookie（需要Secure=True）
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# Session名称（避免使用默认的session）
+app.config['SESSION_COOKIE_NAME'] = 'weibo_session_id'
 
 logger.info(f"Flask应用配置加载完成 [环境: {Config.FLASK_ENV}, 调试模式: {Config.DEBUG}]")
 
@@ -437,6 +463,10 @@ def catch_all(path):
         if re.search(pattern, path, re.IGNORECASE):
             logger.warning(f"检测到可疑请求: /{path} | IP: {get_client_ip()}")
             return '', 404  # 直接返回404，不提供任何信息
+    
+    # 防止重定向循环：如果已经是404路径，直接渲染404页面
+    if path == '404':
+        return render_template('404.html'), 404
     
     # 正常的404重定向
     return redirect('/404')

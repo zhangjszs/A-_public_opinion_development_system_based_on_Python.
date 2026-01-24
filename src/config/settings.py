@@ -22,9 +22,13 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 try:
     from dotenv import load_dotenv
     # 查找项目根目录的 .env 文件
-    env_path = Path(__file__).parent.parent / '.env'
+    # settings.py 在 src/config/ 目录下，所以需要向上两级到项目根目录
+    env_path = Path(__file__).parent.parent.parent / '.env'
     if env_path.exists():
         load_dotenv(env_path)
+        print(f"已加载环境变量文件: {env_path}")
+    else:
+        print(f"警告: 未找到 .env 文件，路径: {env_path}")
 except ImportError:
     pass  # python-dotenv 未安装，仅使用环境变量
 
@@ -167,6 +171,11 @@ class ProductionConfig(Config):
                 "生产环境必须设置 SECRET_KEY 环境变量！"
                 "请使用: python -c \"import secrets; print(secrets.token_hex(32))\" 生成"
             )
+    
+    # 生产环境Session安全配置
+    SESSION_COOKIE_SECURE = True  # 仅HTTPS传输Cookie
+    SESSION_COOKIE_HTTPONLY = True  # 防止JavaScript访问
+    SESSION_COOKIE_SAMESITE = 'Strict'  # 最严格的CSRF保护
 
 
 class TestingConfig(Config):

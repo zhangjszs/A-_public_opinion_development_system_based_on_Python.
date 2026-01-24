@@ -1,8 +1,20 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+API路由模块
+功能：提供RESTful API接口
+特性：分页查询、情感分析、参数验证
+作者：微博舆情分析系统
+"""
+
 from flask import Blueprint, jsonify, request
 from utils.query import query_dataframe, querys
 from snownlp import SnowNLP
 import pandas as pd
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 # 创建API蓝图
 bp = Blueprint('api', __name__, url_prefix='/api')

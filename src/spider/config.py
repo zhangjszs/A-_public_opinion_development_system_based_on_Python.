@@ -151,7 +151,19 @@ class SpiderConfigManager:
         try:
             if os.path.exists(self.PROXY_FILE):
                 with open(self.PROXY_FILE, 'r', encoding='utf-8') as f:
-                    self.working_proxies = json.load(f)
+                    data = json.load(f)
+                    # 支持两种格式：字符串列表或字典列表
+                    if isinstance(data, list):
+                        # 字符串列表格式 ["ip:port", ...]
+                        self.working_proxies = data
+                    elif isinstance(data, dict) and 'proxies' in data:
+                        # 字典格式 {"proxies": [{"ip": "x", "port": "y"}, ...]}
+                        self.working_proxies = [
+                            f"{p['ip']}:{p['port']}" for p in data['proxies']
+                            if 'ip' in p and 'port' in p
+                        ]
+                    else:
+                        self.working_proxies = []
                 logger.info(f"加载了 {len(self.working_proxies)} 个保存的代理")
             else:
                 logger.info("代理文件不存在，将使用直连模式")
@@ -260,39 +272,61 @@ class SpiderConfigManager:
                 return False
         return True
     
-    def get_working_proxy(self):
+    def get_working_proxy(self, verify: bool = False):
         """
         获取一个可用的代理配置
-        自动测试和清理失效代理
+        优先使用本地代理，不足时从代理池自动获取
+        
+        Args:
+            verify: 是否验证代理可用性（默认False以提高效率）
         
         Returns:
             dict: 代理配置字典，失败返回None
         """
-        if not self.USE_PROXY or not self.working_proxies:
+        if not self.USE_PROXY:
             return None
         
+        # 尝试从本地已验证的代理获取
         with self.proxy_lock:
-            # 最多尝试3个代理
-            for _ in range(min(3, len(self.working_proxies))):
-                if not self.working_proxies:
-                    break
-                
+            if self.working_proxies:
+                # 随机选择一个代理
                 proxy_ip = random.choice(self.working_proxies)
                 
-                # 快速测试代理（短超时）
-                if self.test_proxy(proxy_ip, timeout=5):
-                    return {
-                        'http': f'http://{proxy_ip}',
-                        'https': f'http://{proxy_ip}'
-                    }
-                else:
-                    # 移除失效代理
-                    self.working_proxies.remove(proxy_ip)
-                    self._save_working_proxies()
-                    logger.info(f"移除失效代理: {proxy_ip}")
-            
-            logger.warning("未找到可用代理，将使用直连")
-            return None
+                # 如果需要验证，测试代理可用性
+                if verify:
+                    if self.test_proxy(proxy_ip):
+                        return {
+                            'http': f'http://{proxy_ip}',
+                            'https': f'http://{proxy_ip}'
+                        }
+                    else:
+                        # 移除失效代理
+                        self.working_proxies.remove(proxy_ip)
+                        self._save_working_proxies()
+                        logger.warning(f"移除失效代理: {proxy_ip}")
+                        return None
+                
+                # 直接返回（不验证以提高效率）
+                return {
+                    'http': f'http://{proxy_ip}',
+                    'https': f'http://{proxy_ip}'
+                }
+        
+        # 本地代理不足，尝试从代理池获取
+        try:
+            from proxy_pool import get_proxy_pool
+            pool = get_proxy_pool()
+            proxy_dict = pool.get_proxy_dict()
+            if proxy_dict:
+                logger.info(f"从代理池获取代理: {proxy_dict.get('http', '')}")
+                return proxy_dict
+        except ImportError:
+            logger.debug("代理池模块未加载")
+        except Exception as e:
+            logger.warning(f"从代理池获取代理失败: {e}")
+        
+        logger.warning("未找到可用代理，将使用直连")
+        return None
     
     def make_safe_request(self, url, method='GET', use_proxy=True, **kwargs):
         """

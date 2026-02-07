@@ -1,361 +1,492 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+微博评论爬虫模块
+功能：爬取微博评论数据，支持热评和普通评论
+特性：请求重试、数据去重、完善的异常处理
+"""
+
 import requests
 import csv
 import os
-import numpy as np
-from config import HEADERS, DEFAULT_TIMEOUT, DEFAULT_DELAY, get_random_headers, get_working_proxy
-from datetime import datetime
-import time # 1. 导入 time 模块
-import random # (可选) 导入 random 模块，用于随机延时
-import re
-from jsonpath import jsonpath
+import threading
 import logging
+import sys
+import re
+from datetime import datetime
+from typing import Dict, Optional, List, Any
 
-logger = logging.getLogger(__name__)
+# 添加项目根目录到Python路径
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+from config import HEADERS, DEFAULT_TIMEOUT, DEFAULT_DELAY, get_random_headers, get_working_proxy
+from utils.deduplicator import comment_deduplicator
+
+# 配置日志
+logger = logging.getLogger('spider.comments')
+
+# ========== 配置常量 ==========
+MAX_RETRIES = 3  # 最大重试次数
+RETRY_DELAY_BASE = 2  # 基础重试延迟（秒）
+REQUEST_TIMEOUT = 30  # 请求超时（秒）
+RATE_LIMIT_WAIT = 60  # 频率限制等待时间（秒）
+
+# 全局CSV写入锁，防止并发写入冲突
+_csv_write_lock = threading.Lock()
+
 
 def init():
-    # 根据博客优化：增加更多评论字段
+    """初始化CSV文件和目录"""
     data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
     os.makedirs(data_dir, exist_ok=True)
     comments_path = os.path.join(data_dir, 'commentsData.csv')
     
     if not os.path.exists(comments_path):
-        with open(comments_path,'w',encoding='utf8',newline='') as csvfile:
-            wirter = csv.writer(csvfile)
-            wirter.writerow([
+        with open(comments_path, 'w', encoding='utf8', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow([
                 'comment_id',        # 评论ID
                 'articleId',         # 文章ID
                 'created_at',        # 创建时间
                 'like_counts',       # 点赞数
-                'region',           # 地区
-                'content',          # 评论内容
-                'authorName',       # 作者名称
-                'authorGender',     # 作者性别
-                'authorAddress',    # 作者地址
-                'authorAvatar',     # 作者头像
-                'user_id',          # 用户ID（新增）
-                'reply_count',      # 回复数（新增）
-                'comment_source'    # 评论来源（新增）
+                'region',            # IP属地
+                'content',           # 评论内容
+                'authorName',        # 作者名称
+                'authorGender',      # 作者性别
+                'authorAddress',     # 作者地址
+                'authorAvatar',      # 作者头像
+                'user_id',           # 用户ID
+                'reply_count',       # 回复数
+                'comment_source',    # 评论来源
+                'is_hot',            # 是否热评
+                'parent_id',         # 父评论ID（子回复专用）
+                'reply_to_user',     # 回复的目标用户
+                'verified_type',     # 用户认证类型
+                'followers_count'    # 粉丝数
             ])
 
-def writerRow(row):
-    # (writerRow 函数保持不变)
+
+def writerRow(row: List[Any]) -> bool:
+    """
+    线程安全的CSV行写入
+    
+    Args:
+        row: 要写入的数据行
+        
+    Returns:
+        bool: 写入是否成功
+    """
     data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
     comments_path = os.path.join(data_dir, 'commentsData.csv')
     
-    with open(comments_path,'a',encoding='utf8',newline='') as csvfile:
-        wirter = csv.writer(csvfile)
-        wirter.writerow(row)
-
-def get_html(url):
-    # 删除原来的 headers 定义，直接使用导入的 HEADERS
-    params = {
-        'is_new_segment':1,
-        'fetch_hot':1
-    }
     try:
-        response = requests.get(url, headers=HEADERS, params=params, timeout=DEFAULT_TIMEOUT)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            print(f"请求失败，状态码: {response.status_code}")
-            return None
-    except requests.exceptions.RequestException as e:
-        print(f"请求异常: {e}")
-        return None
+        with _csv_write_lock:
+            with open(comments_path, 'a', encoding='utf8', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(row)
+        return True
+    except Exception as e:
+        logger.error(f"CSV写入失败: {e}")
+        return False
 
-# 建议将函数名改回 get_json，因为它返回的是 json 数据
-def get_json(url, id, uid=None):
-    # 使用随机headers和代理
+
+def get_json(url: str, article_id: str, uid: Optional[str] = None, 
+             max_id: int = 0, retries: int = MAX_RETRIES) -> Optional[Dict]:
+    """
+    获取评论JSON数据（带重试机制）
+    
+    Args:
+        url: API地址
+        article_id: 文章ID
+        uid: 用户ID
+        max_id: 分页参数
+        retries: 剩余重试次数
+        
+    Returns:
+        JSON数据或None
+    """
+    import random
+    import time
+    
     headers = get_random_headers()
     proxy = get_working_proxy()
     
-    # 根据博客优化：设置正确的Referer
+    # 设置正确的Referer
     if uid:
-        # 从articleData.csv中获取的uid和mblogid信息
         headers['Referer'] = f'https://weibo.com/{uid}/'
     
-    # 根据博客优化：使用正确的参数
     params = {
-        'is_reload': '1',           # 重新加载
-        'id': id,                   # 文章ID
-        'is_show_bulletin': '2',    # 显示公告
-        'is_mix': '0',              # 不混合
-        'count': '10',              # 每页数量
-        'uid': uid or 'nouid',      # 用户ID
-        'fetch_level': '0',         # 获取级别
-        'locale': 'zh-CN'           # 语言环境
+        'is_reload': '1',
+        'id': article_id,
+        'is_show_bulletin': '2',
+        'is_mix': '0',
+        'count': '20',
+        'uid': uid or 'nouid',
+        'fetch_level': '0',
+        'locale': 'zh-CN'
     }
     
-    try:
-        response = requests.get(
-            url, 
-            headers=headers, 
-            params=params, 
-            proxies=proxy,
-            timeout=DEFAULT_TIMEOUT
-        )
-        if response.status_code == 200:
-            return response.json()
-        else:
-            print(f"Error: Request failed for ID {id} with status code {response.status_code}")
-            return None
-    except requests.exceptions.RequestException as e:
-        print(f"Error: Request exception for ID {id}: {e}")
-        return None
-
-
-# parse_json 和 process_comment 函数保持之前的良好结构，包含错误处理
-def parse_json(response, articleId):
-    # 根据博客优化：使用jsonpath进行数据提取
-    print(f"--- Debug: Processing articleId {articleId} ---")
-
-    if response is None:
-        print("Error: Received None response.")
-        return "ERROR_NONE_RESPONSE" # 返回一个标记
-
-    if not isinstance(response, dict):
-        print(f"Error: Expected response to be a dict, but got {type(response)}.")
-        return "ERROR_INVALID_TYPE" # 返回一个标记
-
-    if response.get('ok') == 0:
-        error_msg = response.get('msg', 'Unknown API error')
-        print(f"Error: API returned failure for articleId {articleId}. Message: {error_msg}")
-        if '访问频次过高' in error_msg:
-            return "RATE_LIMITED" # 返回特定标记表示频率限制
-        else:
-            return "API_ERROR" # 返回通用 API 错误标记
-
-    # 根据博客优化：使用jsonpath提取数据
-    try:
-        # 提取评论相关字段
-        comment_texts = jsonpath(response, '$..text')
-        comment_ids = jsonpath(response, '$..id') 
-        user_names = jsonpath(response, '$..screen_name')
-        user_ids = jsonpath(response, '$..uid')
-        created_times = jsonpath(response, '$..created_at')
-        like_counts = jsonpath(response, '$..attitudes_count')
-        
-        if not comment_texts or comment_texts == False:
-            print(f"No comments found for articleId {articleId}")
-            return "NO_COMMENTS"
+    if max_id > 0:
+        params['max_id'] = str(max_id)
+    
+    for attempt in range(retries):
+        try:
+            response = requests.get(
+                url,
+                headers=headers,
+                params=params,
+                proxies=proxy,
+                timeout=REQUEST_TIMEOUT
+            )
             
-        print(f"Successfully found {len(comment_texts)} comments using jsonpath.")
-        
-        # 处理提取的数据，确保所有列表长度一致
-        max_len = max(len(comment_texts), len(comment_ids or []), len(user_names or []))
-        
-        for i in range(min(len(comment_texts), max_len)):
-            try:
-                comment_data = {
-                    'comment_id': comment_ids[i] if comment_ids and i < len(comment_ids) else '',
-                    'text': comment_texts[i] if i < len(comment_texts) else '',
-                    'user_name': user_names[i] if user_names and i < len(user_names) else '',
-                    'user_id': user_ids[i] if user_ids and i < len(user_ids) else '',
-                    'created_at': created_times[i] if created_times and i < len(created_times) else '',
-                    'like_count': like_counts[i] if like_counts and i < len(like_counts) else 0
-                }
-                
-                # 找到完整的评论对象进行详细处理
-                commentList = response.get('data', [])
-                if i < len(commentList):
-                    process_comment(commentList[i], articleId)
-                else:
-                    process_simple_comment(comment_data, articleId)
+            if response.status_code == 200:
+                try:
+                    return response.json()
+                except ValueError as e:
+                    logger.error(f"JSON解析失败: {e}")
+                    return None
                     
-            except Exception as e:
-                print(f"Error processing comment {i} for article {articleId}: {e}")
-                continue
+            elif response.status_code == 403:
+                logger.warning("请求被拒绝(403)，可能Cookie已过期")
+                return None
                 
-    except Exception as e:
-        print(f"Error using jsonpath for article {articleId}: {e}")
-        # 降级到原有处理方式
-        commentList = response.get('data')
-        if commentList and isinstance(commentList, list):
-            for comment in commentList:
-                process_comment(comment, articleId)
-        else:
-            return "ERROR_NO_DATA"
+            elif response.status_code == 429:
+                logger.warning("请求频率过高(429)，等待后重试")
+                time.sleep(RATE_LIMIT_WAIT)
+                
+            else:
+                logger.warning(f"请求失败，状态码: {response.status_code}")
+                if attempt < retries - 1:
+                    time.sleep(RETRY_DELAY_BASE * (attempt + 1))
+                    
+        except requests.exceptions.Timeout:
+            logger.warning(f"请求超时 (尝试 {attempt + 1}/{retries})")
+            if attempt < retries - 1:
+                time.sleep(RETRY_DELAY_BASE * (attempt + 1))
+                
+        except requests.exceptions.RequestException as e:
+            logger.error(f"请求异常: {e}")
+            if attempt < retries - 1:
+                time.sleep(RETRY_DELAY_BASE * (attempt + 1))
+    
+    logger.error(f"请求最终失败: article_id={article_id}")
+    return None
 
-    return "SUCCESS" # 表示成功处理
 
-def remove_html_tags(html_text):
+def remove_html_tags(html_text: str) -> str:
     """移除HTML标签"""
     if not html_text:
         return ""
     return re.sub(r"<[^>]+>", "", html_text)
 
-def process_simple_comment(comment_data, articleId):
-    """处理简化的评论数据"""
-    try:
-        # 处理时间格式
-        created_at = comment_data.get('created_at', 'Unknown')
-        if created_at and created_at != 'Unknown':
-            try:
-                created_at = datetime.strptime(created_at, "%a %b %d %H:%M:%S %z %Y").strftime("%Y-%m-%d %H:%M:%S")
-            except:
-                pass
-        
-        # 清理评论内容
-        content = remove_html_tags(comment_data.get('text', '')) or "表情"
-        
-        writerRow([
-            comment_data.get('comment_id', ''),     # comment_id
-            articleId,                              # articleId  
-            created_at,                             # created_at
-            comment_data.get('like_count', 0),      # like_counts
-            '无',                                   # region
-            content,                                # content
-            comment_data.get('user_name', 'Unknown'), # authorName
-            'Unknown',                              # authorGender
-            'Unknown',                              # authorAddress
-            '',                                     # authorAvatar
-            comment_data.get('user_id', ''),        # user_id
-            0,                                      # reply_count
-            ''                                      # comment_source
-        ])
-    except Exception as e:
-        print(f"Error in process_simple_comment: {e}")
 
-
-def process_comment(comment, articleId):
-    # 根据博客优化：增加更多字段提取
-    """处理每条评论的逻辑"""
-    try:
-        # 微博返回的日期格式通常是 "%a %b %d %H:%M:%S %z %Y"
-        # 添加健壮的错误处理
-        created_at_raw = comment.get('created_at', '')
-        
-        if not created_at_raw:
-            logger.warning(f"评论缺少created_at字段: articleId={articleId}")
-            created_at = 'Unknown'
-        else:
-            try:
-                created_at = datetime.strptime(created_at_raw, "%a %b %d %H:%M:%S %z %Y").strftime("%Y-%m-%d %H:%M:%S")
-            except ValueError as e:
-                # 尝试其他可能的日期格式
-                try:
-                    created_at = datetime.strptime(created_at_raw, "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
-                except ValueError:
-                    logger.warning(f"无法解析日期格式: {created_at_raw} | articleId={articleId} | 错误: {e}")
-                    created_at = 'Unknown'
-            except KeyError as e:
-                logger.warning(f"日期字段缺失: articleId={articleId} | 错误: {e}")
-                created_at = 'Unknown'
-
-    # 根据博客优化：提取更多字段
-    comment_id = comment.get('id', '')
-    like_counts = comment.get('attitudes_count', 0)  # 使用attitudes_count替代like_counts
-    reply_count = comment.get('total_number', 0)      # 回复数
-
-    user = comment.get('user', {}) # 安全获取 user 字典
-    user_id = user.get('id', '')                      # 用户ID
-    authorName = user.get('screen_name', 'Unknown')
-    authorGender = user.get('gender', 'Unknown') # m/f/n
-    authorAddress = user.get('location', 'Unknown').split(' ')[0] # 只取省份/城市
-    authorAvatar = user.get('avatar_large', '') # 使用空字符串作为默认值可能比 'Unknown' 好
-
-    # region 通常在 source 字段里
-    region_source = comment.get('source', '')
-    region = region_source.replace('来自', '').strip() if region_source else '无'
-    comment_source = comment.get('source', '')  # 评论来源
-
-    # 评论内容 text_raw 可能包含 HTML 实体，text 字段是纯文本但可能不全
-    content = comment.get('text_raw', '') # 优先使用 text_raw
-    if not content:
-        content = comment.get('text', 'No content') # 备选 text
+def parse_created_time(created_at_raw: str) -> str:
+    """
+    解析评论时间格式
     
-    # 根据博客优化：移除HTML标签
+    Args:
+        created_at_raw: 原始时间字符串
+        
+    Returns:
+        格式化后的时间字符串
+    """
+    if not created_at_raw:
+        return 'Unknown'
+    
+    time_formats = [
+        "%a %b %d %H:%M:%S %z %Y",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S",
+    ]
+    
+    for fmt in time_formats:
+        try:
+            parsed = datetime.strptime(created_at_raw, fmt)
+            return parsed.strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            continue
+    
+    return created_at_raw
+
+
+def process_comment(comment: Dict, article_id: str, is_hot: bool = False, 
+                    parent_id: str = '') -> bool:
+    """
+    处理每条评论的逻辑
+    
+    Args:
+        comment: 评论数据
+        article_id: 文章ID
+        is_hot: 是否热评
+        parent_id: 父评论ID
+        
+    Returns:
+        bool: 处理是否成功
+    """
+    try:
+        comment_id = str(comment.get('id', ''))
+        
+        # 检查是否重复
+        if comment_deduplicator.is_duplicate(comment_id, article_id):
+            logger.debug(f"跳过重复评论: {comment_id}")
+            return False
+        
+        # 解析时间
+        created_at = parse_created_time(comment.get('created_at', ''))
+        
+        # 基础字段
+        like_counts = comment.get('attitudes_count', 0)
+        reply_count = comment.get('total_number', 0)
+        
+        # 用户信息
+        user = comment.get('user', {})
+        user_id = str(user.get('id', ''))
+        author_name = user.get('screen_name', 'Unknown')
+        author_gender = user.get('gender', 'Unknown')
+        author_address = user.get('location', 'Unknown').split(' ')[0] if user.get('location') else 'Unknown'
+        author_avatar = user.get('avatar_large', '')
+        
+        # 用户认证和粉丝数
+        verified_type = user.get('verified_type', -1)
+        followers_count = user.get('followers_count', 0)
+        
+        # IP属地和来源
+        region = comment.get('source', '').replace('来自', '').strip() or '无'
+        comment_source = comment.get('source', '')
+        
+        # 评论内容
+        content = comment.get('text_raw', '') or comment.get('text', '')
         content = remove_html_tags(content) or "表情"
-
-        # 根据博客优化：写入更多字段
-        writerRow([
-            comment_id,         # comment_id
-            articleId,          # articleId
-            created_at,         # created_at
-            like_counts,        # like_counts
-            region,             # region
-            content,            # content
-            authorName,         # authorName
-            authorGender,       # authorGender
-            authorAddress,      # authorAddress
-            authorAvatar,       # authorAvatar
-            user_id,            # user_id
-            reply_count,        # reply_count
-            comment_source      # comment_source
+        
+        # 回复目标用户
+        reply_to_user = ''
+        if 'reply_comment' in comment and comment['reply_comment']:
+            reply_user_info = comment['reply_comment'].get('user', {})
+            reply_to_user = reply_user_info.get('screen_name', '') if reply_user_info else ''
+        
+        # 写入CSV
+        success = writerRow([
+            comment_id,
+            article_id,
+            created_at,
+            like_counts,
+            region,
+            content,
+            author_name,
+            author_gender,
+            author_address,
+            author_avatar,
+            user_id,
+            reply_count,
+            comment_source,
+            is_hot,
+            parent_id,
+            reply_to_user,
+            verified_type,
+            followers_count
         ])
+        
+        if success:
+            # 添加到去重过滤器
+            comment_deduplicator.add(comment_id, article_id)
+            
+            # 处理子回复（楼中楼）
+            if reply_count > 0 and 'comments' in comment:
+                sub_comments = comment.get('comments', [])
+                for sub_comment in sub_comments:
+                    process_comment(sub_comment, article_id, is_hot=False, parent_id=comment_id)
+            
+            return True
+        
+        return False
+        
+    except Exception as e:
+        logger.error(f"处理评论失败: article_id={article_id}, error={e}")
+        return False
 
 
-def start():
+def parse_json(response: Optional[Dict], article_id: str) -> str:
+    """
+    解析评论JSON数据
+    
+    Args:
+        response: API响应数据
+        article_id: 文章ID
+        
+    Returns:
+        str: 处理结果状态
+    """
+    logger.debug(f"Processing articleId {article_id}")
+    
+    if response is None:
+        logger.error("Received None response")
+        return "ERROR_NONE_RESPONSE"
+    
+    if not isinstance(response, dict):
+        logger.error(f"Expected response to be a dict, but got {type(response)}")
+        return "ERROR_INVALID_TYPE"
+    
+    if response.get('ok') == 0:
+        error_msg = response.get('msg', 'Unknown API error')
+        logger.error(f"API returned failure: {error_msg}")
+        if '访问频次过高' in error_msg:
+            return "RATE_LIMITED"
+        return "API_ERROR"
+    
+    try:
+        comments_processed = 0
+        
+        # 处理热评
+        hot_comments = response.get('hot_comments', [])
+        if hot_comments:
+            logger.debug(f"Found {len(hot_comments)} hot comments")
+            for comment in hot_comments:
+                if process_comment(comment, article_id, is_hot=True):
+                    comments_processed += 1
+        
+        # 处理普通评论
+        comment_list = response.get('data', [])
+        if comment_list and isinstance(comment_list, list):
+            logger.debug(f"Found {len(comment_list)} regular comments")
+            
+            # 获取热评ID集合，避免重复处理
+            hot_comment_ids = {hc.get('id') for hc in hot_comments} if hot_comments else set()
+            
+            for comment in comment_list:
+                comment_id = comment.get('id', '')
+                if comment_id not in hot_comment_ids:
+                    if process_comment(comment, article_id, is_hot=False):
+                        comments_processed += 1
+        
+        if comments_processed == 0:
+            logger.info(f"No comments found for articleId {article_id}")
+            return "NO_COMMENTS"
+        
+        logger.info(f"Successfully processed {comments_processed} comments")
+        return "SUCCESS"
+        
+    except Exception as e:
+        logger.error(f"Error processing comments: {e}")
+        return "ERROR_PROCESSING"
+
+
+def start(max_comment_pages: int = 5) -> int:
+    """
+    爬取评论数据
+    
+    Args:
+        max_comment_pages: 每篇文章最多爬取的评论页数
+        
+    Returns:
+        int: 成功处理的文章数量
+    """
+    import random
+    import time
+    
     init()
     url = 'https://weibo.com/ajax/statuses/buildComments'
-    article_csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'articleData.csv') # 更新为data目录下的路径
-
+    article_csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'articleData.csv')
+    
     if not os.path.exists(article_csv_path):
-        print(f"Error: Input file not found at {article_csv_path}")
-        return
-
-    with open(article_csv_path,'r',encoding='utf8') as readerFile:
-        reader = csv.reader(readerFile)
-        try:
-            header = next(reader) # 读取标题行
-            # 可以选择性地检查标题行是否符合预期
-            print(f"Input CSV Header: {header}")
-        except StopIteration:
-            print(f"Error: Input file {article_csv_path} is empty.")
-            return
-
-        for i, article in enumerate(reader):
-            if not article: # 跳过空行
-                continue
+        logger.error(f"Input file not found: {article_csv_path}")
+        return 0
+    
+    processed_articles = 0
+    
+    try:
+        with open(article_csv_path, 'r', encoding='utf8') as readerFile:
+            reader = csv.reader(readerFile)
             try:
-                articleId = article[0] # 假设 ID 总是在第一列
-            except IndexError:
-                print(f"Warning: Skipping row {i+2} due to missing article ID.")
-                continue
-
-            # 根据博客优化：使用DEFAULT_DELAY配置
-            if isinstance(DEFAULT_DELAY, tuple):
-                wait_seconds = random.uniform(DEFAULT_DELAY[0], DEFAULT_DELAY[1])
-            else:
-                wait_seconds = DEFAULT_DELAY
+                header = next(reader)
+                logger.info(f"Input CSV Header: {header}")
+            except StopIteration:
+                logger.error(f"Input file is empty: {article_csv_path}")
+                return 0
+            
+            for i, article in enumerate(reader):
+                if not article:
+                    continue
                 
-            print(f"--- Row {i+2}: Waiting for {wait_seconds:.2f} seconds before fetching comments for article ID {articleId} ---")
-            time.sleep(wait_seconds)
-
-            # 根据博客优化：尝试从detailUrl中提取uid
-            uid = None
-            if len(article) > 9:  # detailUrl 在第10列 (索引9)
-                detail_url = article[9]
-                if detail_url and 'weibo.com' in detail_url:
-                    try:
-                        # URL格式: https://weibo.com/uid/mblogid
-                        parts = detail_url.replace('https://weibo.com/', '').split('/')
-                        if len(parts) >= 1:
-                            uid = parts[0]
-                            print(f"Extracted uid: {uid} from URL: {detail_url}")
-                    except Exception as e:
-                        print(f"Failed to extract uid from URL: {detail_url}, error: {e}")
-
-            print(f"Fetching comments for article ID: {articleId}")
-            # 根据博客优化：传入uid参数
-            response = get_json(url, articleId, uid)
-
-            # 调用 parse_json 并检查其返回值
-            parse_result = parse_json(response, articleId)
-
-            # 根据 parse_json 的结果决定下一步操作
-            if parse_result == "RATE_LIMITED":
-                # 如果遇到频率限制，可以等待更长时间再继续，或者中断
-                long_wait = 60 # 等待 1 分钟
-                print(f"Rate limit hit. Waiting for {long_wait} seconds...")
-                time.sleep(long_wait)
-                print("Continuing after rate limit wait...")
-            elif parse_result not in ["SUCCESS", "NO_COMMENTS", None]: # None 是为了兼容旧版 parse_json 可能不返回任何东西
-                # 处理其他类型的错误，比如打印日志、跳过等
-                print(f"Skipping article ID {articleId} due to parsing error: {parse_result}")
-
-    print("Finished processing all articles in the CSV.")
+                try:
+                    article_id = article[0]
+                    comments_count = int(article[2]) if len(article) > 2 and article[2].isdigit() else 0
+                except (IndexError, ValueError) as e:
+                    logger.warning(f"Skipping row {i+2}: {e}")
+                    continue
+                
+                # 提取uid
+                uid = None
+                if len(article) > 9:
+                    detail_url = article[9]
+                    if detail_url and 'weibo.com' in detail_url:
+                        try:
+                            parts = detail_url.replace('https://weibo.com/', '').split('/')
+                            if len(parts) >= 1:
+                                uid = parts[0]
+                        except Exception as e:
+                            logger.debug(f"Failed to extract uid from URL: {e}")
+                
+                logger.info(f"\n=== Article {i+2}: ID {article_id}, Comments: {comments_count} ===")
+                
+                # 根据评论数量决定爬取页数
+                pages_to_fetch = min(max_comment_pages, max(1, (comments_count // 20) + 1))
+                max_id = 0
+                article_success = False
+                
+                for page in range(1, pages_to_fetch + 1):
+                    # 延时防爬
+                    if isinstance(DEFAULT_DELAY, tuple):
+                        wait_seconds = random.uniform(DEFAULT_DELAY[0], DEFAULT_DELAY[1])
+                    else:
+                        wait_seconds = DEFAULT_DELAY
+                    
+                    logger.info(f"Fetching page {page}/{pages_to_fetch} for article {article_id}")
+                    time.sleep(wait_seconds)
+                    
+                    # 请求评论数据
+                    response = get_json(url, article_id, uid, max_id)
+                    
+                    if response is None:
+                        logger.warning(f"Failed to get response for page {page}")
+                        break
+                    
+                    # 解析评论
+                    parse_result = parse_json(response, article_id)
+                    
+                    if parse_result == "RATE_LIMITED":
+                        logger.warning(f"Rate limit hit. Waiting for {RATE_LIMIT_WAIT} seconds...")
+                        time.sleep(RATE_LIMIT_WAIT)
+                        continue
+                    elif parse_result == "NO_COMMENTS":
+                        logger.info(f"No more comments for article {article_id}")
+                        break
+                    elif parse_result == "API_ERROR":
+                        logger.error(f"API error, stopping pagination for article {article_id}")
+                        break
+                    elif parse_result == "SUCCESS":
+                        article_success = True
+                    
+                    # 获取用于下一页的max_id
+                    new_max_id = response.get('max_id', 0)
+                    if new_max_id == 0 or new_max_id == max_id:
+                        logger.info(f"No more pages available for article {article_id}")
+                        break
+                    max_id = new_max_id
+                
+                if article_success:
+                    processed_articles += 1
+    
+    except Exception as e:
+        logger.error(f"爬取过程发生错误: {e}", exc_info=True)
+    
+    # 保存去重状态
+    comment_deduplicator.save()
+    
+    logger.info(f"\n=== Finished processing {processed_articles} articles ===")
+    return processed_articles
 
 
 if __name__ == '__main__':
-    start()
+    # 测试代码
+    logging.basicConfig(level=logging.INFO)
+    start(max_comment_pages=2)

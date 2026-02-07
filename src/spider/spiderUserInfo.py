@@ -46,13 +46,18 @@ class UserInfoSpider:
                 ])
 
     def write_user_row(self, row):
-        """写入用户数据到CSV"""
+        """写入用户数据到CSV（线程安全）"""
         data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
         user_info_path = os.path.join(data_dir, 'userInfo.csv')
         
-        with open(user_info_path, 'a', encoding='utf8', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(row)
+        try:
+            with open(user_info_path, 'a', encoding='utf8', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(row)
+            return True
+        except Exception as e:
+            print(f"写入用户数据失败: {e}")
+            return False
 
     def get_user_detail(self, uid):
         """获取用户详细信息 - profile/detail API"""

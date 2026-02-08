@@ -15,6 +15,7 @@
 
 from flask import Flask, session, render_template, redirect, request, jsonify
 from flask_wtf.csrf import CSRFProtect
+from flask_cors import CORS
 import re
 import os
 import time
@@ -59,6 +60,20 @@ app = Flask(__name__)
 # ===== CSRF保护配置 =====
 # 初始化CSRF保护
 csrf = CSRFProtect(app)
+
+# 初始化CORS支持（解决跨域问题）
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    },
+    r"/getAllData/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 # CSRF配置
 app.config['WTF_CSRF_ENABLED'] = True  # 启用CSRF保护

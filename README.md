@@ -16,14 +16,15 @@ root/
 │   ├── services/           # Business Logic
 │   ├── static/             # Static Assets (JS, CSS, Images)
 │   └── templates/          # HTML Templates
-├── config/                 # (Optional) External configs
 ├── docs/                   # Documentation
 ├── scripts/                # Operations Scripts
-│   ├── check_env.py        # Environment Check Script
-│   └── deploy.py           # Deployment Helper
 ├── tests/                  # Test Suites
 ├── run.py                  # Main Entry Point
 ├── requirements.txt        # Python Dependencies
+├── requirements-dev.txt    # Development Dependencies
+├── pyproject.toml          # Tool Configuration (Black, isort, Ruff)
+├── .editorconfig           # Editor Settings
+├── .pre-commit-config.yaml # Git Hooks
 └── .env                    # Environment Variables (Secrets)
 ```
 
@@ -42,6 +43,25 @@ root/
     python run.py
     ```
     Access at `http://127.0.0.1:5000`
+
+## Development Setup
+
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Setup pre-commit hooks
+pre-commit install
+
+# Format code
+black src/ tests/
+isort src/ tests/
+
+# Run linter
+ruff check src/
+```
+
+See [docs/CODING_STANDARDS.md](docs/CODING_STANDARDS.md) for coding conventions.
 
 ## Deployment
 
@@ -70,3 +90,4 @@ root/
 
 ## Documentation
 See `docs/` for detailed design documents.
+

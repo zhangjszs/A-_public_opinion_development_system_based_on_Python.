@@ -560,44 +560,70 @@
                     <div class="col-md-12 mb-4 mt-1">
                         <div class="d-flex flex-wrap justify-content-between align-items-center">
                             <h4 class="font-weight-bold">首页</h4>
+                            <button id="refreshBtn" class="btn btn-primary" onclick="refreshData()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                    viewBox="0 0 16 16" style="margin-right: 5px;">
+                                    <path fill-rule="evenodd"
+                                        d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z" />
+                                    <path
+                                        d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
+                                </svg>
+                                刷新数据
+                            </button>
                         </div>
                     </div>
+                    <!-- 今日统计卡片 -->
                     <div class="col-lg-8 col-md-12">
                         <div class="row">
-                            <div class="col-md-4">
-                                <div class="card">
+                            <div class="col-md-3">
+                                <div class="card" style="border-left: 4px solid #0078D4;">
                                     <div class="card-body">
                                         <div class="d-flex align-items-center">
                                             <div class="">
-                                                <p class="mb-2 text-secondary">总文章个数</p>
+                                                <p class="mb-2 text-secondary">总文章数</p>
                                                 <div class="d-flex flex-wrap justify-content-start align-items-center">
-                                                    <h5 class="mb-0 font-weight-bold">{{ articleLen }}个</h5>
+                                                    <h5 class="mb-0 font-weight-bold">{{ articleLen }}篇</h5>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="card">
+                            <div class="col-md-3">
+                                <div class="card" style="border-left: 4px solid #28a745;">
                                     <div class="card-body">
                                         <div class="d-flex align-items-center">
                                             <div class="">
-                                                <p class="mb-2 text-secondary">最高点赞微博-作者</p>
+                                                <p class="mb-2 text-secondary">今日新增</p>
                                                 <div class="d-flex flex-wrap justify-content-start align-items-center">
-                                                    <h5 class="mb-0 font-weight-bold">{{ maxLikeAuthorName }}</h5>
+                                                    <h5 id="todayCount" class="mb-0 font-weight-bold">--</h5>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="card">
+                            <div class="col-md-3">
+                                <div class="card" style="border-left: 4px solid #ffc107;">
                                     <div class="card-body">
                                         <div class="d-flex align-items-center">
                                             <div class="">
-                                                <p class="mb-2 text-secondary">最多城市</p>
+                                                <p class="mb-2 text-secondary">最火作者</p>
+                                                <div class="d-flex flex-wrap justify-content-start align-items-center">
+                                                    <h5 class="mb-0 font-weight-bold" style="font-size: 0.9em;">{{
+                                                        maxLikeAuthorName }}</h5>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card" style="border-left: 4px solid #dc3545;">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <div class="">
+                                                <p class="mb-2 text-secondary">热门地区</p>
                                                 <div class="d-flex flex-wrap justify-content-start align-items-center">
                                                     <h5 class="mb-0 font-weight-bold">{{ maxCity }}</h5>
                                                 </div>
@@ -610,7 +636,9 @@
                                 <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-center flex-wrap">
-                                            <h4 class="font-weight-bold">文章发布时间个数</h4>
+                                            <h4 class="font-weight-bold">文章发布时间分布</h4>
+                                            <span id="lastUpdate" class="text-muted" style="font-size: 0.85em;">最后更新:
+                                                --</span>
                                         </div>
                                         <div id="main" style="width:100%;height:350px">
 
@@ -618,6 +646,7 @@
                                     </div>
                                 </div>
                             </div>
+
                         </div>
                     </div>
                     <div class="col-lg-4 col-md-8">
@@ -884,6 +913,62 @@
 
         option && myChart.setOption(option);
         window.addEventListener('resize', function () { myChart.resize(); });
+    </script>
+
+    <!-- 刷新数据和今日统计功能 -->
+    <script>
+        // 加载今日统计
+        function loadTodayStats() {
+            fetch('/api/stats/today')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 200) {
+                        document.getElementById('todayCount').textContent =
+                            (data.data.today_articles || 0) + '篇';
+                        if (data.data.latest_update) {
+                            document.getElementById('lastUpdate').textContent =
+                                '最后更新: ' + data.data.latest_update;
+                        }
+                    }
+                })
+                .catch(err => console.error('加载今日统计失败:', err));
+        }
+
+        // 刷新数据
+        function refreshData() {
+            const btn = document.getElementById('refreshBtn');
+            const originalText = btn.innerHTML;
+
+            // 显示加载状态
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 刷新中...';
+
+            fetch('/api/spider/refresh', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ page_num: 3 })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 200) {
+                        alert('刷新成功！爬取 ' + data.data.crawled + ' 条数据');
+                        // 刷新页面以显示新数据
+                        location.reload();
+                    } else {
+                        alert('刷新失败: ' + data.msg);
+                    }
+                })
+                .catch(err => {
+                    alert('刷新失败: ' + err.message);
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                });
+        }
+
+        // 页面加载时获取今日统计
+        document.addEventListener('DOMContentLoaded', loadTodayStats);
     </script>
     {% endblock %}
     <script src="/static/js/backend-bundle.min.js"></script>

@@ -80,21 +80,31 @@ app.config['MAX_CONTENT_LENGTH'] = Config.MAX_CONTENT_LENGTH # 最大上传文�
 # Session配置
 app.config['PERMANENT_SESSION_LIFETIME'] = Config.PERMANENT_SESSION_LIFETIME
 
-# ===== Session安全配置 =====
+# ===== Session安全配置（根据环境自动调整）=====
 # HttpOnly：防止JavaScript访问Cookie，防止XSS攻击
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 
-# Secure：仅通过HTTPS传输Cookie（生产环境必须启用）
-app.config['SESSION_COOKIE_SECURE'] = False  # 开发环境设为False，生产环境设为True
+# Secure：仅通过HTTPS传输Cookie（生产环境强制启用）
+# 根据环境变量自动设置，生产环境必须为True
+if Config.FLASK_ENV == 'production':
+    app.config['SESSION_COOKIE_SECURE'] = True
+    logger.info("生产环境：启用Secure Cookie（仅HTTPS传输）")
+else:
+    app.config['SESSION_COOKIE_SECURE'] = False
+    logger.info("开发环境：禁用Secure Cookie（允许HTTP传输）")
 
 # SameSite：防止CSRF攻击
-# 'Strict'：最严格，仅同站请求发送Cookie
-# 'Lax'：中等，允许导航请求发送Cookie
-# 'None'：最宽松，允许跨站请求发送Cookie（需要Secure=True）
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+if Config.FLASK_ENV == 'production':
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'  # 生产环境最严格
+else:
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # 开发环境中等
 
 # Session名称（避免使用默认的session）
 app.config['SESSION_COOKIE_NAME'] = 'weibo_session_id'
+
+# 额外的安全头部
+app.config['SESSION_COOKIE_PATH'] = '/'
+app.config['SESSION_COOKIE_DOMAIN'] = None  # 默认当前域名
 
 logger.info(f"Flask应用配置加载完成 [环境: {Config.FLASK_ENV}, 调试模式: {Config.DEBUG}]")
 
@@ -108,6 +118,9 @@ try:
     app.register_blueprint(page.pb)  # 注册页面蓝图
     app.register_blueprint(user.ub)  # 注册用户蓝图
     app.register_blueprint(api.bp)   # 注册API蓝图
+    
+    # 排除API蓝图的CSRF保护
+    csrf.exempt(api.bp)
     
     logger.info("蓝图注册完成: page, user, api")
     
@@ -276,8 +289,9 @@ def before_request():
     1. 静态资源直接放行
     2. 登录/注册页面无需认证
     3. 健康检查端点无需认证
-    4. 其他页面需要登录验证
-    5. 记录请求日志
+    4. API端点部分无需认证
+    5. 其他页面需要登录验证
+    6. 记录请求日志
     """
     # 记录请求信息
     log_request_info()
@@ -296,9 +310,21 @@ def before_request():
     
     if request.path in public_endpoints:
         return None
-    
-    # API端点特殊处理
+        
+    # API端点特殊处理 - 允许特定API无需登录
     if request.path.startswith('/api/'):
+        # 允许的公开API
+        public_apis = [
+            '/api/stats/today',
+            '/api/spider/refresh',
+            '/api/stats/summary'
+        ]
+        
+        # 检查是否是公开API
+        if request.path in public_apis or any(request.path.startswith(p) for p in public_apis):
+            return None
+            
+        # 其他API需要登录
         if not is_user_logged_in():
             return jsonify({
                 'error': 'Unauthorized',

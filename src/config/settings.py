@@ -140,6 +140,24 @@ class Config:
     LLM_API_KEY: str = get_env('LLM_API_KEY', '')
     LLM_API_URL: str = get_env('LLM_API_URL', 'https://api.deepseek.com/v1/chat/completions')
     LLM_MODEL: str = get_env('LLM_MODEL', 'deepseek-chat')
+    LLM_TIMEOUT: int = get_env('LLM_TIMEOUT', '10', int)  # LLM调用超时时间
+    LLM_CACHE_TTL: int = get_env('LLM_CACHE_TTL', '3600', int)  # LLM结果缓存时间（秒）
+    
+    # ========== Redis配置（用于Celery和缓存） ==========
+    REDIS_HOST: str = get_env('REDIS_HOST', 'localhost')
+    REDIS_PORT: int = get_env('REDIS_PORT', '6379', int)
+    REDIS_DB: int = get_env('REDIS_DB', '0', int)
+    REDIS_PASSWORD: str = get_env('REDIS_PASSWORD', '')
+    
+    @classmethod
+    def get_redis_url(cls) -> str:
+        """获取Redis连接URL"""
+        if cls.REDIS_PASSWORD:
+            return f"redis://:{cls.REDIS_PASSWORD}@{cls.REDIS_HOST}:{cls.REDIS_PORT}/{cls.REDIS_DB}"
+        return f"redis://{cls.REDIS_HOST}:{cls.REDIS_PORT}/{cls.REDIS_DB}"
+    
+    # 兼容Celery配置
+    REDIS_URL: str = get_env('REDIS_URL', '')
     
     # ========== 日志配置 ==========
     LOG_LEVEL: str = get_env('LOG_LEVEL', 'INFO')

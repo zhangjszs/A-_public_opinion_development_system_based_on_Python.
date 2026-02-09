@@ -72,6 +72,11 @@ CORS(app, resources={
         "origins": "*",
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
+    },
+    r"/user/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
     }
 })
 
@@ -129,15 +134,19 @@ try:
     from views.page import page  # 页面视图蓝图
     from views.user import user  # 用户认证蓝图
     from views.api import api    # API视图蓝图
+    from views.data import db    # 数据API蓝图
     
     app.register_blueprint(page.pb)  # 注册页面蓝图
     app.register_blueprint(user.ub)  # 注册用户蓝图
     app.register_blueprint(api.bp)   # 注册API蓝图
+    app.register_blueprint(db)       # 注册数据API蓝图
     
-    # 排除API蓝图的CSRF保护
+    # 排除API蓝图的CSRF保护（允许JSON请求）
     csrf.exempt(api.bp)
+    csrf.exempt(user.ub)
+    csrf.exempt(db)
     
-    logger.info("蓝图注册完成: page, user, api")
+    logger.info("蓝图注册完成: page, user, api, data")
     
 except ImportError as e:
     logger.error(f"蓝图导入失败: {e}")
@@ -346,6 +355,10 @@ def before_request():
                 'message': '请先登录',
                 'code': 401
             }), 401
+        return None
+    
+    # 数据API端点 - 允许公开访问（用于Vue前端）
+    if request.path.startswith('/getAllData/'):
         return None
     
     # 其他页面需要登录验证

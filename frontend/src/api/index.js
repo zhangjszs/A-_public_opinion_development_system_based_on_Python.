@@ -3,7 +3,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import router from '@/router'
 
 const request = axios.create({
-  baseURL: import.meta.env.VITE_APP_API_BASE_URL || 'http://127.0.0.1:5000',
+  // 开发环境由 Vite 代理处理，生产环境使用相对路径
+  baseURL: '',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json'

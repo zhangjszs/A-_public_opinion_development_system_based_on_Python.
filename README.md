@@ -1,93 +1,226 @@
-# Weibo Public Opinion Analysis System
+# 微博舆情分析可视化系统
 
-Based on Python, this system analyzes Weibo public opinion and provides visualization.
+基于 Python 的微博舆情分析系统，提供数据采集、情感分析、数据可视化等功能。
 
-## Project Structure
+## 项目结构
 
 ```
-root/
-├── src/                    # Source Code
-│   ├── app.py              # Application Entry (Flask App)
-│   ├── config/             # Configuration Settings
-│   ├── model/              # Sentiment Analysis Models & Training
-│   ├── spider/             # Weibo Crawler
-│   ├── utils/              # Utility Functions
-│   ├── views/              # Web Route Controllers
-│   ├── services/           # Business Logic
-│   ├── static/             # Static Assets (JS, CSS, Images)
-│   └── templates/          # HTML Templates
-├── docs/                   # Documentation
-├── scripts/                # Operations Scripts
-├── tests/                  # Test Suites
-├── run.py                  # Main Entry Point
-├── requirements.txt        # Python Dependencies
-├── requirements-dev.txt    # Development Dependencies
-├── pyproject.toml          # Tool Configuration (Black, isort, Ruff)
-├── .editorconfig           # Editor Settings
-├── .pre-commit-config.yaml # Git Hooks
-└── .env                    # Environment Variables (Secrets)
+基于python微博舆情分析可视化系统/
+├── src/                        # 后端源代码
+│   ├── app.py                  # Flask 应用入口
+│   ├── config/                 # 配置文件
+│   │   └── settings.py         # 应用配置
+│   ├── model/                  # 情感分析模型
+│   │   ├── trainModel.py       # 模型训练
+│   │   └── best_sentiment_model.pkl  # 预训练模型
+│   ├── spider/                 # 微博爬虫模块
+│   │   ├── spiderContent.py    # 文章爬虫
+│   │   ├── spiderComments.py   # 评论爬虫
+│   │   └── spiderMaster.py     # 爬虫主控
+│   ├── utils/                  # 工具函数
+│   │   ├── getHomeData.py      # 首页数据处理
+│   │   ├── getTableData.py     # 表格数据处理
+│   │   ├── getEchartsData.py   # 图表数据处理
+│   │   ├── cache.py            # 缓存管理
+│   │   └── query.py            # 数据库查询
+│   ├── views/                  # 视图/路由
+│   │   ├── data/               # 数据 API
+│   │   │   └── data_api.py     # 数据接口
+│   │   ├── page/               # 页面路由
+│   │   └── user/               # 用户认证
+│   ├── services/               # 业务逻辑层
+│   ├── static/                 # 静态资源
+│   ├── templates/              # HTML 模板
+│   └── cache/                  # 运行时缓存目录
+├── frontend/                   # 前端 Vue 项目
+│   ├── src/
+│   │   ├── api/                # API 接口
+│   │   ├── views/              # 页面组件
+│   │   ├── components/         # 公共组件
+│   │   └── router/             # 路由配置
+│   ├── package.json
+│   └── vite.config.js
+├── docs/                       # 项目文档
+├── scripts/                    # 运维脚本
+├── tests/                      # 测试用例
+├── data/                       # 数据文件目录
+├── cache/                      # 缓存目录
+├── logs/                       # 日志目录
+├── run.py                      # 启动脚本
+├── requirements.txt            # Python 依赖
+├── requirements-dev.txt        # 开发依赖
+├── pyproject.toml              # 工具配置
+├── .editorconfig               # 编辑器配置
+├── .pre-commit-config.yaml     # Git Hooks
+├── .gitignore                  # Git 忽略配置
+└── .env.example                # 环境变量示例
 ```
 
-## Quick Start
+## 快速开始
 
-1.  **Clone the repository**
-2.  **Install Dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
-3.  **Configure Environment**:
-    -   Copy `.env.example` to `.env` (if available) or create a `.env` file.
-    -   Set `WEIBO_COOKIE` and `user-agent` in `.env` if needed for the crawler.
-4.  **Run the Application**:
-    ```bash
-    python run.py
-    ```
-    Access at `http://127.0.0.1:5000`
+### 环境要求
 
-## Development Setup
+- Python 3.8+
+- Node.js 16+
+- MySQL 5.7+ (可选)
+
+### 后端启动
 
 ```bash
-# Install development dependencies
+# 1. 安装依赖
+pip install -r requirements.txt
+
+# 2. 配置环境变量
+cp .env.example .env
+# 编辑 .env 文件，配置数据库连接等
+
+# 3. 启动后端服务
+python run.py
+```
+
+后端服务地址: http://127.0.0.1:5000
+
+### 前端启动
+
+```bash
+cd frontend
+
+# 1. 安装依赖
+npm install
+
+# 2. 启动开发服务器
+npm run dev
+```
+
+前端服务地址: http://localhost:3000
+
+## 主要功能
+
+### 数据采集
+- 微博文章爬取
+- 评论数据采集
+- 用户信息获取
+
+### 数据分析
+- 情感分析（正面/中性/负面）
+- 热词提取
+- 地域分布分析
+- 时间趋势分析
+
+### 数据可视化
+- 首页数据概览
+- 热词分析
+- 文章分析
+- 评论分析
+- IP 地域分布
+- 舆情趋势
+- 词云展示
+
+## API 接口
+
+所有数据接口统一返回格式：
+
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": { ... }
+}
+```
+
+### 数据接口列表
+
+| 接口 | 说明 | 缓存时间 |
+|------|------|----------|
+| `GET /getAllData/getHomeData` | 首页数据 | 5分钟 |
+| `GET /getAllData/getTableData` | 表格数据 | 3分钟 |
+| `GET /getAllData/getArticleData` | 文章分析 | 10分钟 |
+| `GET /getAllData/getCommentData` | 评论分析 | 5分钟 |
+| `GET /getAllData/getIPData` | IP 分布 | 10分钟 |
+| `GET /getAllData/getYuqingData` | 舆情分析 | 5分钟 |
+| `GET /getAllData/getContentCloudData` | 词云数据 | 30分钟 |
+| `POST /getAllData/clearCache` | 清空缓存 | - |
+
+## 开发规范
+
+### 代码格式化
+
+```bash
+# 安装开发依赖
 pip install -r requirements-dev.txt
 
-# Setup pre-commit hooks
+# 设置 pre-commit hooks
 pre-commit install
 
-# Format code
+# 手动格式化代码
 black src/ tests/
 isort src/ tests/
 
-# Run linter
+# 代码检查
 ruff check src/
 ```
 
-See [docs/CODING_STANDARDS.md](docs/CODING_STANDARDS.md) for coding conventions.
+### 项目配置
 
-## Deployment
+- **Black**: 代码格式化
+- **isort**: import 排序
+- **Ruff**: 快速代码检查
 
-### Prerequisites
--   Python 3.8+
--   MySQL (Optional, depending on configuration)
+详见 [docs/CODING_STANDARDS.md](docs/CODING_STANDARDS.md)
 
-### Steps
-1.  Run environment check:
-    ```bash
-    python scripts/check_env.py
-    ```
-2.  Deploy (install deps, check db, etc):
-    ```bash
-    python scripts/deploy.py
-    ```
-3.  Start with Gunicorn (Production):
-    ```bash
-    gunicorn -w 4 -b 0.0.0.0:5000 run:app
-    ```
+## 部署
 
-## Scripts
+### 生产环境部署
 
--   `scripts/check_env.py`: Checks if required Python version and packages are installed.
--   `scripts/deploy.py`: Automates simple deployment tasks.
+```bash
+# 1. 环境检查
+python scripts/check_env.py
 
-## Documentation
-See `docs/` for detailed design documents.
+# 2. 执行部署
+python scripts/deploy.py
 
+# 3. 使用 Gunicorn 启动
+pip install gunicorn
+gunicorn -w 4 -b 0.0.0.0:5000 "src.app:app"
+```
+
+### Docker 部署 (可选)
+
+```bash
+# 构建镜像
+docker build -t weibo-analysis .
+
+# 运行容器
+docker run -p 5000:5000 weibo-analysis
+```
+
+## 目录说明
+
+### 数据目录
+
+- `data/` - 数据文件存储
+- `src/data/` - 应用数据文件
+- `cache/` - 运行时缓存
+- `logs/` - 应用日志
+
+### 缓存策略
+
+- 内存缓存: 使用 `utils/cache.py` 实现
+- 缓存时间: 根据数据更新频率设置 3-30 分钟
+- 缓存清理: 通过 `/getAllData/clearCache` 接口手动清理
+
+## 贡献指南
+
+1. Fork 本仓库
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送分支 (`git push origin feature/AmazingFeature`)
+5. 创建 Pull Request
+
+## 许可证
+
+[MIT License](LICENSE.md)
+
+## 联系方式
+
+如有问题或建议，欢迎提交 Issue 或 Pull Request。

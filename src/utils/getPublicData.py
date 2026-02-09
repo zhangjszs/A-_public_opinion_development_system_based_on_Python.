@@ -1,10 +1,13 @@
 import json
+import os
+import re
+import sys
+import logging
+import pandas as pd
 from .query import querys, query_dataframe
 from .cache import cache_result
-import pandas as pd
-import re
-import logging
-import sys
+from config.settings import Config
+
 sys.path.append('model')
 
 logger = logging.getLogger(__name__)

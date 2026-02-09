@@ -7,11 +7,12 @@
 作者：微博舆情分析系统
 """
 
-from flask import Flask, session, render_template, redirect, Blueprint, request
+from flask import Flask, session, render_template, redirect, Blueprint, request, jsonify
 from utils.errorResponse import *
 from utils.password_hasher import hash_password, verify_password, check_password_strength
 from utils.input_validator import validate_username, validate_password, sanitize_input
 from utils.log_sanitizer import SafeLogger
+from utils.jwt_handler import create_token, verify_token, jwt_required
 import time
 from utils.query import querys
 import logging
@@ -30,12 +31,16 @@ def login():
     POST: 处理登录验证（使用密码哈希）
     """
     if request.method == 'POST':
-        # 将表单数据转换为字典格式，便于处理
-        request.form = dict(request.form)
-        
-        # 获取并清理用户输入数据
-        username_raw = request.form.get('username', '').strip()
-        password_raw = request.form.get('password', '').strip()
+        # 支持 JSON 和表单两种格式
+        if request.is_json:
+            data = request.get_json() or {}
+            username_raw = data.get('username', '').strip()
+            password_raw = data.get('password', '').strip()
+        else:
+            # 将表单数据转换为字典格式，便于处理
+            request.form = dict(request.form)
+            username_raw = request.form.get('username', '').strip()
+            password_raw = request.form.get('password', '').strip()
         
         # 输入验证和清理
         username_validation = validate_username(username_raw)
@@ -80,27 +85,52 @@ def login():
                     # 记录登录日志（脱敏处理）
                     logger.info(f"用户登录成功: {username} at {time.strftime('%Y-%m-%d %H:%M:%S')} | IP: {request.remote_addr}")
                     
-                    # 检查是否有待重定向的页面
-                    redirect_url = request.args.get('redirect', '/page/home')
+                    # 判断请求类型：API请求返回JSON，表单请求返回重定向
+                    is_api_request = (
+                        request.is_json or 
+                        request.headers.get('Accept', '').startswith('application/json')
+                    )
                     
-                    # 安全检查：确保重定向URL是内部URL
-                    if redirect_url.startswith('/'):
-                        return redirect(redirect_url, 301)
+                    if is_api_request:
+                        # API请求：返回JWT Token和用户信息
+                        token = create_token(user_info.get('id'), username)
+                        return jsonify({
+                            'code': 200,
+                            'msg': '登录成功',
+                            'data': {
+                                'token': token,
+                                'user': {
+                                    'id': user_info.get('id'),
+                                    'username': username,
+                                    'createTime': str(user_info.get('createTime', ''))
+                                }
+                            }
+                        })
                     else:
-                        # 如果不是内部URL，重定向到默认主页
-                        return redirect('/page/home', 301)
+                        # 表单请求：重定向到目标页面
+                        redirect_url = request.args.get('redirect', '/page/home')
+                        if redirect_url.startswith('/'):
+                            return redirect(redirect_url, 301)
+                        else:
+                            return redirect('/page/home', 301)
                 else:
                     # 密码错误
                     logger.warning(f"登录失败：密码错误 | 用户名: {username} | IP: {request.remote_addr}")
+                    if request.is_json:
+                        return jsonify({'code': 401, 'msg': '用户名或密码错误，请检查输入'}), 401
                     return errorResponse('用户名或密码错误，请检查输入')
             else:
                 # 用户不存在
                 logger.warning(f"登录失败：用户不存在 | 用户名: {username} | IP: {request.remote_addr}")
+                if request.is_json:
+                    return jsonify({'code': 401, 'msg': '用户名或密码错误，请检查输入'}), 401
                 return errorResponse('用户名或密码错误，请检查输入')
                 
         except Exception as e:
             # 异常处理：记录错误日志并返回友好错误信息
             logger.error(f"登录异常: {e} | 用户名: {username} | IP: {request.remote_addr}")
+            if request.is_json:
+                return jsonify({'code': 500, 'msg': '登录过程中发生错误，请稍后再试'}), 500
             return errorResponse('登录过程中发生错误，请稍后再试')
     else:
         # GET请求：渲染登录页面模板
@@ -119,9 +149,18 @@ def register():
         request.form = dict(request.form)
         
         # 获取并清理用户输入数据
-        username_raw = request.form.get('username', '').strip()
-        password_raw = request.form.get('password', '').strip()
-        password_checked_raw = request.form.get('passwordCheked', '').strip()
+        # 支持JSON和表单两种请求格式
+        if request.is_json:
+            data = request.get_json()
+            username_raw = data.get('username', '').strip()
+            password_raw = data.get('password', '').strip()
+            # 兼容新旧字段名：优先使用confirmPassword，回退到passwordCheked
+            password_checked_raw = (data.get('confirmPassword', '') or data.get('passwordCheked', '')).strip()
+        else:
+            request.form = dict(request.form)
+            username_raw = request.form.get('username', '').strip()
+            password_raw = request.form.get('password', '').strip()
+            password_checked_raw = (request.form.get('confirmPassword', '') or request.form.get('passwordCheked', '')).strip()
         
         # 输入验证和清理
         username_validation = validate_username(username_raw)
@@ -182,7 +221,9 @@ def register():
             # 记录注册日志（脱敏处理）
             logger.info(f"新用户注册成功: {username} at {current_time} | IP: {request.remote_addr}")
             
-            # 注册成功后重定向到登录页面
+            # 注册成功后返回
+            if request.is_json:
+                return jsonify({'code': 200, 'msg': '注册成功，请登录'})
             return redirect('/user/login', 301)
             
         except ValueError as e:
@@ -212,7 +253,53 @@ def logOut():
     session.clear()
     
     # 记录登出日志
-    print(f"用户登出: {current_user} at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info(f"用户登出: {current_user} at {time.strftime('%Y-%m-%d %H:%M:%S')} | IP: {request.remote_addr}")
     
-    # 重定向到登录页面
+    # 判断请求类型返回相应格式
+    is_api_request = (
+        request.is_json or 
+        request.headers.get('Accept', '').startswith('application/json')
+    )
+    
+    if is_api_request:
+        return jsonify({'code': 200, 'msg': '登出成功'})
     return redirect('/user/login')
+
+
+@ub.route('/info', methods=['GET'])
+@jwt_required
+def get_user_info():
+    """
+    获取当前登录用户信息
+    需要 JWT Token 认证
+    
+    Returns:
+        JSON: 用户信息
+    """
+    user = request.current_user
+    
+    try:
+        # 从数据库获取最新用户信息
+        users = querys(
+            'SELECT id, username, createTime FROM user WHERE id = %s',
+            [user['user_id']],
+            'select'
+        )
+        
+        if users:
+            user_info = users[0]
+            return jsonify({
+                'code': 200,
+                'msg': 'success',
+                'data': {
+                    'id': user_info.get('id'),
+                    'username': user_info.get('username'),
+                    'createTime': str(user_info.get('createTime', ''))
+                }
+            })
+        else:
+            return jsonify({'code': 404, 'msg': '用户不存在'}), 404
+            
+    except Exception as e:
+        logger.error(f"获取用户信息异常: {e}")
+        return jsonify({'code': 500, 'msg': '获取用户信息失败'}), 500

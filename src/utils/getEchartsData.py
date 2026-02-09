@@ -12,6 +12,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 def get_abs_path(rel_path):
+    # 静态文件在 src/static 目录下
+    src_static = os.path.join(BASE_DIR, 'src', 'static')
+    if os.path.exists(src_static):
+        return os.path.join(src_static, os.path.basename(rel_path))
     return os.path.join(BASE_DIR, rel_path)
 
 
@@ -209,6 +213,8 @@ def getContentCloud():
 
     save_path = get_abs_path('static/contentCloud.jpg')
     plt.savefig(save_path, dpi=500)
+    plt.close()
+    return '/static/contentCloud.jpg'
 
 def getCommentContentCloud():
     text = ''
@@ -245,6 +251,8 @@ def getCommentContentCloud():
 
     save_path = get_abs_path('static/commentCloud.jpg')
     plt.savefig(save_path, dpi=500)
+    plt.close()
+    return '/static/commentCloud.jpg'
 
 def getYuQingCharDataOne():
     hotWordList = getPublicData.getAllCiPingTotal()

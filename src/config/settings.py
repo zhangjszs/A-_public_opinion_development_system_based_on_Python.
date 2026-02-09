@@ -68,10 +68,10 @@ class Config:
     
     # 标准目录配置
     DATA_DIR = os.path.join(BASE_DIR, 'data')
-    MODEL_DIR = os.path.join(BASE_DIR, 'model')
-    STATIC_DIR = os.path.join(BASE_DIR, 'static')
+    MODEL_DIR = os.path.join(BASE_DIR, 'src', 'model')  # 修正为 src/model
+    STATIC_DIR = os.path.join(BASE_DIR, 'src', 'static')
     LOG_DIR = os.path.join(BASE_DIR, 'logs')
-    SPIDER_DIR = os.path.join(BASE_DIR, 'spider')
+    SPIDER_DIR = os.path.join(BASE_DIR, 'src', 'spider')
     CACHE_DIR = os.path.join(BASE_DIR, 'cache')
     
     # 确保关键目录存在

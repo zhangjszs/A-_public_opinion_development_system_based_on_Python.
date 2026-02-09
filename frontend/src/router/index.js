@@ -69,6 +69,18 @@ const routes = [
     ]
   },
   {
+    path: '/403',
+    name: 'Forbidden',
+    component: () => import('@/views/error/403.vue'),
+    meta: { title: '403 - 访问被拒绝', public: true }
+  },
+  {
+    path: '/500',
+    name: 'ServerError',
+    component: () => import('@/views/error/500.vue'),
+    meta: { title: '500 - 服务器错误', public: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/error/404.vue'),
@@ -86,7 +98,7 @@ router.beforeEach((to, from, next) => {
     document.title = `${to.meta.title} - 微博舆情分析系统`
   }
 
-  const whiteList = ['/login', '/register', '/404', '/500']
+  const whiteList = ['/login', '/register', '/404', '/403', '/500']
   if (whiteList.includes(to.path)) {
     next()
     return

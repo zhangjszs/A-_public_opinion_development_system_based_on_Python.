@@ -162,3 +162,46 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# Frontend Development
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Frontend build
+frontend/node_modules/
+frontend/dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Project specific - Cache files
+cache/
+*.cache
+*.pkl
+src/cache/
+
+# Project specific - Data files (keep structure, ignore content)
+# Note: Keep data/ directory but ignore large data files
+data/*.csv
+!data/.gitkeep
+
+# Project specific - Logs
+logs/
+*.log
+
+# Project specific - Temporary files
+*.tmp
+*.temp
+nul
+
+# Project specific - IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+

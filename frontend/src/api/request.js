@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
+import { ElMessage, ElLoading } from 'element-plus'
 import router from '@/router'
 
 // 加载状态管理
@@ -35,6 +35,18 @@ const request = axios.create({
     'Content-Type': 'application/json'
   }
 })
+
+let redirectingToLogin = false
+const forceLogoutAndRedirect = () => {
+  if (redirectingToLogin) return
+  redirectingToLogin = true
+  localStorage.removeItem('weibo_token')
+  localStorage.removeItem('weibo_user')
+  const target = router.currentRoute?.value?.fullPath || '/home'
+  router.replace(`/login?redirect=${encodeURIComponent(target)}`).finally(() => {
+    redirectingToLogin = false
+  })
+}
 
 // 请求拦截器
 request.interceptors.request.use(
@@ -72,15 +84,8 @@ request.interceptors.response.use(
       // 根据错误码处理
       switch (res.code) {
         case 401:
-          ElMessageBox.confirm('登录已过期，请重新登录', '提示', {
-            confirmButtonText: '重新登录',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }).then(() => {
-            localStorage.removeItem('weibo_token')
-            localStorage.removeItem('weibo_user')
-            router.push('/login')
-          })
+          ElMessage.warning('登录已过期，请重新登录')
+          forceLogoutAndRedirect()
           break
         case 403:
           ElMessage.error('没有权限访问该资源')
@@ -106,15 +111,8 @@ request.interceptors.response.use(
       const { status, data } = error.response
       switch (status) {
         case 401:
-          ElMessageBox.confirm('登录已过期，请重新登录', '提示', {
-            confirmButtonText: '重新登录',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }).then(() => {
-            localStorage.removeItem('weibo_token')
-            localStorage.removeItem('weibo_user')
-            router.push('/login')
-          })
+          ElMessage.warning('登录已过期，请重新登录')
+          forceLogoutAndRedirect()
           break
         case 403:
           ElMessage.error('没有权限访问')

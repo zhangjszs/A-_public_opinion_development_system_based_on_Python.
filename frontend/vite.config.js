@@ -19,19 +19,19 @@ export default defineConfig(({ command, mode }) => {
       open: true,
       proxy: {
         '/api': {
-          target: env.VITE_APP_API_BASE_URL || 'http://127.0.0.1:5000',
+          target: env.VITE_APP_API_BASE_URL || 'http://localhost:5000',
           changeOrigin: true,
           secure: false,
           ws: true
           // 不再 rewrite，保留 /api 前缀
         },
         '/user': {
-          target: env.VITE_APP_API_BASE_URL || 'http://127.0.0.1:5000',
+          target: env.VITE_APP_API_BASE_URL || 'http://localhost:5000',
           changeOrigin: true,
           secure: false
         },
         '/getAllData': {
-          target: env.VITE_APP_API_BASE_URL || 'http://127.0.0.1:5000',
+          target: env.VITE_APP_API_BASE_URL || 'http://localhost:5000',
           changeOrigin: true,
           secure: false
         }

@@ -8,34 +8,111 @@ API路由模块
 """
 
 from flask import Blueprint, jsonify, request
-from utils.query import query_dataframe, querys
-from snownlp import SnowNLP
-import pandas as pd
-from datetime import datetime
+from services.article_service import ArticleService
+from services.auth_service import AuthService
+from services.sentiment_service import SentimentService
+from utils.input_validator import validate_password, validate_username, sanitize_input
+from utils.log_sanitizer import SafeLogger
+from config.settings import Config
 import logging
 
-logger = logging.getLogger(__name__)
+logger = SafeLogger('api', logging.INFO)
+article_service = ArticleService()
+auth_service = AuthService()
 
 # 创建API蓝图
 bp = Blueprint('api', __name__, url_prefix='/api')
+
+@bp.route('/auth/login', methods=['POST'])
+def api_login():
+    try:
+        data = request.get_json(silent=True) or {}
+        username_raw = (data.get('username') or '').strip()
+        password_raw = (data.get('password') or '').strip()
+
+        username_validation = validate_username(username_raw)
+        if not username_validation['valid']:
+            return jsonify({'code': 400, 'msg': username_validation['message']}), 400
+
+        password_validation = validate_password(password_raw)
+        if not password_validation['valid']:
+            return jsonify({'code': 400, 'msg': password_validation['message']}), 400
+
+        username = sanitize_input(username_raw, max_length=20)
+        success, msg, payload = auth_service.login(username, password_raw)
+        if success:
+            return jsonify({'code': 200, 'msg': msg, 'data': payload})
+        return jsonify({'code': 401, 'msg': msg}), 401
+    except Exception as e:
+        logger.error(f"API登录异常: {e}")
+        return jsonify({'code': 500, 'msg': '服务器内部错误'}), 500
+
+@bp.route('/auth/register', methods=['POST'])
+def api_register():
+    try:
+        data = request.get_json(silent=True) or {}
+        username_raw = (data.get('username') or '').strip()
+        password_raw = (data.get('password') or '').strip()
+        confirm_raw = (data.get('confirmPassword') or data.get('passwordCheked') or '').strip()
+
+        username_validation = validate_username(username_raw)
+        if not username_validation['valid']:
+            return jsonify({'code': 400, 'msg': username_validation['message']}), 400
+
+        password_validation = validate_password(password_raw)
+        if not password_validation['valid']:
+            return jsonify({'code': 400, 'msg': password_validation['message']}), 400
+
+        username = sanitize_input(username_raw, max_length=20)
+        success, msg = auth_service.register(username, password_raw, confirm_raw)
+        if success:
+            return jsonify({'code': 200, 'msg': msg})
+        return jsonify({'code': 400, 'msg': msg}), 400
+    except Exception as e:
+        logger.error(f"API注册异常: {e}")
+        return jsonify({'code': 500, 'msg': '服务器内部错误'}), 500
+
+@bp.route('/auth/me', methods=['GET'])
+def api_me():
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'code': 401, 'msg': '未认证'}), 401
+    try:
+        from utils.query import querys
+        users = querys(
+            'SELECT id, username, createTime FROM user WHERE id = %s',
+            [user['user_id']],
+            'select'
+        )
+        if not users:
+            return jsonify({'code': 404, 'msg': '用户不存在'}), 404
+        info = users[0]
+        return jsonify({
+            'code': 200,
+            'msg': 'success',
+            'data': {
+                'id': info.get('id'),
+                'username': info.get('username'),
+                'createTime': str(info.get('createTime', ''))
+            }
+        })
+    except Exception as e:
+        logger.error(f"获取当前用户信息异常: {e}")
+        return jsonify({'code': 500, 'msg': '服务器内部错误'}), 500
+
+@bp.route('/auth/logout', methods=['POST'])
+def api_logout():
+    return jsonify({'code': 200, 'msg': 'success'})
 
 @bp.route('/stats/summary', methods=['GET'])
 def get_stats_summary():
     """获取系统统计概览"""
     try:
-        # 获取各表总数
-        article_count = querys('SELECT count(*) as count FROM article', type='select')[0]['count']
-        comment_count = querys('SELECT count(*) as count FROM comments', type='select')[0]['count']
-        user_count = querys('SELECT count(*) as count FROM user', type='select')[0]['count']
-        
+        data = article_service.get_stats_summary()
         return jsonify({
             'code': 200,
             'msg': 'success',
-            'data': {
-                'articles': article_count,
-                'comments': comment_count,
-                'users': user_count
-            }
+            'data': data
         })
     except Exception as e:
         return jsonify({'code': 500, 'msg': str(e)}), 500
@@ -77,47 +154,12 @@ def get_articles():
             if end_time and not re.match(time_pattern, end_time):
                 return jsonify({'code': 400, 'msg': '结束时间格式错误（应为YYYY-MM-DD或YYYY-MM-DD HH:MM:SS）'}), 400
         
-        offset = (page - 1) * limit
-        params = []
-        sql = "SELECT * FROM article WHERE 1=1"
-        count_sql = "SELECT count(*) as count FROM article WHERE 1=1"
-        
-        if keyword:
-            sql += " AND content LIKE %s"
-            count_sql += " AND content LIKE %s"
-            params.append(f"%{keyword}%")
-            
-        if start_time and end_time:
-            sql += " AND created_at BETWEEN %s AND %s"
-            count_sql += " AND created_at BETWEEN %s AND %s"
-            params.append(start_time)
-            params.append(end_time)
-            
-        # 获取总数
-        total = querys(count_sql, params, type='select')[0]['count']
-        
-        # 获取分页数据
-        sql += " ORDER BY created_at DESC LIMIT %s OFFSET %s"
-        params.append(limit)
-        params.append(offset)
-        
-        # 使用querys而不直接用DataFrame，以便于返回JSON
-        articles = querys(sql, params, type='select')
-        
-        # 简单处理日期格式
-        for item in articles:
-            if 'created_at' in item and item['created_at']:
-                item['created_at'] = str(item['created_at'])
+        result = article_service.get_articles(page, limit, keyword, start_time, end_time)
                 
         return jsonify({
             'code': 200,
             'msg': 'success',
-            'data': {
-                'total': total,
-                'page': page,
-                'limit': limit,
-                'list': articles
-            }
+            'data': result
         })
         
     except Exception as e:
@@ -162,7 +204,6 @@ def analyze_sentiment():
             })
         
         # 同步模式
-        from services.sentiment_service import SentimentService
         result = SentimentService.analyze(text, mode)
             
         return jsonify({
@@ -280,12 +321,18 @@ def refresh_data():
         page_num: 爬取页数（默认3页）
     """
     try:
+        user = getattr(request, 'current_user', None)
+        if Config.ADMIN_USERS and (not user or user.get('username') not in Config.ADMIN_USERS):
+            return jsonify({'code': 403, 'msg': '权限不足'}), 403
+        # 这里的逻辑也应该移到 ArticleService 或 SpiderService
+        # 为了演示，我们假设 ArticleService 暂时处理不了复杂的爬虫逻辑
+        # 或者我们可以创建一个 SpiderService
         import requests
         import os
         import time
         import random
         from datetime import datetime
-        from utils.query import execute_sql
+        from utils.query import querys
         
         data = request.json or {}
         page_num = min(int(data.get('page_num', 3)), 5)  # 最多5页
@@ -354,12 +401,12 @@ def refresh_data():
                     ON DUPLICATE KEY UPDATE 
                     likeNum=VALUES(likeNum), commentsLen=VALUES(commentsLen)"""
                 
-                execute_sql(sql, (
+                querys(sql, [
                     a['id'], a['likeNum'], a['commentsLen'], a['reposts_count'],
                     a['region'], a['content'], a['contentLen'], a['created_at'],
                     a['type'], a['detailUrl'], a['authorAvatar'], a['authorName'],
                     a['authorDetail'], a['isVip']
-                ))
+                ])
                 imported += 1
             except Exception as e:
                 logger.warning(f"导入文章失败: {e}")
@@ -392,7 +439,9 @@ def refresh_data():
 def get_today_stats():
     """获取今日数据统计"""
     try:
+        # TODO: Move to ArticleService or StatsService
         from datetime import date
+        from utils.query import querys
         today = date.today().strftime('%Y-%m-%d')
         
         # 今日文章数
@@ -428,4 +477,3 @@ def get_today_stats():
     except Exception as e:
         logger.error(f"获取今日统计失败: {e}")
         return jsonify({'code': 500, 'msg': str(e)}), 500
-

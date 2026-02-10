@@ -15,15 +15,11 @@ Flask-DebugToolbar~=0.16.0
 bcrypt~=4.2.0
 PyJWT~=2.8.0
 Flask-WTF~=1.2.1
-# 异步任务队列 - Celery和Redis
 celery[redis]~=5.3.6
 redis~=5.0.1
-# 数据校验和熔断器
 pydantic~=2.5.3
 circuitbreaker~=2.0.0
-# 布隆过滤器去重
 pybloom-live~=4.0.0
-# 其他工具
 python-dotenv~=1.0.0
 prometheus-client~=0.19.0
 flask-cors==6.0.0

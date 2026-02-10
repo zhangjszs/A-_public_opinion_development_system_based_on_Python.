@@ -2,9 +2,11 @@
   <div class="login-container">
     <div class="login-box">
       <div class="login-header">
-        <img src="@/assets/images/logo.png" alt="Logo" class="logo" />
-        <h1>微博舆情分析系统</h1>
-        <p>登录您的账户</p>
+        <div class="logo-wrapper">
+          <img src="@/assets/images/logo.png" alt="Logo" class="logo" />
+        </div>
+        <h1>欢迎回来</h1>
+        <p>登录微博舆情分析系统</p>
       </div>
       
       <el-form
@@ -19,6 +21,7 @@
             v-model="loginForm.username"
             placeholder="请输入用户名"
             prefix-icon="User"
+            class="custom-input"
           />
         </el-form-item>
         
@@ -29,9 +32,15 @@
             placeholder="请输入密码"
             prefix-icon="Lock"
             show-password
+            class="custom-input"
             @keyup.enter="handleLogin"
           />
         </el-form-item>
+        
+        <div class="form-options">
+          <el-checkbox v-model="rememberMe">记住我</el-checkbox>
+          <router-link to="/forgot-password" class="forgot-link">忘记密码？</router-link>
+        </div>
         
         <el-form-item>
           <el-button
@@ -65,6 +74,7 @@ const userStore = useUserStore()
 
 const loginFormRef = ref(null)
 const loading = ref(false)
+const rememberMe = ref(false)
 
 const loginForm = reactive({
   username: '',
@@ -112,59 +122,113 @@ const handleLogin = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-color: #F8FAFC;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
   padding: 20px;
 }
 
 .login-box {
   width: 100%;
-  max-width: 420px;
-  background: #fff;
-  border-radius: 12px;
-  padding: 40px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  max-width: 440px;
+  background: $surface-color;
+  border-radius: $border-radius-large;
+  padding: 48px;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1); // Strong shadow for lift
+  transition: transform 0.3s ease;
 }
 
 .login-header {
   text-align: center;
   margin-bottom: 40px;
   
+  .logo-wrapper {
+    width: 64px;
+    height: 64px;
+    background: $primary-light;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+  }
+  
   .logo {
-    width: 80px;
+    width: 40px;
     height: auto;
-    margin-bottom: 16px;
   }
   
   h1 {
     font-size: 24px;
-    font-weight: bold;
-    color: #333;
+    font-weight: 700;
+    color: $text-primary;
     margin-bottom: 8px;
+    letter-spacing: -0.5px;
   }
   
   p {
-    color: #999;
+    color: $text-secondary;
     font-size: 14px;
   }
 }
 
 .login-form {
+  .custom-input {
+    :deep(.el-input__wrapper) {
+      padding: 12px 16px;
+      box-shadow: 0 0 0 1px $border-color inset !important;
+      
+      &.is-focus {
+        box-shadow: 0 0 0 2px rgba($primary-color, 0.2) inset, 0 0 0 1px $primary-color inset !important;
+      }
+    }
+  }
+
   .login-btn {
     width: 100%;
-    height: 44px;
+    height: 48px;
     font-size: 16px;
+    font-weight: 600;
+    margin-top: 8px;
+    box-shadow: 0 4px 6px -1px rgba($primary-color, 0.3);
+    
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 8px -1px rgba($primary-color, 0.4);
+    }
+  }
+}
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  
+  .forgot-link {
+    font-size: 14px;
+    color: $primary-color;
+    
+    &:hover {
+      text-decoration: underline;
+    }
   }
 }
 
 .login-footer {
   text-align: center;
-  margin-top: 24px;
+  margin-top: 32px;
   font-size: 14px;
-  color: #999;
+  color: $text-secondary;
   
   a {
-    color: #667eea;
-    font-weight: 500;
+    color: $primary-color;
+    font-weight: 600;
     margin-left: 4px;
     
     &:hover {

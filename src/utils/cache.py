@@ -14,10 +14,12 @@ from threading import Lock
 
 class MemoryCache:
     """内存缓存类"""
-    def __init__(self, default_timeout=300):  # 默认5分钟过期
+    def __init__(self, default_timeout=300, max_size=2000):  # 默认5分钟过期
         self.cache = {}
         self.timestamps = {}
+        self.expires = {}
         self.default_timeout = default_timeout
+        self.max_size = max_size
         self.lock = Lock()
     
     def _generate_key(self, func_name, args, kwargs):
@@ -29,26 +31,37 @@ class MemoryCache:
         """获取缓存"""
         with self.lock:
             if key in self.cache:
-                timestamp = self.timestamps.get(key, 0)
-                if time.time() - timestamp < self.default_timeout:
+                now = time.time()
+                expire_at = self.expires.get(key, 0)
+                if now < expire_at:
+                    self.timestamps[key] = now
                     return self.cache[key]
-                else:
-                    # 过期删除
-                    del self.cache[key]
-                    del self.timestamps[key]
+                del self.cache[key]
+                self.timestamps.pop(key, None)
+                self.expires.pop(key, None)
             return None
     
     def set(self, key, value, timeout=None):
         """设置缓存"""
         with self.lock:
+            now = time.time()
+            ttl = timeout if timeout is not None else self.default_timeout
+            ttl = max(1, int(ttl))
             self.cache[key] = value
-            self.timestamps[key] = time.time()
+            self.timestamps[key] = now
+            self.expires[key] = now + ttl
+            if len(self.cache) > self.max_size:
+                oldest_key = min(self.timestamps, key=self.timestamps.get)
+                self.cache.pop(oldest_key, None)
+                self.timestamps.pop(oldest_key, None)
+                self.expires.pop(oldest_key, None)
     
     def clear(self):
         """清空缓存"""
         with self.lock:
             self.cache.clear()
             self.timestamps.clear()
+            self.expires.clear()
     
     def size(self):
         """获取缓存大小"""

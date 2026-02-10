@@ -160,11 +160,19 @@ def getCommentsDataFrame():
 @cache_result(timeout=600)
 def getTopArticlesByLikes(limit=10):
     """获取点赞最多的文章"""
-    return query_dataframe(f'''
-        SELECT * FROM article 
-        ORDER BY likeNum DESC 
-        LIMIT {limit}
-    ''')
+    try:
+        limit = int(limit)
+    except Exception:
+        limit = 10
+    limit = max(1, min(limit, 100))
+    return query_dataframe(
+        '''
+        SELECT * FROM article
+        ORDER BY likeNum DESC
+        LIMIT %s
+        ''',
+        params=[limit],
+    )
 
 @cache_result(timeout=600)
 def getArticlesByDateRange(start_date, end_date):

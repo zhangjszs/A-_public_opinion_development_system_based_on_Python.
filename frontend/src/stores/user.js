@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { login, logout } from '@/api/auth'
+import { login, logout, getUserInfo } from '@/api/auth'
 import router from '@/router'
 
 export const useUserStore = defineStore('user', () => {
@@ -40,6 +40,25 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  async function initAuth() {
+    if (!token.value) return
+    try {
+      const res = await getUserInfo()
+      if (res.code === 200) {
+        userInfo.value = res.data
+        localStorage.setItem('weibo_user', JSON.stringify(userInfo.value))
+        return
+      }
+    } catch (e) {
+      token.value = ''
+      userInfo.value = {}
+      localStorage.removeItem('weibo_token')
+      localStorage.removeItem('weibo_user')
+      const target = router.currentRoute?.value?.fullPath || '/home'
+      router.replace(`/login?redirect=${encodeURIComponent(target)}`)
+    }
+  }
+
   function updateUserInfo(info) {
     userInfo.value = { ...userInfo.value, ...info }
     localStorage.setItem('weibo_user', JSON.stringify(userInfo.value))
@@ -52,6 +71,7 @@ export const useUserStore = defineStore('user', () => {
     username,
     doLogin,
     doLogout,
+    initAuth,
     updateUserInfo
   }
 })

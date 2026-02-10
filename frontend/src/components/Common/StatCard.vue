@@ -1,14 +1,20 @@
 <template>
-  <el-card class="stat-card" :body-style="{ padding: '20px' }">
+  <el-card class="stat-card" :body-style="{ padding: '24px' }">
     <div class="stat-content">
-      <div class="stat-icon" :style="{ backgroundColor: bgColor }">
-        <el-icon :size="24" :color="iconColor">
+      <div 
+        class="stat-icon" 
+        :style="{ 
+          backgroundColor: bgColor,
+          color: iconColor 
+        }"
+      >
+        <el-icon :size="24">
           <component :is="icon" />
         </el-icon>
       </div>
       <div class="stat-info">
-        <div class="stat-value">{{ formattedValue }}</div>
         <div class="stat-label">{{ label }}</div>
+        <div class="stat-value" :title="formattedValue">{{ formattedValue }}</div>
       </div>
     </div>
     <div v-if="$slots.footer" class="stat-footer">
@@ -35,11 +41,11 @@ const props = defineProps({
   },
   bgColor: {
     type: String,
-    default: '#e3f2fd'
+    default: '#EFF6FF' // Blue 50
   },
   iconColor: {
     type: String,
-    default: '#1976d2'
+    default: '#2563EB' // Blue 600
   }
 })
 
@@ -53,55 +59,66 @@ const formattedValue = computed(() => {
 
 <style lang="scss" scoped>
 .stat-card {
-  border-left: 4px solid;
   height: 100%;
-  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: none !important;
   
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
+  // Hover effect is handled globally by .el-card in index.scss
 }
 
 .stat-content {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
 }
 
 .stat-icon {
   width: 56px;
   height: 56px;
-  border-radius: 8px;
+  border-radius: 16px; // Soft square
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover .stat-icon {
+  transform: scale(1.05);
 }
 
 .stat-info {
   flex: 1;
   min-width: 0;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #333;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #999;
-  margin-top: 4px;
+  color: $text-secondary;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: $text-primary;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'SF Pro Display', $font-family-base; // Use display font if available
+  letter-spacing: -0.5px;
 }
 
 .stat-footer {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid $border-color-light;
 }
 </style>

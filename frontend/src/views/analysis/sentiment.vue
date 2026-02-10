@@ -1,40 +1,40 @@
 <template>
   <div class="sentiment-analysis-container">
-    <el-row :gutter="20">
+    <el-row :gutter="24" class="stat-row">
       <el-col :xs="24" :sm="8">
-        <el-card class="stat-card">
-          <el-statistic title="正面评价" :value="sentimentStats.positive" suffix="条">
-            <template #suffix>
-              <el-icon color="#67c23a"><CircleCheck /></el-icon>
-            </template>
-          </el-statistic>
-        </el-card>
+        <StatCard
+          :value="sentimentStats.positive"
+          label="正面评价"
+          icon="CircleCheck"
+          bg-color="#ECFDF5"
+          icon-color="#059669"
+        />
       </el-col>
       <el-col :xs="24" :sm="8">
-        <el-card class="stat-card">
-          <el-statistic title="中性评价" :value="sentimentStats.neutral" suffix="条">
-            <template #suffix>
-              <el-icon color="#909399"><Remove /></el-icon>
-            </template>
-          </el-statistic>
-        </el-card>
+        <StatCard
+          :value="sentimentStats.neutral"
+          label="中性评价"
+          icon="Remove"
+          bg-color="#F1F5F9"
+          icon-color="#64748B"
+        />
       </el-col>
       <el-col :xs="24" :sm="8">
-        <el-card class="stat-card">
-          <el-statistic title="负面评价" :value="sentimentStats.negative" suffix="条">
-            <template #suffix>
-              <el-icon color="#f56c6c"><CircleClose /></el-icon>
-            </template>
-          </el-statistic>
-        </el-card>
+        <StatCard
+          :value="sentimentStats.negative"
+          label="负面评价"
+          icon="CircleClose"
+          bg-color="#FEF2F2"
+          icon-color="#DC2626"
+        />
       </el-col>
     </el-row>
     
-    <el-row :gutter="20">
+    <el-row :gutter="24" class="mb-4">
       <el-col :xs="24" :lg="12">
         <el-card class="chart-card">
           <template #header>
-            <span>舆情情感分布</span>
+            <span class="header-title">舆情情感分布</span>
           </template>
           <BaseChart
             ref="sentimentPieRef"
@@ -47,7 +47,7 @@
       <el-col :xs="24" :lg="12">
         <el-card class="chart-card">
           <template #header>
-            <span>舆情趋势变化</span>
+            <span class="header-title">舆情趋势变化</span>
           </template>
           <BaseChart
             ref="trendChartRef"
@@ -58,11 +58,11 @@
       </el-col>
     </el-row>
     
-    <el-row :gutter="20">
+    <el-row :gutter="24" class="mb-4">
       <el-col :span="24">
         <el-card class="chart-card">
           <template #header>
-            <span>关键词云</span>
+            <span class="header-title">关键词云</span>
           </template>
           <div class="keywords-cloud">
             <div
@@ -70,8 +70,9 @@
               :key="index"
               class="keyword-item"
               :style="{
-                fontSize: (12 + keyword.weight) + 'px',
-                color: keyword.color
+                fontSize: Math.min(Math.max(12 + keyword.weight, 12), 32) + 'px',
+                color: keyword.color,
+                opacity: 0.8 + (keyword.weight / 200)
               }"
             >
               {{ keyword.text }}
@@ -81,13 +82,13 @@
       </el-col>
     </el-row>
     
-    <el-row :gutter="20">
+    <el-row :gutter="24">
       <el-col :span="24">
         <el-card class="chart-card">
           <template #header>
             <div class="card-header">
-              <span>舆情详情列表</span>
-              <el-button type="primary" @click="loadData">
+              <span class="header-title">舆情详情列表</span>
+              <el-button type="primary" plain size="small" :icon="Refresh" @click="loadData">
                 刷新数据
               </el-button>
             </div>
@@ -95,22 +96,28 @@
           <el-table
             :data="sentimentList"
             :loading="loading"
-            stripe
-            border
             style="width: 100%"
           >
-            <el-table-column prop="id" label="ID" width="80" />
+            <el-table-column prop="id" label="ID" width="80" align="center" />
             <el-table-column prop="content" label="内容" min-width="300" show-overflow-tooltip />
             <el-table-column prop="sentiment" label="情感倾向" width="120" align="center">
               <template #default="{ row }">
-                <el-tag :type="getSentimentType(row.sentiment)">
+                <el-tag :type="getSentimentType(row.sentiment)" effect="plain" round>
                   {{ row.sentiment }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="score" label="情感分数" width="100" align="center" />
-            <el-table-column prop="source" label="来源" width="150" />
-            <el-table-column prop="time" label="时间" width="180" />
+            <el-table-column prop="score" label="情感分数" width="120" align="center">
+              <template #default="{ row }">
+                <span :class="getScoreClass(row.score)">{{ row.score }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="source" label="来源" width="150" align="center">
+               <template #default="{ row }">
+                <el-tag type="info" size="small">{{ row.source }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="time" label="时间" width="180" align="center" />
           </el-table>
           
           <div class="pagination-wrapper">
@@ -132,8 +139,9 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { CircleCheck, Remove, CircleClose } from '@element-plus/icons-vue'
+import { CircleCheck, Remove, CircleClose, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import StatCard from '@/components/Common/StatCard.vue'
 import BaseChart from '@/components/Charts/BaseChart.vue'
 import { getYuqingData } from '@/api/stats'
 
@@ -157,45 +165,97 @@ const trendChartRef = ref(null)
 
 const sentimentPieOptions = computed(() => ({
   tooltip: { trigger: 'item' },
+  legend: {
+    orient: 'vertical',
+    right: 10,
+    textStyle: { color: '#64748B' }
+  },
   series: [{
     type: 'pie',
     radius: ['40%', '70%'],
+    itemStyle: {
+      borderRadius: 10,
+      borderColor: '#fff',
+      borderWidth: 2
+    },
+    label: { show: false },
     data: [
-      { value: sentimentStats.value.positive, name: '正面', itemStyle: { color: '#67c23a' } },
-      { value: sentimentStats.value.neutral, name: '中性', itemStyle: { color: '#909399' } },
-      { value: sentimentStats.value.negative, name: '负面', itemStyle: { color: '#f56c6c' } }
+      { value: sentimentStats.value.positive, name: '正面', itemStyle: { color: '#10B981' } }, // Emerald 500
+      { value: sentimentStats.value.neutral, name: '中性', itemStyle: { color: '#64748B' } }, // Slate 500
+      { value: sentimentStats.value.negative, name: '负面', itemStyle: { color: '#EF4444' } }  // Red 500
     ]
   }]
 }))
 
 const trendChartOptions = computed(() => ({
-  tooltip: { trigger: 'axis' },
+  tooltip: { 
+    trigger: 'axis',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderColor: '#E2E8F0',
+    textStyle: { color: '#1E293B' }
+  },
+  grid: {
+    left: '3%',
+    right: '4%',
+    bottom: '3%',
+    containLabel: true
+  },
   xAxis: {
     type: 'category',
-    data: trendData.value.dates || []
+    data: trendData.value.dates || [],
+    axisLine: { lineStyle: { color: '#E2E8F0' } },
+    axisLabel: { color: '#64748B' }
   },
-  yAxis: { type: 'value' },
+  yAxis: { 
+    type: 'value',
+    splitLine: { lineStyle: { color: '#F1F5F9' } },
+    axisLabel: { color: '#64748B' }
+  },
   series: [
     {
       name: '正面',
       type: 'line',
       smooth: true,
+      symbol: 'none',
       data: trendData.value.positive || [],
-      itemStyle: { color: '#67c23a' }
+      itemStyle: { color: '#10B981' },
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [{ offset: 0, color: 'rgba(16, 185, 129, 0.2)' }, { offset: 1, color: 'rgba(16, 185, 129, 0)' }]
+        }
+      }
     },
     {
       name: '中性',
       type: 'line',
       smooth: true,
+      symbol: 'none',
       data: trendData.value.neutral || [],
-      itemStyle: { color: '#909399' }
+      itemStyle: { color: '#64748B' },
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [{ offset: 0, color: 'rgba(100, 116, 139, 0.2)' }, { offset: 1, color: 'rgba(100, 116, 139, 0)' }]
+        }
+      }
     },
     {
       name: '负面',
       type: 'line',
       smooth: true,
+      symbol: 'none',
       data: trendData.value.negative || [],
-      itemStyle: { color: '#f56c6c' }
+      itemStyle: { color: '#EF4444' },
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [{ offset: 0, color: 'rgba(239, 68, 68, 0.2)' }, { offset: 1, color: 'rgba(239, 68, 68, 0)' }]
+        }
+      }
     }
   ]
 }))
@@ -206,6 +266,12 @@ const getSentimentType = (sentiment) => {
   if (lower.includes('正面') || lower.includes('positive')) return 'success'
   if (lower.includes('负面') || lower.includes('negative')) return 'danger'
   return 'info'
+}
+
+const getScoreClass = (score) => {
+  if (score > 0.6) return 'text-success'
+  if (score < 0.4) return 'text-danger'
+  return 'text-muted'
 }
 
 const loadData = async () => {
@@ -248,18 +314,25 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .sentiment-analysis-container {
-  .stat-card {
-    margin-bottom: 20px;
-    text-align: center;
+  .stat-row {
+    margin-bottom: 24px;
   }
   
   .chart-card {
-    margin-bottom: 20px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
     
     .card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+    
+    .header-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: $text-primary;
     }
   }
   
@@ -269,24 +342,31 @@ onMounted(() => {
     justify-content: center;
     align-items: center;
     gap: 16px;
-    padding: 20px;
+    padding: 32px;
+    min-height: 200px;
     
     .keyword-item {
-      padding: 8px 16px;
-      border-radius: 4px;
-      background: rgba(0, 0, 0, 0.05);
+      padding: 6px 16px;
+      border-radius: 20px;
+      background: rgba(241, 245, 249, 0.5); // Slate 100
       cursor: pointer;
       transition: all 0.3s ease;
+      font-weight: 500;
       
       &:hover {
-        transform: scale(1.1);
-        background: rgba(0, 0, 0, 0.1);
+        transform: scale(1.1) translateY(-2px);
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       }
     }
   }
   
+  .text-success { color: $success-color; font-weight: bold; }
+  .text-danger { color: $danger-color; font-weight: bold; }
+  .text-muted { color: $text-secondary; }
+  
   .pagination-wrapper {
-    margin-top: 20px;
+    margin-top: 24px;
     display: flex;
     justify-content: flex-end;
   }

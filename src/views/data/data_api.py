@@ -10,6 +10,7 @@ from flask import Blueprint, jsonify, request
 from utils import getHomeData, getTableData, getEchartsData
 from utils.cache import cache_result, memory_cache
 from utils.query import query_dataframe
+from config.settings import Config
 import logging
 import hashlib
 import threading
@@ -562,6 +563,9 @@ def clear_cache():
     清空所有缓存（管理接口）
     """
     try:
+        user = getattr(request, 'current_user', None)
+        if Config.ADMIN_USERS and (not user or user.get('username') not in Config.ADMIN_USERS):
+            return error_response('权限不足', 403)
         memory_cache.clear()
         return success_response({'message': '缓存已清空'})
     except Exception as e:

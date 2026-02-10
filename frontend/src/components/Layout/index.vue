@@ -42,13 +42,15 @@ const toggleSidebar = () => {
 .layout-container {
   height: 100vh;
   overflow: hidden;
+  background-color: $background-color;
 }
 
 .sidebar {
-  background-color: #001529;
-  transition: width 0.3s ease;
+  background-color: #0F172A; // Slate 900
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   flex-shrink: 0;
+  border-right: 1px solid #1E293B; // Slate 800
   
   &.is-collapsed {
     width: 64px !important;
@@ -56,18 +58,38 @@ const toggleSidebar = () => {
 }
 
 .header {
-  background: #fff;
   padding: 0;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
-  height: 60px;
-  line-height: 60px;
+  background: $surface-color;
+  box-shadow: $box-shadow-sm;
+  height: 64px;
+  line-height: 64px;
   flex-shrink: 0;
+  z-index: 10;
 }
 
 .main-content {
-  background: #f0f2f5;
-  padding: 20px;
+  background: $background-color;
+  padding: 24px;
   overflow: auto;
-  height: calc(100vh - 60px);
+  height: calc(100vh - 64px);
+  
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #CBD5E1; // Slate 300
+    border-radius: 4px;
+    
+    &:hover {
+      background: #94A3B8; // Slate 400
+    }
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }
 </style>

@@ -71,7 +71,6 @@ class DatabasePool:
             'port': port,
             'charset': Config.DB_CHARSET,            # 支持emoji和特殊字符
             'autocommit': True,                      # 自动提交事务
-            'client_flag': CLIENT.MULTI_STATEMENTS,  # 支持多语句执行
             'cursorclass': pymysql.cursors.DictCursor # 返回字典格式结果
         }
         

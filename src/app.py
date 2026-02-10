@@ -13,7 +13,7 @@
 - 安全防护：路径拦截，静态文件保护
 """
 
-from flask import Flask, session, render_template, redirect, request, jsonify
+from flask import Flask, session, render_template, redirect, request, jsonify, g
 from flask_wtf.csrf import CSRFProtect
 from flask_cors import CORS
 import re
@@ -24,6 +24,8 @@ from datetime import datetime
 
 # 导入统一配置模块
 from config.settings import Config
+from utils.jwt_handler import verify_token
+from database import db_session
 
 # 确保日志目录存在
 os.makedirs(Config.LOG_DIR, exist_ok=True)
@@ -64,17 +66,17 @@ csrf = CSRFProtect(app)
 # 初始化CORS支持（解决跨域问题）
 CORS(app, resources={
     r"/api/*": {
-        "origins": "*",
+        "origins": Config.ALLOWED_ORIGINS,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     },
     r"/getAllData/*": {
-        "origins": "*",
+        "origins": Config.ALLOWED_ORIGINS,
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     },
     r"/user/*": {
-        "origins": "*",
+        "origins": Config.ALLOWED_ORIGINS,
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     }
@@ -87,6 +89,7 @@ app.config['WTF_CSRF_SSL_STRICT'] = False  # 非生产环境不强制HTTPS
 
 # ===== 应用配置 =====
 # 从环境变量加载安全密钥（使用 config/settings.py 统一管理）
+Config.validate()
 app.secret_key = Config.SECRET_KEY
 
 # 根据环境变量设置调试模式
@@ -143,7 +146,6 @@ try:
     
     # 排除API蓝图的CSRF保护（允许JSON请求）
     csrf.exempt(api.bp)
-    csrf.exempt(user.ub)
     csrf.exempt(db)
     
     logger.info("蓝图注册完成: page, user, api, data")
@@ -184,6 +186,22 @@ def log_request_info():
     ip = get_client_ip()
     logger.info(f"请求: {request.method} {request.path} | 用户: {user} | IP: {ip}")
 
+def _get_bearer_token():
+    auth_header = request.headers.get('Authorization', '')
+    if auth_header.startswith('Bearer '):
+        return auth_header[7:].strip()
+    return None
+
+def _require_jwt_auth():
+    token = _get_bearer_token()
+    if not token:
+        return jsonify({'error': 'Unauthorized', 'message': '缺少认证令牌', 'code': 401}), 401
+    user_info = verify_token(token)
+    if not user_info:
+        return jsonify({'error': 'Unauthorized', 'message': '认证令牌无效或已过期', 'code': 401}), 401
+    request.current_user = user_info
+    g.current_user = user_info
+    return None
 
 # ===== 路由定义 =====
 @app.route('/')
@@ -328,6 +346,7 @@ def before_request():
     public_endpoints = [
         '/user/login',      # 登录页面
         '/user/register',   # 注册页面
+        '/user/info',       # JWT保护的用户信息
         '/health',          # 健康检查
         '/'                 # 首页（会重定向到登录）
     ]
@@ -339,26 +358,24 @@ def before_request():
     if request.path.startswith('/api/'):
         # 允许的公开API
         public_apis = [
-            '/api/stats/today',
-            '/api/spider/refresh',
-            '/api/stats/summary'
+            '/api/auth/login',
+            '/api/auth/register'
         ]
         
         # 检查是否是公开API
         if request.path in public_apis or any(request.path.startswith(p) for p in public_apis):
             return None
             
-        # 其他API需要登录
-        if not is_user_logged_in():
-            return jsonify({
-                'error': 'Unauthorized',
-                'message': '请先登录',
-                'code': 401
-            }), 401
+        auth_result = _require_jwt_auth()
+        if auth_result is not None:
+            return auth_result
         return None
     
     # 数据API端点 - 允许公开访问（用于Vue前端）
     if request.path.startswith('/getAllData/'):
+        auth_result = _require_jwt_auth()
+        if auth_result is not None:
+            return auth_result
         return None
     
     # 其他页面需要登录验证
@@ -409,6 +426,10 @@ def after_request(response):
         logger.warning(f"响应错误: {response.status_code} | 路径: {request.path}")
     
     return response
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    db_session.remove()
 
 
 # ===== 错误处理器 =====

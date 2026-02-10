@@ -2,7 +2,7 @@ import request from '@/api'
 
 export function login(username, password) {
   return request({
-    url: '/user/login',
+    url: '/api/auth/login',
     method: 'post',
     data: { username, password }
   })
@@ -10,7 +10,7 @@ export function login(username, password) {
 
 export function register(username, password, confirmPassword) {
   return request({
-    url: '/user/register',
+    url: '/api/auth/register',
     method: 'post',
     data: { username, password, confirmPassword }
   })
@@ -18,14 +18,14 @@ export function register(username, password, confirmPassword) {
 
 export function logout() {
   return request({
-    url: '/user/logOut',
-    method: 'get'
+    url: '/api/auth/logout',
+    method: 'post'
   })
 }
 
 export function getUserInfo() {
   return request({
-    url: '/user/info',
+    url: '/api/auth/me',
     method: 'get'
   })
 }

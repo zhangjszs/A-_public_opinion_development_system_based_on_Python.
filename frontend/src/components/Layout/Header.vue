@@ -7,20 +7,20 @@
       </el-icon>
       <el-breadcrumb separator="/">
         <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-        <el-breadcrumb-item>{{ currentRoute.meta?.title || '' }}</el-breadcrumb-item>
+        <el-breadcrumb-item v-if="currentRoute.path !== '/'">{{ currentRoute.meta?.title || '' }}</el-breadcrumb-item>
       </el-breadcrumb>
     </div>
     <div class="header-right">
       <el-dropdown trigger="click" @command="handleCommand">
         <span class="user-info">
-          <el-avatar :size="32" :src="userInfo.avatar">
+          <el-avatar :size="32" :src="userInfo.avatar" class="user-avatar">
             {{ username.charAt(0).toUpperCase() }}
           </el-avatar>
           <span class="username">{{ username }}</span>
           <el-icon class="el-icon--right"><ArrowDown /></el-icon>
         </span>
         <template #dropdown>
-          <el-dropdown-menu>
+          <el-dropdown-menu class="user-dropdown">
             <el-dropdown-item command="theme">
               <el-icon><component :is="isDark ? 'Sunny' : 'Moon'" /></el-icon>
               {{ isDark ? '切换亮色模式' : '切换暗黑模式' }}
@@ -64,7 +64,8 @@ const handleCommand = (command) => {
       ElMessageBox.confirm('确定要退出登录吗？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'warning',
+        title: '提示'
       }).then(() => {
         userStore.doLogout()
       })
@@ -78,23 +79,43 @@ const handleCommand = (command) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  background: #fff;
-  height: 100%;
+  padding: 0 24px;
+  background: $surface-color;
+  height: 64px;
+  border-bottom: 1px solid $border-color-light;
+  transition: all 0.3s ease;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
   
   .collapse-btn {
     font-size: 20px;
     cursor: pointer;
-    color: #606266;
+    color: $text-secondary;
+    transition: color 0.2s;
     
     &:hover {
-      color: #409eff;
+      color: $primary-color;
+    }
+  }
+  
+  :deep(.el-breadcrumb) {
+    font-size: 14px;
+    
+    .el-breadcrumb__inner {
+      color: $text-secondary;
+      
+      &.is-link:hover {
+        color: $primary-color;
+      }
+    }
+    
+    .el-breadcrumb__item:last-child .el-breadcrumb__inner {
+      color: $text-primary;
+      font-weight: 500;
     }
   }
 }
@@ -106,18 +127,30 @@ const handleCommand = (command) => {
   .user-info {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
     
     &:hover {
-      background-color: #f5f7fa;
+      background-color: $background-color;
+    }
+    
+    .user-avatar {
+      background-color: $primary-light;
+      color: $primary-color;
+      font-weight: 600;
     }
     
     .username {
       font-size: 14px;
-      color: #606266;
+      color: $text-primary;
+      font-weight: 500;
+    }
+    
+    .el-icon--right {
+      color: $text-secondary;
     }
   }
 }

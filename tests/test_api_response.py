@@ -1,0 +1,29 @@
+from flask import Flask, g
+
+from utils.api_response import ok, error
+
+
+def test_ok_includes_timestamp_and_request_id():
+    app = Flask(__name__)
+    with app.test_request_context("/"):
+        g.request_id = "rid_123"
+        res = ok({"a": 1})
+        payload = res.get_json()
+        assert payload["code"] == 200
+        assert payload["msg"] == "success"
+        assert payload["data"] == {"a": 1}
+        assert "timestamp" in payload
+        assert payload["request_id"] == "rid_123"
+
+
+def test_error_includes_timestamp_and_request_id():
+    app = Flask(__name__)
+    with app.test_request_context("/"):
+        g.request_id = "rid_456"
+        res = error("bad", code=400)
+        payload = res.get_json()
+        assert payload["code"] == 400
+        assert payload["msg"] == "bad"
+        assert "timestamp" in payload
+        assert payload["request_id"] == "rid_456"
+

@@ -7,12 +7,27 @@ class ArticleRepository(BaseRepository):
     def __init__(self):
         super().__init__(Article)
 
-    def find_with_filter(self, keyword: str = '', start_time: str = '', end_time: str = '', limit: int = 10, offset: int = 0) -> Tuple[List[Dict[str, Any]], int]:
+    def find_with_filter(
+        self,
+        keyword: str = '',
+        start_time: str = '',
+        end_time: str = '',
+        article_type: str = '',
+        region: str = '',
+        limit: int = 10,
+        offset: int = 0,
+    ) -> Tuple[List[Dict[str, Any]], int]:
         query = self.session.query(Article)
         
         if keyword:
             query = query.filter(Article.content.like(f"%{keyword}%"))
             
+        if article_type:
+            query = query.filter(Article.type == article_type)
+
+        if region:
+            query = query.filter(Article.region.like(f"%{region}%"))
+
         if start_time and end_time:
             query = query.filter(Article.created_at.between(start_time, end_time))
             

@@ -5,9 +5,18 @@ class ArticleService:
     def __init__(self):
         self.article_repo = ArticleRepository()
 
-    def get_articles(self, page: int, limit: int, keyword: str, start_time: str, end_time: str) -> Dict[str, Any]:
+    def get_articles(
+        self,
+        page: int,
+        limit: int,
+        keyword: str,
+        start_time: str,
+        end_time: str,
+        article_type: str = '',
+        region: str = '',
+    ) -> Dict[str, Any]:
         offset = (page - 1) * limit
-        articles, total = self.article_repo.find_with_filter(keyword, start_time, end_time, limit, offset)
+        articles, total = self.article_repo.find_with_filter(keyword, start_time, end_time, article_type, region, limit, offset)
         
         # Format dates
         for item in articles:

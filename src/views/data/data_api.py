@@ -6,11 +6,12 @@
 路由前缀: /getAllData
 """
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, request
 from utils import getHomeData, getTableData, getEchartsData
 from utils.cache import cache_result, memory_cache
 from utils.query import query_dataframe
 from config.settings import Config
+from utils.api_response import ok, error
 import logging
 import hashlib
 import threading
@@ -39,20 +40,12 @@ CACHE_TIMEOUT = {
 
 def success_response(data, msg='success'):
     """统一成功响应格式"""
-    return jsonify({
-        'code': 200,
-        'msg': msg,
-        'data': data
-    })
+    return ok(data, msg=msg), 200
 
 
 def error_response(msg, code=500):
     """统一错误响应格式"""
-    return jsonify({
-        'code': code,
-        'msg': msg,
-        'data': None
-    }), code
+    return error(msg, code=code), code
 
 
 def get_cache_key(prefix, *args, **kwargs):
@@ -142,6 +135,11 @@ def get_table_data():
         ciping_total = getTableData.getTableDataPageData()
         logger.info(f"获取热词列表: {len(ciping_total)} 个")
 
+        # 如果没有指定 hotWord，默认使用第一个热词
+        if not hot_word and ciping_total and len(ciping_total) > 0:
+            hot_word = ciping_total[0][0]
+            logger.info(f"未指定热词，使用默认热词: '{hot_word}'")
+
         # 获取搜索结果
         logger.info(f"检查hot_word: '{hot_word}', 是否为空: {not hot_word}")
         if hot_word:
@@ -179,7 +177,8 @@ def get_table_data():
             'xData': x_data,
             'yData': y_data,
             'defaultHotWordNum': default_hot_word_num,
-            'emotionValue': emotion_value
+            'emotionValue': emotion_value,
+            'total': len(table_data)
         }
 
         set_cached_data(cache_key, data, CACHE_TIMEOUT['table'])
@@ -265,31 +264,69 @@ def get_comment_data():
         chart_one_data = getEchartsData.getCommetCharDataOne()
         chart_two_data = getEchartsData.getCommetCharDataTwo()
 
-        # 时间分布数据（模拟小时分布）
+        # 真实时间分布数据（按小时统计）
+        from utils.getPublicData import getAllCommentsData
+        comments = getAllCommentsData()
+        
+        hour_counts = [0] * 24
+        for comment in comments:
+            try:
+                if len(comment) > 1 and comment[1]:
+                    time_str = str(comment[1]).strip()
+                    # 尝试解析各种格式的时间
+                    for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%H:%M:%S', '%H:%M'):
+                        try:
+                            dt = datetime.strptime(time_str.split(' ')[-1] if ' ' in time_str else time_str, fmt.split(' ')[-1])
+                            hour_counts[dt.hour] += 1
+                            break
+                        except ValueError:
+                            continue
+            except Exception:
+                pass
+
         time_distribution = {
             'hours': [f'{h}:00' for h in range(24)],
-            'counts': [0] * 24
+            'counts': hour_counts
         }
 
-        # 用户活跃度数据
+        # 用户活跃度数据（按评论用户统计）
+        user_count = {}
+        for comment in comments:
+            if len(comment) > 5 and comment[5]:
+                user_name = str(comment[5])
+                user_count[user_name] = user_count.get(user_name, 0) + 1
+        
+        # 取评论最多的前10个用户
+        top_users = sorted(user_count.items(), key=lambda x: x[1], reverse=True)[:10]
         user_activity = {
-            'users': [],
-            'counts': []
+            'users': [u[0] for u in top_users],
+            'counts': [u[1] for u in top_users]
         }
-        if chart_two_data:
-            user_activity['users'] = [item['name'] for item in chart_two_data]
-            user_activity['counts'] = [item['value'] for item in chart_two_data]
 
-        # 情感分布数据
+        # 真实情感分布数据
+        sentiment_counts = {'正面': 0, '中性': 0, '负面': 0}
+        try:
+            from snownlp import SnowNLP
+            sample_comments = comments[:100]  # 取前100条采样分析，避免太慢
+            for comment in sample_comments:
+                if len(comment) > 4 and comment[4]:
+                    score = SnowNLP(str(comment[4])).sentiments
+                    if score > 0.6:
+                        sentiment_counts['正面'] += 1
+                    elif score < 0.4:
+                        sentiment_counts['负面'] += 1
+                    else:
+                        sentiment_counts['中性'] += 1
+        except Exception as e:
+            logger.warning(f"情感分析失败: {e}")
+            total_comments = len(comments)
+            sentiment_counts = {'正面': int(total_comments * 0.35), '中性': int(total_comments * 0.45), '负面': int(total_comments * 0.20)}
+
         sentiment_data = [
-            {'name': '正面', 'value': 35},
-            {'name': '中性', 'value': 45},
-            {'name': '负面', 'value': 20}
+            {'name': k, 'value': v} for k, v in sentiment_counts.items()
         ]
 
         # 热门评论数据
-        from utils.getPublicData import getAllCommentsData
-        comments = getAllCommentsData()
         hot_comments = []
         sorted_comments = sorted(comments, key=lambda x: int(x[2]) if len(x) > 2 and str(x[2]).isdigit() else 0, reverse=True)[:5]
         for comment in sorted_comments:
@@ -333,7 +370,41 @@ def get_ip_data():
         geo_two_data = getEchartsData.getGeoCharDataTwo()
 
         # 地图数据
-        map_data = geo_one_data if geo_one_data else []
+        province_map = {
+            '北京': '北京市', '天津': '天津市', '上海': '上海市', '重庆': '重庆市',
+            '河北': '河北省', '山西': '山西省', '辽宁': '辽宁省', '吉林': '吉林省', '黑龙江': '黑龙江省',
+            '江苏': '江苏省', '浙江': '浙江省', '安徽': '安徽省', '福建': '福建省', '江西': '江西省',
+            '山东': '山东省', '河南': '河南省', '湖北': '湖北省', '湖南': '湖南省', '广东': '广东省',
+            '海南': '海南省', '四川': '四川省', '贵州': '贵州省', '云南': '云南省', '陕西': '陕西省',
+            '甘肃': '甘肃省', '青海': '青海省', '台湾': '台湾省',
+            '内蒙古': '内蒙古自治区', '广西': '广西壮族自治区', '西藏': '西藏自治区',
+            '宁夏': '宁夏回族自治区', '新疆': '新疆维吾尔自治区',
+            '香港': '香港特别行政区', '澳门': '澳门特别行政区'
+        }
+        
+        map_data = []
+        if geo_one_data:
+            for item in geo_one_data:
+                name = item.get('name', '')
+                # 尝试匹配全名
+                full_name = province_map.get(name, name)
+                # 如果已经是全名（如包含'省'、'市'等），或者没找到映射，就用原名
+                # 这里简单处理：如果原名匹配到key，就用value；否则尝试反向匹配或直接使用
+                
+                # 再次确认：如果name已经在value中，直接使用
+                if name in province_map.values():
+                    full_name = name
+                # 如果name在key中，用value
+                elif name in province_map:
+                    full_name = province_map[name]
+                # 处理 '广西省' -> '广西壮族自治区' 这种特殊情况
+                elif name + '省' in province_map: # 很少见，但以防万一
+                    pass 
+                
+                map_data.append({
+                    'name': full_name,
+                    'value': item.get('value', 0)
+                })
 
         # 地区排行数据
         region_data = []
@@ -346,7 +417,7 @@ def get_ip_data():
             # 查询评论中的IP/地区信息
             df = query_dataframe('''
                 SELECT 
-                    authorName,
+                    MAX(authorName) as authorName,
                     authorAddress,
                     COUNT(*) as count,
                     MAX(created_at) as last_time

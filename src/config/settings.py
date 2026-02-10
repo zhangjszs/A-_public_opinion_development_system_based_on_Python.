@@ -30,6 +30,8 @@ class Config:
         ['http://localhost:3000', 'http://127.0.0.1:3000'] if IS_DEVELOPMENT else []
     )
     ADMIN_USERS = set(_parse_csv_env('ADMIN_USERS'))
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY') or SECRET_KEY
+    JWT_EXPIRATION_HOURS = int(os.getenv('JWT_EXPIRATION_HOURS', 24))
 
     # Database Settings
     DB_HOST = os.getenv('DB_HOST', 'localhost')
@@ -74,6 +76,10 @@ class Config:
         if cls.FLASK_ENV == 'production':
             if not cls.SECRET_KEY:
                 raise RuntimeError('SECRET_KEY must be set in production')
+            if not cls.JWT_SECRET_KEY:
+                raise RuntimeError('JWT_SECRET_KEY must be set in production (or reuse SECRET_KEY)')
+            if not cls.ALLOWED_ORIGINS:
+                raise RuntimeError('ALLOWED_ORIGINS must be set in production')
 
 # Late binding for properties that depend on class variables
 Config.SQLALCHEMY_DATABASE_URI = Config.get_database_url()

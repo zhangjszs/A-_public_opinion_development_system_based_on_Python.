@@ -15,16 +15,20 @@
 
 from flask import Flask, session, render_template, redirect, request, jsonify, g
 from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFError
 from flask_cors import CORS
 import re
 import os
 import time
 import logging
+import uuid
 from datetime import datetime
 
 # 导入统一配置模块
 from config.settings import Config
 from utils.jwt_handler import verify_token
+from utils.api_response import ok, error
+from utils.authz import admin_required
 from database import db_session
 
 # 确保日志目录存在
@@ -138,17 +142,21 @@ try:
     from views.user import user  # 用户认证蓝图
     from views.api import api    # API视图蓝图
     from views.data import db    # 数据API蓝图
+    from views.api.spider_api import spider_bp  # 爬虫管理蓝图
     
     app.register_blueprint(page.pb)  # 注册页面蓝图
     app.register_blueprint(user.ub)  # 注册用户蓝图
     app.register_blueprint(api.bp)   # 注册API蓝图
     app.register_blueprint(db)       # 注册数据API蓝图
+    app.register_blueprint(spider_bp)  # 注册爬虫管理蓝图
     
-    # 排除API蓝图的CSRF保护（允许JSON请求）
+    # 排除蓝图的CSRF保护（允许JSON请求）
     csrf.exempt(api.bp)
     csrf.exempt(db)
+    csrf.exempt(user.ub)
+    csrf.exempt(spider_bp)
     
-    logger.info("蓝图注册完成: page, user, api, data")
+    logger.info("蓝图注册完成: page, user, api, data, spider")
     
 except ImportError as e:
     logger.error(f"蓝图导入失败: {e}")
@@ -195,10 +203,10 @@ def _get_bearer_token():
 def _require_jwt_auth():
     token = _get_bearer_token()
     if not token:
-        return jsonify({'error': 'Unauthorized', 'message': '缺少认证令牌', 'code': 401}), 401
+        return error('缺少认证令牌', code=401), 401
     user_info = verify_token(token)
     if not user_info:
-        return jsonify({'error': 'Unauthorized', 'message': '认证令牌无效或已过期', 'code': 401}), 401
+        return error('认证令牌无效或已过期', code=401), 401
     request.current_user = user_info
     g.current_user = user_info
     return None
@@ -223,32 +231,32 @@ def health_check():
     Returns:
         JSON: 系统状态信息
     """
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'uptime': time.time() - app.start_time if hasattr(app, 'start_time') else 0,
+        'version': '1.0.0',
+    })
+
+
+@app.route('/api/health/details')
+@admin_required
+def health_details():
     try:
-        # 检查数据库连接
         from utils.query import get_database_stats
         db_stats = get_database_stats()
-        
-        health_info = {
+        return ok({
             'status': 'healthy',
-            'timestamp': datetime.now().isoformat(),
-            'uptime': time.time() - app.start_time if hasattr(app, 'start_time') else 0,
             'database': {
                 'connected': bool(db_stats),
-                'stats': db_stats
+                'stats': db_stats,
             },
-            'memory_usage': 'N/A',  # 可以添加内存使用情况
-            'version': '1.0.0'
-        }
-        
-        return jsonify(health_info)
-        
+            'uptime': time.time() - app.start_time if hasattr(app, 'start_time') else 0,
+            'version': '1.0.0',
+        }), 200
     except Exception as e:
-        logger.error(f"健康检查失败: {e}")
-        return jsonify({
-            'status': 'unhealthy',
-            'error': str(e),
-            'timestamp': datetime.now().isoformat()
-        }), 500
+        logger.error(f"健康详情检查失败: {e}")
+        return error('健康详情检查失败', code=500), 500
 
 
 @app.route('/api/session/check')
@@ -260,28 +268,15 @@ def session_check():
         JSON: 会话状态信息
     """
     try:
-        username = session.get('username')
-        is_authenticated = is_user_logged_in()
-        
-        if is_authenticated:
-            return jsonify({
-                'authenticated': True,
-                'username': username,
-                'timestamp': datetime.now().isoformat(),
-                'sessionId': session.get('_id', 'unknown')
-            })
-        else:
-            return jsonify({
-                'authenticated': False,
-                'message': '会话已过期或不存在'
-            }), 401
+        user = getattr(request, 'current_user', None) or getattr(g, 'current_user', None) or {}
+        return ok({
+            'authenticated': True,
+            'user': user
+        }), 200
             
     except Exception as e:
         logger.error(f"会话检查失败: {e}")
-        return jsonify({
-            'authenticated': False,
-            'error': '会话检查过程中发生错误'
-        }), 500
+        return error('会话检查过程中发生错误', code=500), 500
 
 
 @app.route('/api/session/extend', methods=['POST'])
@@ -293,32 +288,14 @@ def session_extend():
         JSON: 延长结果
     """
     try:
-        if not is_user_logged_in():
-            return jsonify({
-                'success': False,
-                'message': '用户未登录，无法延长会话'
-            }), 401
-        
-        # 更新会话的permanent标志，重新设置过期时间
-        session.permanent = True
-        
-        # 记录会话延长操作
-        username = session.get('username')
-        logger.info(f"用户 {username} 延长会话 | IP: {get_client_ip()}")
-        
-        return jsonify({
-            'success': True,
-            'message': '会话已成功延长',
-            'timestamp': datetime.now().isoformat(),
-            'username': username
-        })
+        user = getattr(request, 'current_user', None) or getattr(g, 'current_user', None) or {}
+        username = user.get('username', '')
+        logger.info(f"用户 {username} 延长会话（JWT） | IP: {get_client_ip()}")
+        return ok({'extended': True, 'user': user}, msg='会话已成功延长'), 200
         
     except Exception as e:
         logger.error(f"会话延长失败: {e}")
-        return jsonify({
-            'success': False,
-            'error': '会话延长过程中发生错误'
-        }), 500
+        return error('会话延长过程中发生错误', code=500), 500
 
 
 # ===== 中间件和钩子函数 =====
@@ -337,6 +314,8 @@ def before_request():
     """
     # 记录请求信息
     log_request_info()
+
+    g.request_id = request.headers.get('X-Request-Id') or uuid.uuid4().hex
     
     # 静态资源放行（CSS、JS、图片等）
     if request.path.startswith('/static'):
@@ -371,26 +350,23 @@ def before_request():
             return auth_result
         return None
     
-    # 数据API端点 - 允许公开访问（用于Vue前端）
+    # 数据API端点 - JWT保护（用于Vue前端）
     if request.path.startswith('/getAllData/'):
         auth_result = _require_jwt_auth()
         if auth_result is not None:
             return auth_result
         return None
     
-    # 其他页面需要登录验证
-    if not is_user_logged_in():
-        logger.warning(f"未登录访问受保护页面: {request.path} | IP: {get_client_ip()}")
-        
-        # 保存当前请求的URL，登录后可以重定向回来
-        if request.method == 'GET' and not request.path.startswith('/api/'):
+    # 旧版 Jinja 模板页面 (/page/*) 需要 session 登录验证
+    if request.path.startswith('/page/'):
+        if not is_user_logged_in():
+            logger.warning(f"未登录访问受保护页面: {request.path} | IP: {get_client_ip()}")
             redirect_url = request.path
             if request.query_string:
                 redirect_url += '?' + request.query_string.decode('utf-8')
             return redirect(f'/user/login?redirect={redirect_url}')
-        else:
-            return redirect('/user/login')
     
+    # 其他路径直接放行（Vue 前端路由由前端自行管理认证）
     return None
 
 
@@ -413,7 +389,25 @@ def after_request(response):
     # 添加安全响应头
     response.headers['X-Content-Type-Options'] = 'nosniff'      # 防止MIME类型嗅探
     response.headers['X-Frame-Options'] = 'DENY'               # 防止页面被嵌入iframe
-    response.headers['X-XSS-Protection'] = '1; mode=block'     # XSS保护
+    response.headers['X-XSS-Protection'] = '0'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=(), payment=()'
+
+    if not Config.IS_DEVELOPMENT:
+        proto = request.headers.get('X-Forwarded-Proto', 'http')
+        if request.is_secure or proto == 'https':
+            response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+
+    if response.mimetype == 'text/html':
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "base-uri 'self'; "
+            "frame-ancestors 'none'; "
+            "img-src 'self' data:; "
+            "style-src 'self' 'unsafe-inline'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "connect-src 'self'"
+        )
     
     # 缓存控制（根据内容类型）
     if request.path.startswith('/static'):
@@ -424,6 +418,9 @@ def after_request(response):
     # 记录响应状态
     if response.status_code >= 400:
         logger.warning(f"响应错误: {response.status_code} | 路径: {request.path}")
+
+    if getattr(g, 'request_id', None):
+        response.headers['X-Request-Id'] = g.request_id
     
     return response
 
@@ -448,13 +445,8 @@ def page_not_found(error):
     logger.warning(f"404错误: {request.path} | IP: {get_client_ip()}")
     
     # API请求返回JSON错误
-    if request.path.startswith('/api/'):
-        return jsonify({
-            'error': 'Not Found',
-            'message': '请求的资源不存在',
-            'code': 404,
-            'path': request.path
-        }), 404
+    if request.path.startswith('/api/') or request.path.startswith('/getAllData/'):
+        return error('请求的资源不存在', code=404), 404
     
     # 网页请求返回HTML错误页面
     return render_template('404.html'), 404
@@ -475,12 +467,8 @@ def internal_server_error(error):
     logger.error(f"500错误: {error} | 路径: {request.path} | IP: {get_client_ip()}")
     
     # API请求返回JSON错误
-    if request.path.startswith('/api/'):
-        return jsonify({
-            'error': 'Internal Server Error',
-            'message': '服务器内部错误，请稍后重试',
-            'code': 500
-        }), 500
+    if request.path.startswith('/api/') or request.path.startswith('/getAllData/'):
+        return error('服务器内部错误，请稍后重试', code=500), 500
     
     # 网页请求返回错误页面
     try:
@@ -498,32 +486,37 @@ def forbidden(error):
     """
     logger.warning(f"403错误: 权限不足 | 路径: {request.path} | IP: {get_client_ip()}")
     
-    if request.path.startswith('/api/'):
-        return jsonify({
-            'error': 'Forbidden',
-            'message': '权限不足',
-            'code': 403
-        }), 403
+    if request.path.startswith('/api/') or request.path.startswith('/getAllData/'):
+        return error('权限不足', code=403), 403
     
     return render_template('error.html', error_message='权限不足'), 403
 
 
-# ===== 通用路由捕获 =====
+@app.errorhandler(401)
+def unauthorized(error):
+    if request.path.startswith('/api/') or request.path.startswith('/getAllData/'):
+        return error('未认证或登录已过期', code=401), 401
+    return redirect('/user/login')
+
+
+@app.errorhandler(CSRFError)
+def handle_csrf_error(err):
+    if request.path.startswith('/api/') or request.path.startswith('/getAllData/'):
+        return error('CSRF 校验失败', code=400), 400
+    return render_template('error.html', error_message='CSRF 校验失败'), 400
+
+
+# ===== 通用路由捕获（仅拦截恶意请求）=====
 @app.route('/<path:path>')
 def catch_all(path):
     """
     捕获所有未定义的路径
-    重定向到404页面，防止暴露系统信息
+    仅拦截恶意请求，其他返回默认404
     
-    Args:
-        path: 请求的路径
-        
-    Returns:
-        redirect: 重定向到404页面
+    注意：Vue 客户端路由（/home, /hot-words 等）在开发环境由 Vite 代理处理，
+    不会到达此处。生产环境应由 Nginx 转发到 index.html。
     """
-    logger.info(f"捕获未定义路径: /{path} | IP: {get_client_ip()}")
-    
-    # 一些常见的恶意请求路径，直接拒绝
+    # 一些常见的恶意请求路径，静默拒绝
     malicious_patterns = [
         r'\.php$',           # PHP文件
         r'wp-admin',         # WordPress后台
@@ -539,12 +532,9 @@ def catch_all(path):
             logger.warning(f"检测到可疑请求: /{path} | IP: {get_client_ip()}")
             return '', 404  # 直接返回404，不提供任何信息
     
-    # 防止重定向循环：如果已经是404路径，直接渲染404页面
-    if path == '404':
-        return render_template('404.html'), 404
-    
-    # 正常的404重定向
-    return redirect('/404')
+    # 其他未知路径返回404（不做重定向，避免与Vue Router冲突）
+    logger.info(f"未定义路径: /{path} | IP: {get_client_ip()}")
+    return render_template('404.html'), 404
 
 
 # ===== 应用启动配置 =====
@@ -566,13 +556,13 @@ def initialize_app():
     logger.info(f"Python版本: {os.sys.version}")
     logger.info("=" * 50)
 
+# 模块级别初始化（确保通过 run.py 导入时也会执行）
+initialize_app()
+
 
 # ===== 主程序入口 =====
 if __name__ == '__main__':
     try:
-        # 初始化应用
-        initialize_app()
-        
         # 启动Flask开发服务器
         # 生产环境请使用gunicorn或uwsgi等WSGI服务器
         app.run(

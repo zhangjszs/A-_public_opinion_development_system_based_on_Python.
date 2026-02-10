@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { ElMessage } from 'element-plus'
 
 const routes = [
   {
@@ -65,6 +66,18 @@ const routes = [
         name: 'WordCloud',
         component: () => import('@/views/analysis/wordCloud.vue'),
         meta: { title: '词云图', icon: 'Cloudy' }
+      },
+      {
+        path: 'spider',
+        name: 'SpiderManager',
+        component: () => import('@/views/analysis/spider.vue'),
+        meta: { title: '爬虫管理', icon: 'Monitor', adminOnly: true }
+      },
+      {
+        path: 'tasks',
+        name: 'TaskCenter',
+        component: () => import('@/views/system/tasks.vue'),
+        meta: { title: '任务中心', icon: 'Tickets', adminOnly: true }
       }
     ]
   },
@@ -93,7 +106,15 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+const readCachedUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('weibo_user') || '{}') || {}
+  } catch (e) {
+    return {}
+  }
+}
+
+router.beforeEach(async (to, from, next) => {
   if (to.meta.title) {
     document.title = `${to.meta.title} - 微博舆情分析系统`
   }
@@ -108,6 +129,37 @@ router.beforeEach((to, from, next) => {
   if (!token) {
     next(`/login?redirect=${to.fullPath}`)
     return
+  }
+
+  if (to.meta.adminOnly) {
+    let user = readCachedUser()
+    let isAdmin = user?.is_admin === true
+
+    if (!isAdmin && user?.is_admin === undefined) {
+      try {
+        const resp = await fetch('/api/auth/me', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        })
+        const payload = await resp.json()
+        if (payload && payload.code === 200) {
+          user = payload.data || {}
+          localStorage.setItem('weibo_user', JSON.stringify(user))
+          isAdmin = user?.is_admin === true
+        }
+      } catch (e) {
+        isAdmin = false
+      }
+    }
+
+    if (!isAdmin) {
+      ElMessage.warning('没有权限访问该页面')
+      next('/home')
+      return
+    }
   }
 
   next()

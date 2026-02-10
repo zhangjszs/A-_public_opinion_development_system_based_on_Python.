@@ -9,9 +9,9 @@ let loadingCount = 0
 const showLoading = (options = {}) => {
   if (loadingCount === 0) {
     loadingInstance = ElLoading.service({
-      lock: true,
+      lock: false,
       text: options.text || '加载中...',
-      background: 'rgba(0, 0, 0, 0.7)',
+      background: 'rgba(248, 250, 252, 0.6)',
       ...options
     })
   }
@@ -56,15 +56,21 @@ request.interceptors.request.use(
       config.headers['Authorization'] = `Bearer ${token}`
     }
     
-    // 显示加载动画（如果配置中未禁用）
-    if (!config.hideLoading) {
-      showLoading(config.loadingOptions)
+    const loadingOptions = config.loadingOptions
+    const shouldShowLoading =
+      !config.hideLoading &&
+      loadingOptions &&
+      loadingOptions !== false &&
+      loadingOptions.fullscreen === true
+
+    if (shouldShowLoading) {
+      showLoading(loadingOptions)
     }
     
     return config
   },
   (error) => {
-    hideLoading()
+    if (loadingInstance) hideLoading()
     return Promise.reject(error)
   }
 )
@@ -72,7 +78,7 @@ request.interceptors.request.use(
 // 响应拦截器
 request.interceptors.response.use(
   (response) => {
-    hideLoading()
+    if (loadingInstance) hideLoading()
     const res = response.data
     
     if (res.code === 200) {
@@ -104,7 +110,7 @@ request.interceptors.response.use(
     }
   },
   (error) => {
-    hideLoading()
+    if (loadingInstance) hideLoading()
     
     // 网络错误处理
     if (error.response) {

@@ -27,4 +27,4 @@ COPY . /app/
 EXPOSE 5000
 
 # Run gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
+CMD ["gunicorn", "--chdir", "src", "--bind", "0.0.0.0:5000", "app:app"]

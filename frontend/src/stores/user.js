@@ -9,6 +9,7 @@ export const useUserStore = defineStore('user', () => {
 
   const isLoggedIn = computed(() => !!token.value)
   const username = computed(() => userInfo.value?.username || '')
+  const isAdmin = computed(() => userInfo.value?.is_admin === true)
 
   async function doLogin(username, password) {
     try {
@@ -69,6 +70,7 @@ export const useUserStore = defineStore('user', () => {
     userInfo,
     isLoggedIn,
     username,
+    isAdmin,
     doLogin,
     doLogout,
     initAuth,

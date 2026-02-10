@@ -1,539 +1,215 @@
-# 📚 API 文档 (API Documentation)
+# 📚 API 文档
 
-本文档详细介绍微博舆情分析系统的 API 接口规范。
-
-## 📋 目录
-
-- [概述](#概述)
-- [认证](#认证)
-- [数据接口](#数据接口)
-- [用户管理](#用户管理)
-- [错误处理](#错误处理)
-- [示例代码](#示例代码)
+本文档描述本项目后端对外 API 的实际接口与响应规范。
 
 ## 📖 概述
 
-### 基础信息
-- **Base URL**: `http://localhost:5000`
-- **API 版本**: v1.0
-- **数据格式**: JSON
-- **字符编码**: UTF-8
+### Base URL
+- `http://localhost:5000`
 
-### 请求格式
+### 认证方式
+- 需要认证的接口使用 Bearer Token：
+
 ```http
+Authorization: Bearer <token>
 Content-Type: application/json
-Authorization: Bearer <token>  # 如果需要认证
 ```
 
-### 响应格式
+### 统一响应格式
+
+所有 `/api/*`、`/api/spider/*` 与 `/getAllData/*` 接口返回统一结构：
+
 ```json
 {
-    "code": 200,
-    "message": "success",
-    "data": {},
-    "timestamp": "2025-09-20T10:00:00Z"
+  "code": 200,
+  "msg": "success",
+  "data": {},
+  "timestamp": "2026-02-10T12:00:00+00:00",
+  "request_id": "9f3d..."
 }
 ```
 
-## 🔐 认证
+- `code`：业务码（与 HTTP 状态码保持一致，如 200/400/401/403/404/409/500，异步提交为 202）
+- `msg`：提示信息
+- `data`：业务数据（可选）
+- `timestamp`：UTC 时间戳
+- `request_id`：请求追踪 ID（同时也会写入响应头 `X-Request-Id`）
 
-### 用户登录
+## 🔐 认证（/api/auth）
+
+### 登录
 ```http
-POST /user/login
+POST /api/auth/login
 ```
 
-**请求体**:
+Body:
+```json
+{ "username": "test", "password": "pass" }
+```
+
+返回（成功）：
 ```json
 {
-    "username": "string",
-    "password": "string"
+  "code": 200,
+  "msg": "登录成功",
+  "data": {
+    "token": "<jwt>",
+    "user": { "id": 1, "username": "test", "createTime": "2025-01-01", "is_admin": false }
+  },
+  "timestamp": "..."
 }
 ```
 
-**响应**:
-```json
-{
-    "code": 200,
-    "message": "登录成功",
-    "data": {
-        "user_id": 1,
-        "username": "testuser",
-        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-        "expires_in": 3600
-    }
-}
-```
-
-### 用户注册
+### 注册
 ```http
-POST /user/register
+POST /api/auth/register
 ```
 
-**请求体**:
+Body:
 ```json
-{
-    "username": "string",
-    "password": "string",
-    "email": "string"
-}
+{ "username": "test", "password": "pass", "confirmPassword": "pass" }
 ```
 
-### 用户登出
+### 当前用户
 ```http
-POST /user/logout
+GET /api/auth/me
 ```
 
-## 📊 数据接口
+返回：
+- `is_admin`: 是否为管理员（用于前端隐藏/保护管理员入口）
 
-### 获取首页数据
+### 登出
 ```http
-GET /api/home
+POST /api/auth/logout
 ```
 
-**响应**:
-```json
-{
-    "code": 200,
-    "data": {
-        "total_articles": 1250,
-        "total_comments": 5600,
-        "sentiment_distribution": {
-            "positive": 45.2,
-            "negative": 23.1,
-            "neutral": 31.7
-        },
-        "hot_topics": [
-            {"topic": "科技", "count": 234},
-            {"topic": "娱乐", "count": 189}
-        ]
-    }
-}
-```
+## 📊 统计与分析（/api）
 
-### 获取文章列表
+### 健康检查
 ```http
-GET /api/articles
+GET /health
 ```
 
-**查询参数**:
-- `page`: 页码 (默认: 1)
-- `per_page`: 每页数量 (默认: 20)
-- `keyword`: 关键词搜索
-- `sentiment`: 情感过滤 (positive/negative/neutral)
-- `start_date`: 开始日期 (YYYY-MM-DD)
-- `end_date`: 结束日期 (YYYY-MM-DD)
+说明：
+- 对外返回最小信息（不包含数据库统计）
 
-**响应**:
-```json
-{
-    "code": 200,
-    "data": {
-        "articles": [
-            {
-                "id": 1,
-                "title": "文章标题",
-                "content": "文章内容...",
-                "author": "作者名",
-                "created_at": "2025-09-20T08:00:00Z",
-                "sentiment": "positive",
-                "likes": 125,
-                "comments": 23,
-                "reposts": 5
-            }
-        ],
-        "pagination": {
-            "page": 1,
-            "per_page": 20,
-            "total": 1250,
-            "pages": 63
-        }
-    }
-}
-```
-
-### 获取文章详情
+### 健康检查（详情，管理员）
 ```http
-GET /api/articles/{article_id}
+GET /api/health/details
 ```
 
-**响应**:
-```json
-{
-    "code": 200,
-    "data": {
-        "id": 1,
-        "title": "文章标题",
-        "content": "完整文章内容...",
-        "author": "作者名",
-        "created_at": "2025-09-20T08:00:00Z",
-        "sentiment": "positive",
-        "sentiment_score": 0.85,
-        "likes": 125,
-        "comments": 23,
-        "reposts": 5,
-        "region": "北京",
-        "tags": ["科技", "AI", "创新"]
-    }
-}
-```
-
-### 获取评论数据
+### 系统概览统计
 ```http
-GET /api/comments
+GET /api/stats/summary
 ```
 
-**查询参数**:
-- `article_id`: 文章ID
-- `page`: 页码
-- `per_page`: 每页数量
-- `sentiment`: 情感过滤
-
-**响应**:
-```json
-{
-    "code": 200,
-    "data": {
-        "comments": [
-            {
-                "id": 1,
-                "article_id": 1,
-                "content": "评论内容...",
-                "author": "评论者",
-                "created_at": "2025-09-20T09:00:00Z",
-                "sentiment": "positive",
-                "likes": 12,
-                "replies": 3
-            }
-        ],
-        "pagination": {
-            "page": 1,
-            "per_page": 20,
-            "total": 5600,
-            "pages": 280
-        }
-    }
-}
-```
-
-### 获取情感分析统计
+### 今日统计
 ```http
-GET /api/sentiment/stats
+GET /api/stats/today
 ```
 
-**查询参数**:
-- `start_date`: 开始日期
-- `end_date`: 结束日期
-- `group_by`: 分组方式 (hour/day/week/month)
-
-**响应**:
-```json
-{
-    "code": 200,
-    "data": {
-        "total": 5600,
-        "distribution": {
-            "positive": 45.2,
-            "negative": 23.1,
-            "neutral": 31.7
-        },
-        "trend": [
-            {"date": "2025-09-20", "positive": 120, "negative": 45, "neutral": 78},
-            {"date": "2025-09-19", "positive": 98, "negative": 67, "neutral": 89}
-        ]
-    }
-}
-```
-
-### 获取词频分析
+### 文章列表（分页/筛选）
 ```http
-GET /api/words/frequency
+GET /api/articles?page=1&limit=10&keyword=xxx&start_time=2025-01-01&end_time=2025-02-01
 ```
 
-**查询参数**:
-- `limit`: 返回数量 (默认: 50)
-- `min_freq`: 最小频率 (默认: 5)
+说明：
+- `limit` 最大为 100
+- 可选筛选：`type`（文章类型）、`region`（地区，模糊匹配）
+- `start_time/end_time` 支持 `YYYY-MM-DD` 或 `YYYY-MM-DD HH:MM:SS`
 
-**响应**:
-```json
-{
-    "code": 200,
-    "data": {
-        "words": [
-            {"word": "中国", "frequency": 234, "sentiment": "neutral"},
-            {"word": "发展", "frequency": 189, "sentiment": "positive"},
-            {"word": "经济", "frequency": 156, "sentiment": "positive"}
-        ],
-        "total_words": 12500,
-        "unique_words": 3456
-    }
-}
-```
-
-### 获取图表数据
+### 情感分析（支持异步）
 ```http
-GET /api/charts/{chart_type}
+POST /api/sentiment/analyze
 ```
 
-**支持的图表类型**:
-- `sentiment_pie`: 情感分布饼图
-- `trend_line`: 情感趋势折线图
-- `word_cloud`: 词云图
-- `region_map`: 地域分布地图
-- `hot_topics`: 热门话题柱状图
+Body:
+```json
+{ "text": "待分析文本", "mode": "simple", "async": false }
+```
 
-**响应**:
+异步返回（202）：
 ```json
 {
-    "code": 200,
-    "data": {
-        "chart_type": "sentiment_pie",
-        "title": "情感分布统计",
-        "data": [
-            {"name": "积极", "value": 45.2, "color": "#52c41a"},
-            {"name": "消极", "value": 23.1, "color": "#ff4d4f"},
-            {"name": "中性", "value": 31.7, "color": "#1890ff"}
-        ]
-    }
+  "code": 202,
+  "msg": "任务已提交",
+  "data": { "task_id": "<celery_task_id>", "status": "PENDING", "check_url": "/api/tasks/<id>/status" },
+  "timestamp": "..."
 }
 ```
 
-## 👤 用户管理
-
-### 获取用户信息
+### 查询异步任务状态
 ```http
-GET /api/user/profile
+GET /api/tasks/<task_id>/status
 ```
 
-**响应**:
-```json
-{
-    "code": 200,
-    "data": {
-        "user_id": 1,
-        "username": "testuser",
-        "email": "user@example.com",
-        "created_at": "2025-09-15T10:00:00Z",
-        "last_login": "2025-09-20T09:00:00Z",
-        "role": "user"
-    }
-}
-```
+## 🕷️ 爬虫管理（/api 与 /api/spider）
 
-### 更新用户信息
+说明：
+- 该模块接口需要管理员权限（由 `ADMIN_USERS` 控制）
+
+### 异步：关键词搜索爬虫
 ```http
-PUT /api/user/profile
+POST /api/spider/search
 ```
 
-**请求体**:
+Body:
 ```json
-{
-    "email": "newemail@example.com",
-    "nickname": "新昵称"
-}
+{ "keyword": "关键词", "page_num": 3 }
 ```
 
-### 修改密码
+### 异步：评论爬虫
 ```http
-PUT /api/user/password
+POST /api/spider/comments
 ```
 
-**请求体**:
+Body:
 ```json
-{
-    "old_password": "oldpassword",
-    "new_password": "newpassword"
-}
+{ "article_limit": 50 }
 ```
 
-## ⚠️ 错误处理
+### 同步：刷新热门微博（管理员）
+```http
+POST /api/spider/refresh
+```
 
-### 错误响应格式
+Body:
 ```json
-{
-    "code": 400,
-    "message": "参数错误",
-    "error": "详细错误信息",
-    "timestamp": "2025-09-20T10:00:00Z"
-}
+{ "page_num": 3 }
 ```
 
-### 常见错误码
+### 概览（爬虫工作台）
+```http
+GET /api/spider/overview
+```
 
-| 错误码 | 说明 | 处理建议 |
-|--------|------|----------|
-| 200 | 成功 | - |
-| 400 | 请求参数错误 | 检查请求参数格式 |
-| 401 | 未授权 | 重新登录 |
-| 403 | 权限不足 | 联系管理员 |
-| 404 | 资源不存在 | 检查URL和参数 |
-| 429 | 请求过于频繁 | 稍后重试 |
-| 500 | 服务器内部错误 | 联系技术支持 |
+### 启动后台线程爬取（不依赖 Celery）
+```http
+POST /api/spider/crawl
+```
 
-### 错误示例
+Body:
 ```json
-{
-    "code": 400,
-    "message": "参数验证失败",
-    "error": "用户名不能为空",
-    "timestamp": "2025-09-20T10:00:00Z"
-}
+{ "type": "hot", "pageNum": 3 }
 ```
 
-## 💻 示例代码
-
-### Python 客户端示例
-
-```python
-import requests
-import json
-
-class WeiboAPIClient:
-    def __init__(self, base_url="http://localhost:5000"):
-        self.base_url = base_url
-        self.session = requests.Session()
-        self.token = None
-
-    def login(self, username, password):
-        """用户登录"""
-        response = self.session.post(f"{self.base_url}/user/login", json={
-            "username": username,
-            "password": password
-        })
-        data = response.json()
-        if data['code'] == 200:
-            self.token = data['data']['token']
-            self.session.headers.update({
-                'Authorization': f'Bearer {self.token}'
-            })
-        return data
-
-    def get_articles(self, page=1, per_page=20, **filters):
-        """获取文章列表"""
-        params = {'page': page, 'per_page': per_page, **filters}
-        response = self.session.get(f"{self.base_url}/api/articles", params=params)
-        return response.json()
-
-    def get_sentiment_stats(self, **params):
-        """获取情感统计"""
-        response = self.session.get(f"{self.base_url}/api/sentiment/stats", params=params)
-        return response.json()
-
-    def get_word_frequency(self, limit=50):
-        """获取词频统计"""
-        response = self.session.get(f"{self.base_url}/api/words/frequency",
-                                  params={'limit': limit})
-        return response.json()
-
-# 使用示例
-client = WeiboAPIClient()
-client.login("username", "password")
-
-# 获取文章
-articles = client.get_articles(page=1, sentiment="positive")
-print(f"获取到 {len(articles['data']['articles'])} 篇文章")
-
-# 获取情感统计
-stats = client.get_sentiment_stats()
-print(f"积极情感占比: {stats['data']['distribution']['positive']}%")
+### 状态
+```http
+GET /api/spider/status
 ```
 
-### JavaScript 客户端示例
-
-```javascript
-class WeiboAPIClient {
-    constructor(baseURL = 'http://localhost:5000') {
-        this.baseURL = baseURL;
-        this.token = localStorage.getItem('token');
-    }
-
-    async request(endpoint, options = {}) {
-        const url = `${this.baseURL}${endpoint}`;
-        const config = {
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
-            },
-            ...options
-        };
-
-        if (this.token) {
-            config.headers.Authorization = `Bearer ${this.token}`;
-        }
-
-        const response = await fetch(url, config);
-        return response.json();
-    }
-
-    async login(username, password) {
-        const data = await this.request('/user/login', {
-            method: 'POST',
-            body: JSON.stringify({ username, password })
-        });
-
-        if (data.code === 200) {
-            this.token = data.data.token;
-            localStorage.setItem('token', this.token);
-        }
-
-        return data;
-    }
-
-    async getArticles(params = {}) {
-        return this.request('/api/articles', { params });
-    }
-
-    async getSentimentStats(params = {}) {
-        return this.request('/api/sentiment/stats', { params });
-    }
-
-    async getWordFrequency(limit = 50) {
-        return this.request('/api/words/frequency', {
-            params: { limit }
-        });
-    }
-}
-
-// 使用示例
-const client = new WeiboAPIClient();
-
-// 登录
-await client.login('username', 'password');
-
-// 获取数据
-const articles = await client.getArticles({ page: 1, sentiment: 'positive' });
-const stats = await client.getSentimentStats();
-const words = await client.getWordFrequency(20);
+### 日志（最近 N 行）
+```http
+GET /api/spider/logs?lines=200
 ```
 
-### cURL 示例
+## 🧩 兼容接口（/getAllData）
 
-```bash
-# 登录
-curl -X POST http://localhost:5000/user/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"test","password":"123456"}'
-
-# 获取文章列表
-curl -X GET "http://localhost:5000/api/articles?page=1&per_page=10" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-
-# 获取情感统计
-curl -X GET "http://localhost:5000/api/sentiment/stats?start_date=2025-09-01&end_date=2025-09-20" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-
-# 获取词频统计
-curl -X GET "http://localhost:5000/api/words/frequency?limit=20" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
-
-## 🔄 版本历史
-
-### v1.0 (2025-09-20)
-- 初始版本发布
-- 支持基础的文章、评论、情感分析接口
-- 提供用户认证功能
-- 支持数据可视化图表接口
-
----
-
-**最后更新**: 2025年9月20日
+前端部分分析页面仍使用历史接口（目前也已统一为 `code/msg/data/timestamp`，仅路由前缀不同），例如：
+- `GET /getAllData/getHomeData`
+- `GET /getAllData/getArticleData`
+- `GET /getAllData/getCommentData`
+- `GET /getAllData/getIPData`
+- `GET /getAllData/getYuqingData`
+- `GET /getAllData/getContentCloudData`
+- `POST /getAllData/clearCache`

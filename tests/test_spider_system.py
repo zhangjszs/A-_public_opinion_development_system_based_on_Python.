@@ -5,6 +5,9 @@
 用于验证各模块功能和配置是否正常
 """
 
+import pytest
+pytest.skip("integration script (requires external spider modules/network)", allow_module_level=True)
+
 import os
 import sys
 import time
@@ -14,11 +17,7 @@ import requests
 # 添加spider目录到路径
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'spider'))
 
-try:
-    from config import get_config_manager, HEADERS
-except ImportError as e:
-    print(f"配置模块导入失败: {e}")
-    sys.exit(1)
+from config import get_config_manager, HEADERS
 
 def test_config():
     """测试配置系统"""

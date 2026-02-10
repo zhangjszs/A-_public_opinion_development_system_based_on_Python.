@@ -12,14 +12,14 @@ from datetime import datetime, timedelta
 from functools import wraps
 from flask import request, jsonify, g
 import logging
-import os
+from config.settings import Config
 
 logger = logging.getLogger(__name__)
 
 # JWT 配置
-JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', os.getenv('SECRET_KEY', 'weibo-analysis-jwt-secret-key'))
+JWT_SECRET_KEY = Config.JWT_SECRET_KEY
 JWT_ALGORITHM = 'HS256'
-JWT_EXPIRATION_HOURS = int(os.getenv('JWT_EXPIRATION_HOURS', 24))
+JWT_EXPIRATION_HOURS = Config.JWT_EXPIRATION_HOURS
 
 
 def create_token(user_id: int, username: str, expires_hours: int = None) -> str:

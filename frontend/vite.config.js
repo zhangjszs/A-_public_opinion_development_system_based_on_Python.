@@ -34,6 +34,11 @@ export default defineConfig(({ command, mode }) => {
           target: env.VITE_APP_API_BASE_URL || 'http://localhost:5000',
           changeOrigin: true,
           secure: false
+        },
+        '/static': {
+          target: env.VITE_APP_API_BASE_URL || 'http://localhost:5000',
+          changeOrigin: true,
+          secure: false
         }
       }
     },

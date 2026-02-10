@@ -7,11 +7,12 @@
 作者：微博舆情分析系统
 """
 
-from flask import Flask, session, render_template, redirect, Blueprint, request, jsonify
+from flask import session, render_template, redirect, Blueprint, request, jsonify
 from utils.errorResponse import *
 from utils.input_validator import validate_username, validate_password, sanitize_input
 from utils.log_sanitizer import SafeLogger
 from utils.jwt_handler import jwt_required
+from utils.api_response import ok, error
 from services.auth_service import AuthService
 import time
 import logging
@@ -31,6 +32,10 @@ def login():
     POST: 处理登录验证（使用密码哈希）
     """
     if request.method == 'POST':
+        is_api_request = (
+            request.is_json or
+            request.headers.get('Accept', '').startswith('application/json')
+        )
         # 支持 JSON 和表单两种格式
         if request.is_json:
             data = request.get_json() or {}
@@ -44,11 +49,15 @@ def login():
         # 输入验证
         username_validation = validate_username(username_raw)
         if not username_validation['valid']:
-            return errorResponse(username_validation['message'])
+            if is_api_request:
+                return error(username_validation['message'], code=400), 400
+            return errorResponse(username_validation['message']), 400
         
         password_validation = validate_password(password_raw)
         if not password_validation['valid']:
-            return errorResponse(password_validation['message'])
+            if is_api_request:
+                return error(password_validation['message'], code=400), 400
+            return errorResponse(password_validation['message']), 400
         
         username = sanitize_input(username_raw, max_length=20)
         password = password_raw
@@ -64,25 +73,15 @@ def login():
             session['createTime'] = user_info['createTime']
             session.permanent = True
             
-            # API 响应
-            is_api_request = (
-                request.is_json or 
-                request.headers.get('Accept', '').startswith('application/json')
-            )
-            
             if is_api_request:
-                return jsonify({
-                    'code': 200,
-                    'msg': msg,
-                    'data': data
-                })
+                return ok(data, msg=msg), 200
             else:
-                redirect_url = request.args.get('redirect', '/page/home')
-                return redirect(redirect_url if redirect_url.startswith('/') else '/page/home', 301)
+                redirect_url = request.args.get('redirect', '/home')
+                return redirect(redirect_url if redirect_url.startswith('/') else '/home', 301)
         else:
-            if request.is_json:
-                return jsonify({'code': 401, 'msg': msg}), 401
-            return errorResponse(msg)
+            if is_api_request:
+                return error(msg, code=401), 401
+            return errorResponse(msg), 401
 
     else:
         return render_template('login.html')
@@ -96,6 +95,10 @@ def register():
     POST: 处理用户注册（使用密码哈希）
     """
     if request.method == 'POST':
+        is_api_request = (
+            request.is_json or
+            request.headers.get('Accept', '').startswith('application/json')
+        )
         if request.is_json:
             data = request.get_json()
             username_raw = data.get('username', '').strip()
@@ -109,17 +112,19 @@ def register():
         
         username = sanitize_input(username_raw, max_length=20)
         password = password_raw
-        confirm = sanitize_input(confirm_raw, max_length=32)
+        confirm = confirm_raw
         
         # 调用 Service 层
         success, msg = auth_service.register(username, password, confirm)
         
         if success:
-            if request.is_json:
-                return jsonify({'code': 200, 'msg': msg})
+            if is_api_request:
+                return ok(None, msg=msg), 200
             return redirect('/user/login', 301)
         else:
-            return errorResponse(msg)
+            if is_api_request:
+                return error(msg, code=400), 400
+            return errorResponse(msg), 400
             
     else:
         return render_template('register.html')

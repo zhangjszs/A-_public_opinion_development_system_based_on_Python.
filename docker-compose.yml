@@ -3,11 +3,13 @@ version: '3.8'
 services:
   web:
     build: .
-    command: gunicorn --worker-class gevent --workers 3 --bind 0.0.0.0:5000 app:app
+    command: gunicorn --chdir src --worker-class gevent --workers 3 --bind 0.0.0.0:5000 app:app
     volumes:
       - .:/app
     ports:
       - "5000:5000"
+    env_file:
+      - .env
     environment:
       - FLASK_ENV=production
       - DB_HOST=db

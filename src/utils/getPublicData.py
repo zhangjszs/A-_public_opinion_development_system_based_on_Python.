@@ -93,6 +93,7 @@ def getAllData():
 @cache_result(timeout=1800, use_file_cache=True)  # 缓存30分钟，词频数据变化较少
 def getAllCiPingTotal():
     """获取词频统计数据"""
+    import os
     data = []
     try:
         csv_path = os.path.join(Config.MODEL_DIR, 'comment_1_fenci_qutingyongci_cipin.csv')
@@ -186,5 +187,3 @@ def getArticlesByDateRange(start_date, end_date):
 if __name__ == '__main__':
     print(getAllCiPingTotal())
 
-if __name__ == '__main__':
-    print(getAllCiPingTotal())

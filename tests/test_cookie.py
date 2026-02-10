@@ -5,6 +5,9 @@
 快速验证Cookie是否有效
 """
 
+import pytest
+pytest.skip("integration script (requires real weibo cookie/network)", allow_module_level=True)
+
 import requests
 import time
 

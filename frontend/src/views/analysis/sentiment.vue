@@ -40,6 +40,7 @@
             ref="sentimentPieRef"
             :options="sentimentPieOptions"
             height="350px"
+            @click="handlePieClick"
           />
         </el-card>
       </el-col>
@@ -53,6 +54,7 @@
             ref="trendChartRef"
             :options="trendChartOptions"
             height="350px"
+            @click="handleTrendClick"
           />
         </el-card>
       </el-col>
@@ -88,13 +90,29 @@
           <template #header>
             <div class="card-header">
               <span class="header-title">舆情详情列表</span>
-              <el-button type="primary" plain size="small" :icon="Refresh" @click="loadData">
-                刷新数据
-              </el-button>
+              <div class="header-actions">
+                <el-select v-model="filters.sentiment" placeholder="情感" clearable size="small" style="width: 120px">
+                  <el-option label="正面" value="正面" />
+                  <el-option label="中性" value="中性" />
+                  <el-option label="负面" value="负面" />
+                </el-select>
+                <el-input v-model="filters.keyword" placeholder="内容关键词" clearable size="small" style="width: 220px" />
+                <el-date-picker
+                  v-model="filters.dateRange"
+                  type="daterange"
+                  range-separator="至"
+                  start-placeholder="开始日期"
+                  end-placeholder="结束日期"
+                  value-format="YYYY-MM-DD"
+                  size="small"
+                />
+                <el-button plain size="small" @click="resetFilters">重置</el-button>
+                <el-button type="primary" plain size="small" :icon="Refresh" @click="loadData">刷新数据</el-button>
+              </div>
             </div>
           </template>
           <el-table
-            :data="sentimentList"
+            :data="pagedList"
             :loading="loading"
             style="width: 100%"
           >
@@ -125,7 +143,7 @@
               v-model:current-page="currentPage"
               v-model:page-size="pageSize"
               :page-sizes="[10, 20, 50, 100]"
-              :total="total"
+              :total="filteredTotal"
               layout="total, sizes, prev, pager, next, jumper"
               @size-change="handleSizeChange"
               @current-change="handlePageChange"
@@ -146,7 +164,7 @@ import BaseChart from '@/components/Charts/BaseChart.vue'
 import { getYuqingData } from '@/api/stats'
 
 const loading = ref(false)
-const sentimentList = ref([])
+const rawList = ref([])
 const sentimentStats = ref({
   positive: 0,
   neutral: 0,
@@ -159,6 +177,7 @@ const keywords = ref([])
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const filters = ref({ sentiment: '', keyword: '', dateRange: [] })
 
 const sentimentPieRef = ref(null)
 const trendChartRef = ref(null)
@@ -274,21 +293,49 @@ const getScoreClass = (score) => {
   return 'text-muted'
 }
 
+const filteredList = computed(() => {
+  const keyword = (filters.value.keyword || '').trim()
+  const sentiment = filters.value.sentiment || ''
+  const [start, end] = filters.value.dateRange || []
+
+  const matchDate = (val) => {
+    if (!start && !end) return true
+    if (!val) return false
+    const dateStr = String(val).slice(0, 10)
+    if (start && dateStr < start) return false
+    if (end && dateStr > end) return false
+    return true
+  }
+
+  return (rawList.value || []).filter((x) => {
+    if (sentiment && x.sentiment !== sentiment) return false
+    if (keyword && !String(x.content || '').includes(keyword)) return false
+    if (!matchDate(x.time)) return false
+    return true
+  })
+})
+
+const filteredTotal = computed(() => filteredList.value.length)
+
+const pagedList = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredList.value.slice(start, end)
+})
+
 const loadData = async () => {
   loading.value = true
   try {
-    const res = await getYuqingData({
-      page: currentPage.value,
-      pageSize: pageSize.value
-    })
+    const res = await getYuqingData()
     
     if (res.code === 200) {
       const data = res.data
       sentimentStats.value = data.stats || { positive: 0, neutral: 0, negative: 0 }
-      sentimentList.value = data.list || []
+      rawList.value = data.list || []
       trendData.value = data.trend || { dates: [], positive: [], neutral: [], negative: [] }
       keywords.value = data.keywords || []
       total.value = data.total || 0
+      currentPage.value = 1
     }
   } catch (error) {
     ElMessage.error('加载数据失败')
@@ -299,12 +346,32 @@ const loadData = async () => {
 
 const handleSizeChange = (size) => {
   pageSize.value = size
-  loadData()
+  currentPage.value = 1
 }
 
 const handlePageChange = (page) => {
   currentPage.value = page
-  loadData()
+}
+
+const resetFilters = () => {
+  filters.value.sentiment = ''
+  filters.value.keyword = ''
+  filters.value.dateRange = []
+  currentPage.value = 1
+}
+
+const handlePieClick = (params) => {
+  const name = params?.name
+  if (!name || typeof name !== 'string') return
+  filters.value.sentiment = name
+  currentPage.value = 1
+}
+
+const handleTrendClick = (params) => {
+  const date = params?.name
+  if (!date || typeof date !== 'string') return
+  filters.value.dateRange = [date, date]
+  currentPage.value = 1
 }
 
 onMounted(() => {
@@ -327,6 +394,14 @@ onMounted(() => {
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
     
     .header-title {

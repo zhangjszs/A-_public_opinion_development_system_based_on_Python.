@@ -10,6 +10,7 @@
             ref="mapChartRef"
             :options="mapChartOptions"
             height="500px"
+            @click="handleRegionSelect"
           />
         </el-card>
       </el-col>
@@ -23,6 +24,7 @@
             ref="regionChartRef"
             :options="regionChartOptions"
             height="500px"
+            @click="handleRegionSelect"
           />
         </el-card>
       </el-col>
@@ -34,13 +36,16 @@
           <template #header>
             <div class="card-header">
               <span>IP分析详细数据</span>
-              <el-button type="primary" @click="loadData">
-                刷新数据
-              </el-button>
+              <div class="actions">
+                <el-tag v-if="selectedRegion" closable effect="plain" @close="clearRegion">
+                  地区：{{ selectedRegion }}
+                </el-tag>
+                <el-button type="primary" @click="loadData">刷新数据</el-button>
+              </div>
             </div>
           </template>
           <el-table
-            :data="ipDataList"
+            :data="displayIpList"
             :loading="loading"
             stripe
             border
@@ -61,16 +66,36 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import * as echarts from 'echarts'
 import BaseChart from '@/components/Charts/BaseChart.vue'
 import { getIPData } from '@/api/stats'
+import chinaMap from '@/assets/china.json'
 
 const loading = ref(false)
 const ipDataList = ref([])
 const mapData = ref([])
 const regionData = ref([])
+const mapReady = ref(false)
+const selectedRegion = ref('')
 
 const mapChartRef = ref(null)
 const regionChartRef = ref(null)
+
+const displayIpList = computed(() => {
+  if (!selectedRegion.value) return ipDataList.value
+  return (ipDataList.value || []).filter((x) => (x.location || '').includes(selectedRegion.value))
+})
+
+// 注册中国地图
+const registerChinaMap = () => {
+  try {
+    echarts.registerMap('china', chinaMap)
+    mapReady.value = true
+  } catch (error) {
+    console.error('Failed to load China map data:', error)
+    ElMessage.warning('地图数据加载失败，地图功能不可用')
+  }
+}
 
 const mapChartOptions = computed(() => ({
   tooltip: {
@@ -135,7 +160,18 @@ const loadData = async () => {
   }
 }
 
+const handleRegionSelect = (params) => {
+  const name = params?.name
+  if (!name || typeof name !== 'string') return
+  selectedRegion.value = name
+}
+
+const clearRegion = () => {
+  selectedRegion.value = ''
+}
+
 onMounted(() => {
+  registerChinaMap()
   loadData()
 })
 </script>
@@ -149,6 +185,12 @@ onMounted(() => {
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
   }
 }

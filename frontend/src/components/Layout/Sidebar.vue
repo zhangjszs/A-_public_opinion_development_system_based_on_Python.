@@ -29,6 +29,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
 defineProps({
   collapsed: {
@@ -38,13 +39,21 @@ defineProps({
 })
 
 const route = useRoute()
+const userStore = useUserStore()
 
 const menuRoutes = computed(() => {
   const parentRoute = route.matched.find(r => r.children)?.path
   if (!parentRoute) return []
   
   const parent = route.matched.find(r => r.children && r.children.some(c => c.meta))
-  return parent?.children.filter(child => child.meta && !child.meta.public) || []
+  const isAdmin = userStore.isAdmin
+  return (
+    parent?.children.filter((child) => {
+      if (!child.meta || child.meta.public) return false
+      if (child.meta.adminOnly && !isAdmin) return false
+      return true
+    }) || []
+  )
 })
 
 const activeMenu = computed(() => route.path)

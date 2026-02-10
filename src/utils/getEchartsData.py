@@ -178,6 +178,9 @@ def stopwordslist():
         return []
     return stopwords
 
+import threading
+_plt_lock = threading.Lock()
+
 def getContentCloud():
     text = ''
     stopwords = stopwordslist()
@@ -201,19 +204,19 @@ def getContentCloud():
     )
     wc.generate_from_text(string)
 
-    # 绘制图片
-    fig = plt.figure(1)
-    plt.imshow(wc)
-    plt.axis('off')  # 不显示坐标轴
-
-    # 显示生成的词语图片
-    # plt.show()
-
-    # 输入词语图片到文件
-
     save_path = get_abs_path('static/contentCloud.jpg')
-    plt.savefig(save_path, dpi=500)
-    plt.close()
+    
+    # 加锁防止多线程绘图冲突
+    with _plt_lock:
+        try:
+            # 绘制图片
+            fig = plt.figure(1)
+            plt.imshow(wc)
+            plt.axis('off')  # 不显示坐标轴
+            plt.savefig(save_path, dpi=500)
+        finally:
+            plt.close()
+            
     return '/static/contentCloud.jpg'
 
 def getCommentContentCloud():
@@ -239,19 +242,19 @@ def getCommentContentCloud():
     )
     wc.generate_from_text(string)
 
-    # 绘制图片
-    fig = plt.figure(1)
-    plt.imshow(wc)
-    plt.axis('off')  # 不显示坐标轴
-
-    # 显示生成的词语图片
-    # plt.show()
-
-    # 输入词语图片到文件
-
     save_path = get_abs_path('static/commentCloud.jpg')
-    plt.savefig(save_path, dpi=500)
-    plt.close()
+
+    # 加锁防止多线程绘图冲突
+    with _plt_lock:
+        try:
+            # 绘制图片
+            fig = plt.figure(1)
+            plt.imshow(wc)
+            plt.axis('off')  # 不显示坐标轴
+            plt.savefig(save_path, dpi=500)
+        finally:
+            plt.close()
+            
     return '/static/commentCloud.jpg'
 
 def getYuQingCharDataOne():

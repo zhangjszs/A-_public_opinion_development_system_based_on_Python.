@@ -4,6 +4,7 @@ from repositories.user_repository import UserRepository
 from utils.password_hasher import hash_password, verify_password, check_password_strength
 from utils.jwt_handler import create_token
 from utils.log_sanitizer import SafeLogger
+from config.settings import Config
 import logging
 
 logger = SafeLogger('auth_service', logging.INFO)
@@ -31,7 +32,8 @@ class AuthService:
             'user': {
                 'id': user.get('id'),
                 'username': username,
-                'createTime': str(user.get('createTime', ''))
+                'createTime': str(user.get('createTime', '')),
+                'is_admin': bool(Config.ADMIN_USERS and username in Config.ADMIN_USERS),
             }
         }
         logger.info(f"User login success: {username}")

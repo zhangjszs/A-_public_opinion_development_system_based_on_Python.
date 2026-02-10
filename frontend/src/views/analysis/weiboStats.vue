@@ -100,7 +100,7 @@ const loadData = async () => {
     const res = await getTableData({
       page: currentPage.value,
       pageSize: pageSize.value,
-      keyword: filterForm.value.keyword,
+      hotWord: filterForm.value.keyword,
       startDate: filterForm.value.dateRange?.[0],
       endDate: filterForm.value.dateRange?.[1]
     })

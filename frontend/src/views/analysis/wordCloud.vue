@@ -117,8 +117,15 @@ const regenerateContentCloud = async () => {
   try {
     const res = await getContentCloudData({ type: 'content' })
     if (res.code === 200) {
-      contentCloudUrl.value = res.data.url + '?t=' + Date.now()
-      ElMessage.success('内容词云已重新生成')
+      if (res.data.contentCloud) {
+        contentCloudUrl.value = res.data.contentCloud + '?t=' + Date.now()
+        ElMessage.success('内容词云已重新生成')
+      } else {
+        ElMessage.warning('未能获取到图片URL')
+      }
+      if (res.data.wordStats) {
+        wordStats.value = res.data.wordStats
+      }
     }
   } catch (error) {
     ElMessage.error('生成失败')
@@ -132,8 +139,12 @@ const regenerateAuthorCloud = async () => {
   try {
     const res = await getContentCloudData({ type: 'author' })
     if (res.code === 200) {
-      authorCloudUrl.value = res.data.url + '?t=' + Date.now()
-      ElMessage.success('用户名词云已重新生成')
+      if (res.data.authorCloud) {
+        authorCloudUrl.value = res.data.authorCloud + '?t=' + Date.now()
+        ElMessage.success('用户名词云已重新生成')
+      } else {
+        ElMessage.warning('未能获取到图片URL')
+      }
     }
   } catch (error) {
     ElMessage.error('生成失败')

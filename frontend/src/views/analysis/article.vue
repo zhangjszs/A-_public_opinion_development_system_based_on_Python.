@@ -10,6 +10,7 @@
             ref="timeChartRef"
             :options="timeChartOptions"
             height="400px"
+            @click="handleTimeChartClick"
           />
         </el-card>
       </el-col>
@@ -25,6 +26,7 @@
             ref="typeChartRef"
             :options="typeChartOptions"
             height="350px"
+            @click="handleTypeChartClick"
           />
         </el-card>
       </el-col>
@@ -84,14 +86,111 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <el-card class="list-card">
+      <template #header>
+        <div class="card-header">
+          <div class="header-title">文章列表</div>
+          <div class="header-actions">
+            <el-button :icon="Download" @click="exportList" :disabled="listData.length === 0">导出 CSV</el-button>
+            <el-button :icon="Refresh" @click="loadList">刷新</el-button>
+          </div>
+        </div>
+      </template>
+
+      <el-form :inline="true" class="filter-form" @submit.prevent>
+        <el-form-item label="关键词">
+          <el-input v-model="filters.keyword" placeholder="内容关键词" clearable style="width: 240px" />
+        </el-form-item>
+        <el-form-item label="类型">
+          <el-select v-model="filters.type" placeholder="全部" clearable style="width: 180px">
+            <el-option v-for="t in typeOptions" :key="t" :label="t" :value="t" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="时间范围">
+          <el-date-picker
+            v-model="filters.dateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :icon="Search" @click="applyFilters">查询</el-button>
+          <el-button @click="resetFilters">重置</el-button>
+        </el-form-item>
+      </el-form>
+
+      <el-table :data="listData" :loading="listLoading" style="width: 100%">
+        <el-table-column prop="id" label="ID" width="120" align="center" />
+        <el-table-column prop="authorName" label="作者" width="160" show-overflow-tooltip />
+        <el-table-column prop="region" label="地区" width="120" align="center" />
+        <el-table-column prop="type" label="类型" width="110" align="center" />
+        <el-table-column prop="created_at" label="时间" width="180" align="center" />
+        <el-table-column prop="content" label="内容" min-width="360" show-overflow-tooltip />
+        <el-table-column prop="likeNum" label="赞" width="90" align="center" />
+        <el-table-column prop="commentsLen" label="评" width="90" align="center" />
+        <el-table-column prop="reposts_count" label="转" width="90" align="center" />
+        <el-table-column label="操作" width="110" fixed="right" align="center">
+          <template #default="{ row }">
+            <el-button type="primary" link :icon="View" @click="openDetail(row)">查看</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.limit"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="pagination.total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
+    </el-card>
+
+    <el-dialog v-model="detailVisible" title="文章详情" width="760px">
+      <div v-if="detailRow" class="detail">
+        <div class="detail-row">
+          <div class="detail-label">作者</div>
+          <div class="detail-value">{{ detailRow.authorName || '-' }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">时间</div>
+          <div class="detail-value">{{ detailRow.created_at || '-' }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">地区</div>
+          <div class="detail-value">{{ detailRow.region || '-' }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">指标</div>
+          <div class="detail-value">赞 {{ detailRow.likeNum || 0 }} · 评 {{ detailRow.commentsLen || 0 }} · 转 {{ detailRow.reposts_count || 0 }}</div>
+        </div>
+        <div class="detail-content">{{ detailRow.content || '' }}</div>
+        <div v-if="detailRow.detailUrl" class="detail-link">
+          <el-link :href="detailRow.detailUrl" target="_blank" type="primary">打开微博链接</el-link>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="detailVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Search, Refresh, Download, View } from '@element-plus/icons-vue'
 import BaseChart from '@/components/Charts/BaseChart.vue'
 import { getArticleData } from '@/api/stats'
+import { getArticles } from '@/api/content'
+import { downloadCsv } from '@/utils'
 
 const loading = ref(false)
 const articleList = ref([])
@@ -102,6 +201,7 @@ const sentimentData = ref([])
 const timeChartRef = ref(null)
 const typeChartRef = ref(null)
 const sentimentChartRef = ref(null)
+const typeOptions = ref([])
 
 const timeChartOptions = computed(() => ({
   tooltip: { 
@@ -209,6 +309,7 @@ const loadData = async () => {
       timeData.value = { x: data.xData || [], y: data.yData || [] }
       typeData.value = data.typeData || []
       sentimentData.value = data.sentimentData || [0, 0, 0]
+      typeOptions.value = (data.typeList || []).map((x) => (Array.isArray(x) ? x[0] : x)).filter(Boolean)
       articleList.value = (data.articleList || []).map(item => ({
         id: item[0],
         user: item[5],
@@ -225,8 +326,109 @@ const loadData = async () => {
   }
 }
 
+const listLoading = ref(false)
+const listData = ref([])
+const pagination = ref({ page: 1, limit: 10, total: 0 })
+const filters = ref({ keyword: '', type: '', dateRange: [] })
+
+const detailVisible = ref(false)
+const detailRow = ref(null)
+
+const normalizeDates = () => {
+  const [start, end] = filters.value.dateRange || []
+  return {
+    start_time: start || '',
+    end_time: end || ''
+  }
+}
+
+const loadList = async () => {
+  listLoading.value = true
+  try {
+    const { start_time, end_time } = normalizeDates()
+    const res = await getArticles({
+      page: pagination.value.page,
+      limit: pagination.value.limit,
+      keyword: filters.value.keyword || '',
+      type: filters.value.type || '',
+      start_time,
+      end_time
+    })
+    if (res.code === 200) {
+      const data = res.data || {}
+      listData.value = data.list || []
+      pagination.value.total = data.total || 0
+    }
+  } catch (e) {
+    ElMessage.error('加载文章列表失败')
+  } finally {
+    listLoading.value = false
+  }
+}
+
+const applyFilters = () => {
+  pagination.value.page = 1
+  loadList()
+}
+
+const resetFilters = () => {
+  filters.value.keyword = ''
+  filters.value.type = ''
+  filters.value.dateRange = []
+  pagination.value.page = 1
+  loadList()
+}
+
+const handlePageChange = (page) => {
+  pagination.value.page = page
+  loadList()
+}
+
+const handleSizeChange = (size) => {
+  pagination.value.limit = size
+  pagination.value.page = 1
+  loadList()
+}
+
+const openDetail = (row) => {
+  detailRow.value = row
+  detailVisible.value = true
+}
+
+const exportList = () => {
+  const headers = ['ID', '作者', '地区', '类型', '时间', '内容', '赞', '评', '转', '链接']
+  const rows = listData.value.map((a) => [
+    a.id,
+    a.authorName,
+    a.region,
+    a.type,
+    a.created_at,
+    a.content,
+    a.likeNum,
+    a.commentsLen,
+    a.reposts_count,
+    a.detailUrl
+  ])
+  downloadCsv(`articles_${Date.now()}.csv`, headers, rows)
+}
+
+const handleTimeChartClick = (params) => {
+  const date = params?.name
+  if (!date || typeof date !== 'string') return
+  filters.value.dateRange = [date, date]
+  applyFilters()
+}
+
+const handleTypeChartClick = (params) => {
+  const t = params?.name
+  if (!t || typeof t !== 'string') return
+  filters.value.type = t
+  applyFilters()
+}
+
 onMounted(() => {
   loadData()
+  loadList()
 })
 </script>
 
@@ -262,6 +464,56 @@ onMounted(() => {
     
     &.likes { color: #F59E0B; } // Amber
     &.reposts { color: #3B82F6; } // Blue
+  }
+
+  .list-card {
+    margin-top: 24px;
+
+    .filter-form {
+      margin-bottom: 12px;
+    }
+
+    .pagination-wrapper {
+      margin-top: 16px;
+      display: flex;
+      justify-content: flex-end;
+    }
+  }
+
+  .detail {
+    .detail-row {
+      display: flex;
+      align-items: center;
+      padding: 6px 0;
+      gap: 12px;
+    }
+
+    .detail-label {
+      width: 56px;
+      color: $text-secondary;
+    }
+
+    .detail-value {
+      color: $text-primary;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .detail-content {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid $border-color-light;
+      border-radius: $border-radius-base;
+      background: $background-color;
+      color: $text-primary;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .detail-link {
+      margin-top: 12px;
+    }
   }
 }
 </style>

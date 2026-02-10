@@ -1,7 +1,15 @@
 <template>
   <el-header class="header-content">
     <div class="header-left">
-      <el-icon class="collapse-btn" @click="$emit('toggle')">
+      <el-icon
+        class="collapse-btn"
+        role="button"
+        tabindex="0"
+        aria-label="切换侧边栏"
+        @click="$emit('toggle')"
+        @keydown.enter.prevent="$emit('toggle')"
+        @keydown.space.prevent="$emit('toggle')"
+      >
         <Fold v-if="!appStore.sidebarCollapsed" />
         <Expand v-else />
       </el-icon>

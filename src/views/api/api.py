@@ -10,15 +10,18 @@ API路由模块
 from flask import Blueprint, jsonify, request
 from services.article_service import ArticleService
 from services.auth_service import AuthService
+from services.comment_service import CommentService
 from services.sentiment_service import SentimentService
 from utils.input_validator import validate_password, validate_username, sanitize_input
 from utils.log_sanitizer import SafeLogger
+from utils.api_response import ok, error
 from config.settings import Config
 import logging
 
 logger = SafeLogger('api', logging.INFO)
 article_service = ArticleService()
 auth_service = AuthService()
+comment_service = CommentService()
 
 # 创建API蓝图
 bp = Blueprint('api', __name__, url_prefix='/api')
@@ -32,20 +35,20 @@ def api_login():
 
         username_validation = validate_username(username_raw)
         if not username_validation['valid']:
-            return jsonify({'code': 400, 'msg': username_validation['message']}), 400
+            return error(username_validation['message'], code=400), 400
 
         password_validation = validate_password(password_raw)
         if not password_validation['valid']:
-            return jsonify({'code': 400, 'msg': password_validation['message']}), 400
+            return error(password_validation['message'], code=400), 400
 
         username = sanitize_input(username_raw, max_length=20)
         success, msg, payload = auth_service.login(username, password_raw)
         if success:
-            return jsonify({'code': 200, 'msg': msg, 'data': payload})
-        return jsonify({'code': 401, 'msg': msg}), 401
+            return ok(payload, msg=msg), 200
+        return error(msg, code=401), 401
     except Exception as e:
         logger.error(f"API登录异常: {e}")
-        return jsonify({'code': 500, 'msg': '服务器内部错误'}), 500
+        return error('服务器内部错误', code=500), 500
 
 @bp.route('/auth/register', methods=['POST'])
 def api_register():
@@ -57,26 +60,26 @@ def api_register():
 
         username_validation = validate_username(username_raw)
         if not username_validation['valid']:
-            return jsonify({'code': 400, 'msg': username_validation['message']}), 400
+            return error(username_validation['message'], code=400), 400
 
         password_validation = validate_password(password_raw)
         if not password_validation['valid']:
-            return jsonify({'code': 400, 'msg': password_validation['message']}), 400
+            return error(password_validation['message'], code=400), 400
 
         username = sanitize_input(username_raw, max_length=20)
         success, msg = auth_service.register(username, password_raw, confirm_raw)
         if success:
-            return jsonify({'code': 200, 'msg': msg})
-        return jsonify({'code': 400, 'msg': msg}), 400
+            return ok(msg=msg), 200
+        return error(msg, code=400), 400
     except Exception as e:
         logger.error(f"API注册异常: {e}")
-        return jsonify({'code': 500, 'msg': '服务器内部错误'}), 500
+        return error('服务器内部错误', code=500), 500
 
 @bp.route('/auth/me', methods=['GET'])
 def api_me():
     user = getattr(request, 'current_user', None)
     if not user:
-        return jsonify({'code': 401, 'msg': '未认证'}), 401
+        return error('未认证', code=401), 401
     try:
         from utils.query import querys
         users = querys(
@@ -85,37 +88,30 @@ def api_me():
             'select'
         )
         if not users:
-            return jsonify({'code': 404, 'msg': '用户不存在'}), 404
+            return error('用户不存在', code=404), 404
         info = users[0]
-        return jsonify({
-            'code': 200,
-            'msg': 'success',
-            'data': {
-                'id': info.get('id'),
-                'username': info.get('username'),
-                'createTime': str(info.get('createTime', ''))
-            }
-        })
+        return ok({
+            'id': info.get('id'),
+            'username': info.get('username'),
+            'createTime': str(info.get('createTime', '')),
+            'is_admin': bool(Config.ADMIN_USERS and info.get('username') in Config.ADMIN_USERS),
+        }), 200
     except Exception as e:
         logger.error(f"获取当前用户信息异常: {e}")
-        return jsonify({'code': 500, 'msg': '服务器内部错误'}), 500
+        return error('服务器内部错误', code=500), 500
 
 @bp.route('/auth/logout', methods=['POST'])
 def api_logout():
-    return jsonify({'code': 200, 'msg': 'success'})
+    return ok(), 200
 
 @bp.route('/stats/summary', methods=['GET'])
 def get_stats_summary():
     """获取系统统计概览"""
     try:
         data = article_service.get_stats_summary()
-        return jsonify({
-            'code': 200,
-            'msg': 'success',
-            'data': data
-        })
+        return ok(data), 200
     except Exception as e:
-        return jsonify({'code': 500, 'msg': str(e)}), 500
+        return error(str(e), code=500), 500
 
 @bp.route('/articles', methods=['GET'])
 def get_articles():
@@ -134,36 +130,106 @@ def get_articles():
         keyword = request.args.get('keyword', '')
         start_time = request.args.get('start_time', '')
         end_time = request.args.get('end_time', '')
+        article_type = request.args.get('type', '')
+        region = request.args.get('region', '')
         
         # 参数校验：关键词长度和SQL注入检测
-        if keyword:
+        if keyword or article_type or region:
             from utils.input_validator import validate_keyword, detect_sql_injection
-            validation = validate_keyword(keyword)
-            if not validation['valid']:
-                return jsonify({'code': 400, 'msg': validation['message']}), 400
-            if detect_sql_injection(keyword):
-                logger.warning(f"检测到SQL注入尝试: keyword={keyword[:50]}")
-                return jsonify({'code': 400, 'msg': '关键词包含非法字符'}), 400
+            if keyword:
+                validation = validate_keyword(keyword)
+                if not validation['valid']:
+                    return error(validation['message'], code=400), 400
+                if detect_sql_injection(keyword):
+                    logger.warning(f"检测到SQL注入尝试: keyword={keyword[:50]}")
+                    return error('关键词包含非法字符', code=400), 400
+
+            if article_type:
+                validation = validate_keyword(article_type)
+                if not validation['valid']:
+                    return error(validation['message'], code=400), 400
+                if detect_sql_injection(article_type):
+                    logger.warning(f"检测到SQL注入尝试: type={article_type[:50]}")
+                    return error('类型包含非法字符', code=400), 400
+
+            if region:
+                validation = validate_keyword(region)
+                if not validation['valid']:
+                    return error(validation['message'], code=400), 400
+                if detect_sql_injection(region):
+                    logger.warning(f"检测到SQL注入尝试: region={region[:50]}")
+                    return error('地区包含非法字符', code=400), 400
         
         # 参数校验：时间格式
         if start_time or end_time:
             import re
             time_pattern = r'^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$'
             if start_time and not re.match(time_pattern, start_time):
-                return jsonify({'code': 400, 'msg': '开始时间格式错误（应为YYYY-MM-DD或YYYY-MM-DD HH:MM:SS）'}), 400
+                return error('开始时间格式错误（应为YYYY-MM-DD或YYYY-MM-DD HH:MM:SS）', code=400), 400
             if end_time and not re.match(time_pattern, end_time):
-                return jsonify({'code': 400, 'msg': '结束时间格式错误（应为YYYY-MM-DD或YYYY-MM-DD HH:MM:SS）'}), 400
+                return error('结束时间格式错误（应为YYYY-MM-DD或YYYY-MM-DD HH:MM:SS）', code=400), 400
         
-        result = article_service.get_articles(page, limit, keyword, start_time, end_time)
+        result = article_service.get_articles(page, limit, keyword, start_time, end_time, article_type, region)
                 
-        return jsonify({
-            'code': 200,
-            'msg': 'success',
-            'data': result
-        })
+        return ok(result), 200
         
     except Exception as e:
-        return jsonify({'code': 500, 'msg': str(e)}), 500
+        return error(str(e), code=500), 500
+
+@bp.route('/comments', methods=['GET'])
+def get_comments():
+    """
+    获取评论列表（支持分页、关键词搜索、时间筛选）
+    Params:
+        page: 页码 (默认1)
+        limit: 每页数量 (默认10)
+        keyword: 搜索关键词（评论内容）
+        article_id: 文章ID（rootId）
+        user: 评论用户名（模糊匹配）
+        start_time: 开始时间
+        end_time: 结束时间
+    """
+    try:
+        page = int(request.args.get('page', 1))
+        limit = min(int(request.args.get('limit', 10)), 100)
+        keyword = request.args.get('keyword', '')
+        article_id = request.args.get('article_id', '')
+        user = request.args.get('user', '')
+        start_time = request.args.get('start_time', '')
+        end_time = request.args.get('end_time', '')
+
+        if keyword or user:
+            from utils.input_validator import validate_keyword, detect_sql_injection
+
+            if keyword:
+                validation = validate_keyword(keyword)
+                if not validation['valid']:
+                    return error(validation['message'], code=400), 400
+                if detect_sql_injection(keyword):
+                    logger.warning(f"检测到SQL注入尝试: keyword={keyword[:50]}")
+                    return error('关键词包含非法字符', code=400), 400
+
+            if user:
+                validation = validate_keyword(user)
+                if not validation['valid']:
+                    return error(validation['message'], code=400), 400
+                if detect_sql_injection(user):
+                    logger.warning(f"检测到SQL注入尝试: user={user[:50]}")
+                    return error('用户名包含非法字符', code=400), 400
+
+        if start_time or end_time:
+            import re
+
+            time_pattern = r'^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$'
+            if start_time and not re.match(time_pattern, start_time):
+                return error('开始时间格式错误（应为YYYY-MM-DD或YYYY-MM-DD HH:MM:SS）', code=400), 400
+            if end_time and not re.match(time_pattern, end_time):
+                return error('结束时间格式错误（应为YYYY-MM-DD或YYYY-MM-DD HH:MM:SS）', code=400), 400
+
+        result = comment_service.get_comments(page, limit, keyword, article_id, user, start_time, end_time)
+        return ok(result), 200
+    except Exception as e:
+        return error(str(e), code=500), 500
 
 @bp.route('/sentiment/analyze', methods=['POST'])
 def analyze_sentiment():
@@ -181,40 +247,32 @@ def analyze_sentiment():
         is_async = data.get('async', False)
         
         if not text:
-            return jsonify({'code': 400, 'msg': 'text is required'}), 400
+            return error('text is required', code=400), 400
         
         # 参数校验
         from utils.input_validator import validate_keyword
         validation = validate_keyword(text[:50])  # 只校验前50字符
         if not validation['valid']:
-            return jsonify({'code': 400, 'msg': validation['message']}), 400
+            return error(validation['message'], code=400), 400
         
         # 异步模式
         if is_async:
             from tasks.celery_sentiment import analyze_single_with_fallback
             task = analyze_single_with_fallback.delay(text, mode)
-            return jsonify({
-                'code': 202,
-                'msg': '任务已提交',
-                'data': {
-                    'task_id': task.id,
-                    'status': 'PENDING',
-                    'check_url': f'/api/tasks/{task.id}/status'
-                }
-            })
+            return ok({
+                'task_id': task.id,
+                'status': 'PENDING',
+                'check_url': f'/api/tasks/{task.id}/status'
+            }, msg='任务已提交', code=202), 202
         
         # 同步模式
         result = SentimentService.analyze(text, mode)
             
-        return jsonify({
-            'code': 200,
-            'msg': 'success',
-            'data': result
-        })
+        return ok(result), 200
         
     except Exception as e:
         logger.error(f"情感分析接口异常: {e}")
-        return jsonify({'code': 500, 'msg': '服务器内部错误'}), 500
+        return error('服务器内部错误', code=500), 500
 
 
 @bp.route('/spider/search', methods=['POST'])
@@ -234,7 +292,7 @@ def spider_search():
         from utils.input_validator import validate_keyword
         validation = validate_keyword(keyword)
         if not validation['valid']:
-            return jsonify({'code': 400, 'msg': validation['message']}), 400
+            return error(validation['message'], code=400), 400
         
         # 提交异步任务
         from tasks.celery_spider import spider_search_task
@@ -242,21 +300,17 @@ def spider_search():
         
         logger.info(f"爬虫任务已提交: task_id={task.id}, keyword={keyword}")
         
-        return jsonify({
-            'code': 202,
-            'msg': '爬虫任务已提交',
-            'data': {
-                'task_id': task.id,
-                'keyword': keyword,
-                'page_num': page_num,
-                'status': 'PENDING',
-                'check_url': f'/api/tasks/{task.id}/status'
-            }
-        })
+        return ok({
+            'task_id': task.id,
+            'keyword': keyword,
+            'page_num': page_num,
+            'status': 'PENDING',
+            'check_url': f'/api/tasks/{task.id}/status'
+        }, msg='爬虫任务已提交', code=202), 202
         
     except Exception as e:
         logger.error(f"爬虫接口异常: {e}")
-        return jsonify({'code': 500, 'msg': '服务器内部错误'}), 500
+        return error('服务器内部错误', code=500), 500
 
 
 @bp.route('/spider/comments', methods=['POST'])
@@ -276,20 +330,16 @@ def spider_comments():
         
         logger.info(f"评论爬虫任务已提交: task_id={task.id}, limit={article_limit}")
         
-        return jsonify({
-            'code': 202,
-            'msg': '评论爬虫任务已提交',
-            'data': {
-                'task_id': task.id,
-                'article_limit': article_limit,
-                'status': 'PENDING',
-                'check_url': f'/api/tasks/{task.id}/status'
-            }
-        })
+        return ok({
+            'task_id': task.id,
+            'article_limit': article_limit,
+            'status': 'PENDING',
+            'check_url': f'/api/tasks/{task.id}/status'
+        }, msg='评论爬虫任务已提交', code=202), 202
         
     except Exception as e:
         logger.error(f"评论爬虫接口异常: {e}")
-        return jsonify({'code': 500, 'msg': '服务器内部错误'}), 500
+        return error('服务器内部错误', code=500), 500
 
 
 @bp.route('/tasks/<task_id>/status', methods=['GET'])
@@ -301,15 +351,11 @@ def get_task_status(task_id):
         from tasks.celery_spider import get_task_progress
         result = get_task_progress(task_id)
         
-        return jsonify({
-            'code': 200,
-            'msg': 'success',
-            'data': result
-        })
+        return ok(result), 200
         
     except Exception as e:
         logger.error(f"查询任务状态异常: {e}")
-        return jsonify({'code': 500, 'msg': '查询失败'}), 500
+        return error('查询失败', code=500), 500
 
 
 @bp.route('/spider/refresh', methods=['POST'])
@@ -323,7 +369,7 @@ def refresh_data():
     try:
         user = getattr(request, 'current_user', None)
         if Config.ADMIN_USERS and (not user or user.get('username') not in Config.ADMIN_USERS):
-            return jsonify({'code': 403, 'msg': '权限不足'}), 403
+            return error('权限不足', code=403), 403
         # 这里的逻辑也应该移到 ArticleService 或 SpiderService
         # 为了演示，我们假设 ArticleService 暂时处理不了复杂的爬虫逻辑
         # 或者我们可以创建一个 SpiderService
@@ -340,7 +386,7 @@ def refresh_data():
         # 获取Cookie
         cookie = os.getenv('WEIBO_COOKIE', '')
         if not cookie:
-            return jsonify({'code': 400, 'msg': 'WEIBO_COOKIE未配置'}), 400
+            return error('WEIBO_COOKIE未配置', code=400), 400
         
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -420,19 +466,15 @@ def refresh_data():
         
         logger.info(f"刷新数据完成: 爬取{len(articles)}条, 导入{imported}条")
         
-        return jsonify({
-            'code': 200,
-            'msg': '刷新成功',
-            'data': {
-                'crawled': len(articles),
-                'imported': imported,
-                'pages': page_num
-            }
-        })
+        return ok({
+            'crawled': len(articles),
+            'imported': imported,
+            'pages': page_num
+        }, msg='刷新成功'), 200
         
     except Exception as e:
         logger.error(f"刷新数据异常: {e}")
-        return jsonify({'code': 500, 'msg': str(e)}), 500
+        return error(str(e), code=500), 500
 
 
 @bp.route('/stats/today', methods=['GET'])
@@ -465,15 +507,11 @@ def get_today_stats():
             'select'
         )[0]['latest']
         
-        return jsonify({
-            'code': 200,
-            'msg': 'success',
-            'data': {
-                'today_articles': today_articles,
-                'today_comments': today_comments,
-                'latest_update': str(latest) if latest else None
-            }
-        })
+        return ok({
+            'today_articles': today_articles,
+            'today_comments': today_comments,
+            'latest_update': str(latest) if latest else None
+        }), 200
     except Exception as e:
         logger.error(f"获取今日统计失败: {e}")
-        return jsonify({'code': 500, 'msg': str(e)}), 500
+        return error(str(e), code=500), 500

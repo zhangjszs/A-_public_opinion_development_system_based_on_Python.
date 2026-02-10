@@ -15,8 +15,8 @@ start "Frontend - Vite" cmd /k "cd /d %~dp0frontend && npm run dev"
 echo.
 echo ================================
 echo   启动完成！
-echo   后端: http://127.0.0.1:5000
-echo   前端: http://localhost:3000
+echo   Backend URL: http://127.0.0.1:5000
+echo   Frontend URL: http://localhost:3000
 echo ================================
 echo.
 echo 按任意键退出此窗口...

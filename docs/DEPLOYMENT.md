@@ -41,11 +41,12 @@ pip install -r requirements.txt
 # 3. 数据库初始化
 mysql -u root -p < 数据库/new.sql
 
-# 4. 配置数据库连接
-# 编辑 utils/query.py 中的连接信息
+# 4. 配置环境变量（推荐）
+cp .env.example .env
+# 编辑 .env，至少配置：SECRET_KEY / JWT_SECRET_KEY / DB_*
 
 # 5. 启动应用
-python app.py
+python run.py
 ```
 
 ## 🔧 环境要求
@@ -211,37 +212,29 @@ python test_spider_system.py
 ### 开发模式启动
 
 ```bash
-# 设置环境变量
-export FLASK_APP=app.py
-export FLASK_ENV=development
+# 1. 配置环境变量
+cp .env.example .env
+# 编辑 .env，开发环境至少配置：DB_*、SECRET_KEY（可选）、JWT_SECRET_KEY（可选）
 
-# 启动应用
-flask run
-
-# 或直接运行
-python app.py
+# 2. 启动后端
+python run.py
 ```
 
 ### 自定义端口启动
 
 ```bash
-# 指定端口
-flask run --host=0.0.0.0 --port=8000
-
-# 或在代码中修改
-# app.py 中修改
-app.run(host='0.0.0.0', port=8000, debug=True)
+# 通过环境变量或反向代理指定端口；开发直接修改 run.py / 启动命令即可
 ```
 
 ### 后台运行
 
 ```bash
 # 使用 nohup
-nohup python app.py &
+nohup python run.py &
 
 # 或使用 screen
 screen -S weibo_app
-python app.py
+python run.py
 # Ctrl+A+D 脱离
 ```
 
@@ -253,14 +246,29 @@ python app.py
 # 安装 Gunicorn
 pip install gunicorn
 
+# 生产环境必须配置 SECRET_KEY（并建议单独配置 JWT_SECRET_KEY）
 # 启动应用
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
+gunicorn -w 4 -b 0.0.0.0:5000 "src.app:app"
 
 # 参数说明
 # -w 4: 4个工作进程
 # -b: 绑定地址和端口
-# app:app: 模块名:应用实例名
+# src.app:app: 模块名:应用实例名
 ```
+
+### 前端 Nginx（SPA 路由回退）
+
+如果前端使用 Nginx 托管构建产物，需要开启 `try_files ... /index.html`，否则用户在生产环境直接访问 `/home` 等路由会出现 404。
+
+本项目已在 `frontend/nginx.conf` 中配置：
+
+```nginx
+location / {
+  try_files $uri $uri/ /index.html;
+}
+```
+
+并对 `/api`、`/getAllData` 做反向代理到后端服务，避免跨域与直连后端端口。
 
 ### 使用 uWSGI
 
@@ -270,7 +278,7 @@ pip install uwsgi
 
 # 创建配置文件 uwsgi.ini
 [uwsgi]
-module = app:app
+module = src.app:app
 master = true
 processes = 4
 socket = 127.0.0.1:5000
@@ -334,7 +342,7 @@ User=www-data
 Group=www-data
 WorkingDirectory=/path/to/your/project
 Environment="PATH=/path/to/your/venv/bin"
-ExecStart=/path/to/your/venv/bin/gunicorn -w 4 -b 127.0.0.1:5000 app:app
+ExecStart=/path/to/your/venv/bin/gunicorn -w 4 -b 127.0.0.1:5000 "src.app:app"
 Restart=always
 
 [Install]

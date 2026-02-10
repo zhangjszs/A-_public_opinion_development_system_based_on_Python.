@@ -194,3 +194,23 @@ export function getEnumLabel(enumObj, value) {
   const found = Object.entries(enumObj).find(([key, val]) => val === value)
   return found ? found[0] : String(value)
 }
+
+export function downloadCsv(filename, headers, rows) {
+  const escapeCell = (value) => {
+    if (value === null || value === undefined) return ''
+    const str = String(value)
+    const escaped = str.replaceAll('"', '""')
+    if (/[",\n\r]/.test(escaped)) return `"${escaped}"`
+    return escaped
+  }
+
+  const lines = []
+  lines.push(headers.map(escapeCell).join(','))
+  for (const row of rows) {
+    lines.push(row.map(escapeCell).join(','))
+  }
+
+  const bom = '\uFEFF'
+  const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8' })
+  downloadBlob(blob, filename)
+}

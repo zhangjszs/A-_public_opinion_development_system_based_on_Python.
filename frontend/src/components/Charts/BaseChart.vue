@@ -21,7 +21,7 @@ const props = defineProps({
   },
   theme: {
     type: String,
-    default: 'light'
+    default: 'auto'
   },
   autoResize: {
     type: Boolean,
@@ -33,19 +33,30 @@ const emit = defineEmits(['click', 'legendselectchanged'])
 
 const chartRef = ref(null)
 let chartInstance = null
+let observer = null
+
+const getAutoTheme = () => {
+  return document.documentElement.classList.contains('dark') ? 'dark' : null
+}
+
+const initInstance = (themeName) => {
+  if (!chartRef.value) return
+  chartInstance = markRaw(echarts.init(chartRef.value, themeName))
+  chartInstance.setOption(props.options, true)
+
+  chartInstance.on('click', (params) => {
+    emit('click', params)
+  })
+
+  chartInstance.on('legendselectchanged', (params) => {
+    emit('legendselectchanged', params)
+  })
+}
 
 const initChart = () => {
   if (chartRef.value) {
-    chartInstance = markRaw(echarts.init(chartRef.value, props.theme))
-    chartInstance.setOption(props.options, true)
-    
-    chartInstance.on('click', (params) => {
-      emit('click', params)
-    })
-    
-    chartInstance.on('legendselectchanged', (params) => {
-      emit('legendselectchanged', params)
-    })
+    const themeName = props.theme === 'auto' ? getAutoTheme() : props.theme
+    initInstance(themeName)
     
     if (props.autoResize) {
       window.addEventListener('resize', handleResize)
@@ -68,19 +79,28 @@ watch(() => props.options, (newOptions) => {
 }, { deep: true })
 
 watch(() => props.theme, (newTheme) => {
+  const themeName = newTheme === 'auto' ? getAutoTheme() : newTheme
   chartInstance?.dispose()
-  chartInstance = markRaw(echarts.init(chartRef.value, newTheme))
-  chartInstance.setOption(props.options, true)
+  initInstance(themeName)
 })
 
 onMounted(() => {
   nextTick(() => {
     initChart()
+    if (props.theme === 'auto') {
+      observer = new MutationObserver(() => {
+        const themeName = getAutoTheme()
+        chartInstance?.dispose()
+        initInstance(themeName)
+      })
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    }
   })
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  observer?.disconnect()
   chartInstance?.dispose()
 })
 

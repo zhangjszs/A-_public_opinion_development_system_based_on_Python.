@@ -143,20 +143,29 @@ try:
     from views.api import api    # API视图蓝图
     from views.data import db    # 数据API蓝图
     from views.api.spider_api import spider_bp  # 爬虫管理蓝图
+    from views.api.alert_api import bp as alert_bp  # 预警管理蓝图
+    from views.api.propagation_api import bp as propagation_bp  # 传播分析蓝图
+    from views.api.report_api import bp as report_bp  # 报告生成蓝图
     
     app.register_blueprint(page.pb)  # 注册页面蓝图
     app.register_blueprint(user.ub)  # 注册用户蓝图
     app.register_blueprint(api.bp)   # 注册API蓝图
     app.register_blueprint(db)       # 注册数据API蓝图
     app.register_blueprint(spider_bp)  # 注册爬虫管理蓝图
+    app.register_blueprint(alert_bp)   # 注册预警管理蓝图
+    app.register_blueprint(propagation_bp)   # 注册传播分析蓝图
+    app.register_blueprint(report_bp)   # 注册报告生成蓝图
     
     # 排除蓝图的CSRF保护（允许JSON请求）
     csrf.exempt(api.bp)
     csrf.exempt(db)
     csrf.exempt(user.ub)
     csrf.exempt(spider_bp)
+    csrf.exempt(alert_bp)
+    csrf.exempt(propagation_bp)
+    csrf.exempt(report_bp)
     
-    logger.info("蓝图注册完成: page, user, api, data, spider")
+    logger.info("蓝图注册完成: page, user, api, data, spider, alert, propagation, report")
     
 except ImportError as e:
     logger.error(f"蓝图导入失败: {e}")

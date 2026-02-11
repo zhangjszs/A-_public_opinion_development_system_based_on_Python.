@@ -167,3 +167,80 @@ def analyze_single_with_fallback(self, text: str, mode: str = 'smart') -> Dict[s
         except Exception as e:
             logger.error(f"[任务{task_id}] 降级也失败: {e}")
             raise self.retry(exc=exc)
+
+
+@celery_app.task(bind=True, max_retries=1, default_retry_delay=300)
+def retrain_model_task(self, optimize: bool = False) -> Dict[str, Any]:
+    """
+    模型重训练任务
+    
+    Args:
+        optimize: 是否进行超参数优化
+        
+    Returns:
+        dict: 训练结果
+    """
+    task_id = self.request.id
+    logger.info(f"[任务{task_id}] 开始模型重训练, optimize={optimize}")
+    
+    try:
+        self.update_state(
+            state='PROGRESS',
+            meta={'status': '正在准备训练数据...', 'progress': 10}
+        )
+        
+        from pathlib import Path
+        import sys
+        model_dir = Path(Config.BASE_DIR) / 'model'
+        sys.path.insert(0, str(model_dir))
+        
+        self.update_state(
+            state='PROGRESS',
+            meta={'status': '正在训练模型...', 'progress': 30}
+        )
+        
+        if optimize:
+            from model.trainModel import evaluate_models, train_best_model, load_data
+            from pathlib import Path
+            
+            df = load_data(Path(model_dir) / 'target.csv')
+            results = evaluate_models(df, scoring='macro_f1')
+            
+            mean_scores = {name: scores.mean() for name, scores in results.items()}
+            best_model_name = max(mean_scores, key=mean_scores.get)
+            
+            self.update_state(
+                state='PROGRESS',
+                meta={'status': f'正在保存最优模型 ({best_model_name})...', 'progress': 80}
+            )
+            
+            train_best_model(df, model_name=best_model_name)
+            
+            return {
+                'status': 'success',
+                'task_id': task_id,
+                'best_model': best_model_name,
+                'score': mean_scores[best_model_name],
+                'optimized': True
+            }
+        else:
+            from model.trainModel import train_best_model, load_data
+            from pathlib import Path
+            
+            df = load_data(Path(model_dir) / 'target.csv')
+            train_best_model(df, model_name='NaiveBayes')
+            
+            return {
+                'status': 'success',
+                'task_id': task_id,
+                'best_model': 'NaiveBayes',
+                'optimized': False
+            }
+            
+    except Exception as exc:
+        logger.error(f"[任务{task_id}] 模型重训练失败: {exc}")
+        self.update_state(
+            state='FAILURE',
+            meta={'status': f'训练失败: {str(exc)}', 'error': str(exc)}
+        )
+        raise

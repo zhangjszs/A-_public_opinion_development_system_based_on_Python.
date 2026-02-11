@@ -62,6 +62,18 @@ const routes = [
         meta: { title: '舆情分析', icon: 'TrendCharts' }
       },
       {
+        path: 'predict',
+        name: 'ContentPredict',
+        component: () => import('@/views/analysis/predict.vue'),
+        meta: { title: '内容预测', icon: 'Cpu' }
+      },
+      {
+        path: 'propagation',
+        name: 'PropagationAnalysis',
+        component: () => import('@/views/analysis/propagation.vue'),
+        meta: { title: '传播分析', icon: 'Share' }
+      },
+      {
         path: 'word-cloud',
         name: 'WordCloud',
         component: () => import('@/views/analysis/wordCloud.vue'),
@@ -72,6 +84,24 @@ const routes = [
         name: 'SpiderManager',
         component: () => import('@/views/analysis/spider.vue'),
         meta: { title: '爬虫管理', icon: 'Monitor', adminOnly: true }
+      },
+      {
+        path: 'alert-center',
+        name: 'AlertCenter',
+        component: () => import('@/views/alert/center.vue'),
+        meta: { title: '预警中心', icon: 'Bell' }
+      },
+      {
+        path: 'report',
+        name: 'ReportGenerator',
+        component: () => import('@/views/system/report.vue'),
+        meta: { title: '报告生成', icon: 'Document' }
+      },
+      {
+        path: 'big-screen',
+        name: 'BigScreen',
+        component: () => import('@/views/dashboard/BigScreen.vue'),
+        meta: { title: '数据大屏', icon: 'Monitor' }
       },
       {
         path: 'tasks',

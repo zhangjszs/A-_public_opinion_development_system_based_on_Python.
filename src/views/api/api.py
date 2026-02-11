@@ -3,7 +3,7 @@
 """
 API路由模块
 功能：提供RESTful API接口
-特性：分页查询、情感分析、参数验证
+特性：分页查询、情感分析、参数验证、限流保护
 作者：微博舆情分析系统
 """
 
@@ -15,6 +15,7 @@ from services.sentiment_service import SentimentService
 from utils.input_validator import validate_password, validate_username, sanitize_input
 from utils.log_sanitizer import SafeLogger
 from utils.api_response import ok, error
+from utils.rate_limiter import rate_limit
 from config.settings import Config
 import logging
 
@@ -23,10 +24,10 @@ article_service = ArticleService()
 auth_service = AuthService()
 comment_service = CommentService()
 
-# 创建API蓝图
 bp = Blueprint('api', __name__, url_prefix='/api')
 
 @bp.route('/auth/login', methods=['POST'])
+@rate_limit(max_requests=10, window_seconds=60, error_message='登录请求过于频繁，请稍后再试')
 def api_login():
     try:
         data = request.get_json(silent=True) or {}
@@ -51,6 +52,7 @@ def api_login():
         return error('服务器内部错误', code=500), 500
 
 @bp.route('/auth/register', methods=['POST'])
+@rate_limit(max_requests=5, window_seconds=60, error_message='注册请求过于频繁，请稍后再试')
 def api_register():
     try:
         data = request.get_json(silent=True) or {}
@@ -232,6 +234,7 @@ def get_comments():
         return error(str(e), code=500), 500
 
 @bp.route('/sentiment/analyze', methods=['POST'])
+@rate_limit(max_requests=30, window_seconds=60, error_message='情感分析请求过于频繁，请稍后再试')
 def analyze_sentiment():
     """
     文本情感分析接口
@@ -272,6 +275,114 @@ def analyze_sentiment():
         
     except Exception as e:
         logger.error(f"情感分析接口异常: {e}")
+        return error('服务器内部错误', code=500), 500
+
+
+@bp.route('/predict/batch', methods=['POST'])
+@rate_limit(max_requests=10, window_seconds=60, error_message='批量预测请求过于频繁，请稍后再试')
+def predict_batch():
+    """
+    批量文本情感分析接口
+    Body:
+        texts: 待分析文本列表
+        mode: 分析模式 (simple/smart/custom)，默认 custom
+    """
+    try:
+        data = request.json
+        texts = data.get('texts', [])
+        mode = data.get('mode', 'custom')
+        
+        if not texts or not isinstance(texts, list):
+            return error('texts 必须是非空数组', code=400), 400
+        
+        if len(texts) > 100:
+            return error('单次最多预测100条文本', code=400), 400
+        
+        results = SentimentService.analyze_batch(texts, mode)
+        
+        return ok({
+            'total': len(results),
+            'results': results
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"批量预测接口异常: {e}")
+        return error('服务器内部错误', code=500), 500
+
+
+@bp.route('/model/info', methods=['GET'])
+def get_model_info():
+    """
+    获取模型信息接口
+    """
+    try:
+        import os
+        import json
+        from pathlib import Path
+        
+        model_dir = Path(Config.BASE_DIR) / 'model'
+        model_path = model_dir / 'best_sentiment_model.pkl'
+        
+        info = {
+            'model_type': 'TF-IDF + 分类器',
+            'best_model': 'NaiveBayes',
+            'accuracy': None,
+            'f1_score': None,
+            'training_samples': None,
+            'last_updated': None,
+            'model_exists': model_path.exists()
+        }
+        
+        if model_path.exists():
+            import os.path
+            from datetime import datetime
+            mtime = os.path.getmtime(model_path)
+            info['last_updated'] = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
+        
+        summary_path = model_dir / 'analysis_summary.json'
+        if summary_path.exists():
+            try:
+                with open(summary_path, 'r', encoding='utf-8') as f:
+                    summary = json.load(f)
+                    info['training_samples'] = summary.get('total_comments')
+            except:
+                pass
+        
+        return ok(info), 200
+        
+    except Exception as e:
+        logger.error(f"获取模型信息异常: {e}")
+        return error('服务器内部错误', code=500), 500
+
+
+@bp.route('/model/retrain', methods=['POST'])
+def retrain_model():
+    """
+    触发模型重训练（异步）
+    Body:
+        optimize: 是否进行超参数优化
+    """
+    try:
+        user = getattr(request, 'current_user', None)
+        if Config.ADMIN_USERS and (not user or user.get('username') not in Config.ADMIN_USERS):
+            return error('权限不足', code=403), 403
+        
+        data = request.json or {}
+        optimize = data.get('optimize', False)
+        
+        from tasks.celery_sentiment import retrain_model_task
+        task = retrain_model_task.delay(optimize=optimize)
+        
+        logger.info(f"模型重训练任务已提交: task_id={task.id}")
+        
+        return ok({
+            'task_id': task.id,
+            'status': 'PENDING',
+            'check_url': f'/api/tasks/{task.id}/status'
+        }, msg='模型重训练任务已提交', code=202), 202
+        
+    except Exception as e:
+        logger.error(f"模型重训练接口异常: {e}")
         return error('服务器内部错误', code=500), 500
 
 

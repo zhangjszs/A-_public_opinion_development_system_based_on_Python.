@@ -104,6 +104,12 @@ const routes = [
         meta: { title: '数据大屏', icon: 'Monitor' }
       },
       {
+        path: 'platform-monitor',
+        name: 'PlatformMonitor',
+        component: () => import('@/views/analysis/platform.vue'),
+        meta: { title: '多平台监测', icon: 'Connection' }
+      },
+      {
         path: 'tasks',
         name: 'TaskCenter',
         component: () => import('@/views/system/tasks.vue'),

@@ -9,7 +9,7 @@
         <h1 class="title">微博舆情分析实时监控大屏</h1>
       </div>
       <div class="header-right">
-        <el-button type="primary" :icon="isFullscreen ? ExitFullScreen : FullScreen" @click="toggleFullscreen">
+        <el-button type="primary" @click="toggleFullscreen">
           {{ isFullscreen ? '退出全屏' : '全屏显示' }}
         </el-button>
       </div>
@@ -99,7 +99,6 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { FullScreen, ExitFullScreen } from '@element-plus/icons-vue'
 import BaseChart from '@/components/Charts/BaseChart.vue'
 
 const isFullscreen = ref(false)

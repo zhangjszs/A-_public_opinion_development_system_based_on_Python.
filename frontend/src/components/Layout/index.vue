@@ -1,14 +1,19 @@
 <template>
   <el-config-provider :locale="locale">
-    <el-container class="layout-container">
-      <el-aside :width="isCollapsed ? '64px' : '240px'" class="sidebar" :class="{ 'is-collapsed': isCollapsed }">
+    <el-container class="layout-container" :class="{ 'mobile-mode': isMobile }">
+      <el-aside 
+        v-if="!isMobile" 
+        :width="isCollapsed ? '64px' : '240px'" 
+        class="sidebar" 
+        :class="{ 'is-collapsed': isCollapsed }"
+      >
         <Sidebar :collapsed="isCollapsed" />
       </el-aside>
       <el-container>
-        <el-header class="header">
-          <Header @toggle="toggleSidebar" />
+        <el-header class="header" :class="{ 'mobile-header': isMobile }">
+          <Header @toggle="toggleSidebar" :is-mobile="isMobile" @toggleMobile="toggleMobileMenu" />
         </el-header>
-        <el-main class="main-content">
+        <el-main class="main-content" :class="{ 'mobile-content': isMobile }">
           <router-view v-slot="{ Component }">
             <transition name="fade" mode="out-in">
               <keep-alive>
@@ -18,24 +23,45 @@
           </router-view>
         </el-main>
       </el-container>
+      <MobileNav v-if="isMobile" />
     </el-container>
   </el-config-provider>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import Sidebar from './Sidebar.vue'
 import Header from './Header.vue'
+import MobileNav from './MobileNav.vue'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 
 const locale = zhCn
 const appStore = useAppStore()
 const isCollapsed = computed(() => appStore.sidebarCollapsed)
+const isMobile = ref(false)
+const isMobileMenuOpen = ref(false)
 
 const toggleSidebar = () => {
   appStore.toggleSidebar()
 }
+
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+}
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
+
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+})
 </script>
 
 <style lang="scss" scoped>
@@ -90,6 +116,26 @@ const toggleSidebar = () => {
   
   &::-webkit-scrollbar-track {
     background: transparent;
+  }
+  
+  &.mobile-content {
+    padding: 12px;
+    height: calc(100vh - 64px - 60px);
+  }
+}
+
+.mobile-mode {
+  .header {
+    &.mobile-header {
+      height: 50px;
+      line-height: 50px;
+    }
+  }
+  
+  .main-content {
+    &.mobile-content {
+      padding: 12px;
+    }
   }
 }
 </style>

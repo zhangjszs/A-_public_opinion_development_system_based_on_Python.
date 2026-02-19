@@ -248,8 +248,8 @@ def spider_overview():
                         'date': str(row['date']),
                         'count': int(row['count']),
                     })
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("查询每日文章趋势失败: %s", e)
 
         # 获取每日评论数趋势
         comment_trend = []
@@ -267,8 +267,8 @@ def spider_overview():
                         'date': str(row['date']),
                         'count': int(row['count']),
                     })
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("查询每日评论趋势失败: %s", e)
 
         return ok({
             'articleCount': article_count,

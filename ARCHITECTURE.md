@@ -41,10 +41,16 @@
 - [x] 添加 `Dockerfile` 和 `docker-compose.yml`。
 - [x] 配置 CI/CD 流水线 (`.github/workflows`).
 
-### Phase 3: 深度 DDD 重构 (待执行)
-- [ ] 引入 SQLAlchemy 或 Peewee ORM，替换原生 SQL。
-- [ ] 定义 `User`、`Article` 等领域实体。
+### Phase 3: 深度 DDD 重构 (已完成)
+- [x] 统一数据访问层：使用 SQLAlchemy 替换自定义 pymysql 连接池（S10）。
+- [x] 定义 `User`、`Article` 等领域实体。
 - [ ] 引入 `Domain Event` 解耦业务副作用。
+
+## 6. 数据访问层说明
+
+数据访问层统一使用 SQLAlchemy（`src/utils/query.py`）。`engine`（连接池）和 `db_session`（scoped_session）是唯一的数据库访问入口。`querys()` 和 `query_dataframe()` 提供向后兼容的函数接口，内部均通过 SQLAlchemy engine 执行。
+
+自定义 `DatabasePool`（pymysql）和备用连接机制已于 S10 整改中删除。
 
 ### Phase 4: 微服务拆分 (长期目标)
 - [ ] 将 `Spider` 模块拆分为独立服务。

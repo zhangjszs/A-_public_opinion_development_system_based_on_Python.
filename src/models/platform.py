@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 多平台数据模型
 统一管理不同平台的数据结构
@@ -7,8 +6,8 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, List, Dict, Any
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class Platform(Enum):
@@ -42,30 +41,30 @@ class PlatformContent:
     author_name: str
     author_followers: int = 0
     author_verified: bool = False
-    
+
     content: str = ""
     media_urls: List[str] = field(default_factory=list)
-    
+
     like_count: int = 0
     comment_count: int = 0
     repost_count: int = 0
     view_count: int = 0
-    
+
     published_at: Optional[datetime] = None
     collected_at: datetime = field(default_factory=datetime.now)
-    
+
     keywords: List[str] = field(default_factory=list)
     sentiment_score: Optional[float] = None
     sentiment_label: Optional[str] = None
-    
+
     location: Optional[str] = None
     tags: List[str] = field(default_factory=list)
-    
+
     raw_data: Dict[str, Any] = field(default_factory=dict)
-    
+
     parent_id: Optional[str] = None
     root_id: Optional[str] = None
-    
+
     def to_dict(self) -> Dict:
         return {
             'platform': self.platform.value,
@@ -91,7 +90,7 @@ class PlatformContent:
             'parent_id': self.parent_id,
             'root_id': self.root_id
         }
-    
+
     @classmethod
     def from_weibo(cls, data: Dict) -> 'PlatformContent':
         """从微博数据转换"""
@@ -117,7 +116,7 @@ class PlatformContent:
             parent_id=data.get('parent_id'),
             raw_data=data
         )
-    
+
     @classmethod
     def from_wechat(cls, data: Dict) -> 'PlatformContent':
         """从微信数据转换"""
@@ -138,7 +137,7 @@ class PlatformContent:
             tags=data.get('source', []),
             raw_data=data
         )
-    
+
     @classmethod
     def from_douyin(cls, data: Dict) -> 'PlatformContent':
         """从抖音数据转换"""
@@ -161,7 +160,7 @@ class PlatformContent:
             location=data.get('location'),
             raw_data=data
         )
-    
+
     @classmethod
     def from_zhihu(cls, data: Dict) -> 'PlatformContent':
         """从知乎数据转换"""
@@ -193,12 +192,12 @@ class PlatformStats:
     positive_ratio: float = 0.0
     negative_ratio: float = 0.0
     neutral_ratio: float = 0.0
-    
+
     top_keywords: List[Dict[str, Any]] = field(default_factory=list)
     top_users: List[Dict[str, Any]] = field(default_factory=list)
-    
+
     updated_at: datetime = field(default_factory=datetime.now)
-    
+
     def to_dict(self) -> Dict:
         return {
             'platform': self.platform.value,
@@ -216,9 +215,9 @@ class PlatformStats:
 
 class PlatformRegistry:
     """平台注册表"""
-    
+
     _platforms: Dict[str, Dict] = {}
-    
+
     @classmethod
     def register(cls, platform: Platform, name: str, enabled: bool = True):
         """注册平台"""
@@ -227,7 +226,7 @@ class PlatformRegistry:
             'name': name,
             'enabled': enabled
         }
-    
+
     @classmethod
     def get_platform(cls, platform: str) -> Optional[Platform]:
         """获取平台枚举"""
@@ -235,7 +234,7 @@ class PlatformRegistry:
             return Platform(platform)
         except ValueError:
             return None
-    
+
     @classmethod
     def list_platforms(cls, enabled_only: bool = True) -> List[Dict]:
         """列出所有平台"""
@@ -243,7 +242,7 @@ class PlatformRegistry:
         if enabled_only:
             platforms = [p for p in platforms if p['enabled']]
         return platforms
-    
+
     @classmethod
     def is_enabled(cls, platform: str) -> bool:
         """检查平台是否启用"""

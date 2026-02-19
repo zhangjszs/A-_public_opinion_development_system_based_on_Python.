@@ -1,16 +1,17 @@
-# -*- coding: utf-8 -*-
 """
 缓存管理模块
 提供内存缓存和文件缓存功能来提升性能
 """
 
+import hashlib
 import json
-import pickle
+import logging
 import os
 import time
-import hashlib
 from functools import wraps
 from threading import Lock
+
+logger = logging.getLogger(__name__)
 
 class MemoryCache:
     """内存缓存类"""
@@ -21,12 +22,12 @@ class MemoryCache:
         self.default_timeout = default_timeout
         self.max_size = max_size
         self.lock = Lock()
-    
+
     def _generate_key(self, func_name, args, kwargs):
         """生成缓存键"""
         key_data = f"{func_name}_{str(args)}_{str(sorted(kwargs.items()))}"
         return hashlib.md5(key_data.encode()).hexdigest()
-    
+
     def get(self, key):
         """获取缓存"""
         with self.lock:
@@ -40,7 +41,7 @@ class MemoryCache:
                 self.timestamps.pop(key, None)
                 self.expires.pop(key, None)
             return None
-    
+
     def set(self, key, value, timeout=None):
         """设置缓存"""
         with self.lock:
@@ -55,14 +56,14 @@ class MemoryCache:
                 self.cache.pop(oldest_key, None)
                 self.timestamps.pop(oldest_key, None)
                 self.expires.pop(oldest_key, None)
-    
+
     def clear(self):
         """清空缓存"""
         with self.lock:
             self.cache.clear()
             self.timestamps.clear()
             self.expires.clear()
-    
+
     def size(self):
         """获取缓存大小"""
         return len(self.cache)
@@ -74,11 +75,11 @@ class FileCache:
         self.default_timeout = default_timeout
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
-    
+
     def _get_cache_path(self, key):
         """获取缓存文件路径"""
         return os.path.join(self.cache_dir, f"{key}.cache")
-    
+
     def get(self, key):
         """获取文件缓存"""
         cache_path = self._get_cache_path(key)
@@ -86,25 +87,32 @@ class FileCache:
             # 检查是否过期
             if time.time() - os.path.getmtime(cache_path) < self.default_timeout:
                 try:
-                    with open(cache_path, 'rb') as f:
-                        return pickle.load(f)
-                except:
-                    # 读取失败，删除文件
+                    with open(cache_path, 'r', encoding='utf-8') as f:
+                        payload = json.load(f)
+                    if isinstance(payload, dict) and 'data' in payload:
+                        return payload['data']
+                    return payload
+                except (json.JSONDecodeError, OSError, ValueError, TypeError):
+                    # 兼容策略：历史 pickle 文件不再反序列化，直接删除并回源重建缓存
                     os.remove(cache_path)
             else:
                 # 过期删除
                 os.remove(cache_path)
         return None
-    
+
     def set(self, key, value):
         """设置文件缓存"""
         cache_path = self._get_cache_path(key)
+        temp_path = f"{cache_path}.tmp"
         try:
-            with open(cache_path, 'wb') as f:
-                pickle.dump(value, f)
+            with open(temp_path, 'w', encoding='utf-8') as f:
+                json.dump({'data': value}, f, ensure_ascii=False, default=str)
+            os.replace(temp_path, cache_path)
         except Exception as e:
-            print(f"缓存写入失败: {e}")
-    
+            logger.error(f"缓存写入失败: {e}")
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
     def clear(self):
         """清空文件缓存"""
         for filename in os.listdir(self.cache_dir):
@@ -122,12 +130,12 @@ def cache_result(timeout=300, use_file_cache=False):
         def wrapper(*args, **kwargs):
             # 生成缓存键
             cache_key = f"{func.__name__}_{hashlib.md5(str(args).encode() + str(kwargs).encode()).hexdigest()}"
-            
+
             # 先尝试内存缓存
             result = memory_cache.get(cache_key)
             if result is not None:
                 return result
-            
+
             # 再尝试文件缓存
             if use_file_cache:
                 result = file_cache.get(cache_key)
@@ -135,15 +143,15 @@ def cache_result(timeout=300, use_file_cache=False):
                     # 同时写入内存缓存
                     memory_cache.set(cache_key, result, timeout)
                     return result
-            
+
             # 缓存未命中，执行函数
             result = func(*args, **kwargs)
-            
+
             # 写入缓存
             memory_cache.set(cache_key, result, timeout)
             if use_file_cache:
                 file_cache.set(cache_key, result)
-            
+
             return result
         return wrapper
     return decorator

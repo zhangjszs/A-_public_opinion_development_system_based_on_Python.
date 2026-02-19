@@ -1,14 +1,17 @@
-from utils import getPublicData
-from utils.cache import cache_result
-from datetime import datetime
-from wordcloud import WordCloud, ImageColorGenerator
-import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw
-import numpy as np
-import jieba
 import os
 import time
+from datetime import datetime
+
+import jieba
+import matplotlib.pyplot as plt
+import numpy as np
+from PIL import Image, ImageDraw
+from wordcloud import ImageColorGenerator, WordCloud
+
 from config.settings import BASE_DIR
+from utils import getPublicData
+from utils.cache import cache_result
+
 
 def get_abs_path(rel_path):
     return os.path.join(BASE_DIR, rel_path)
@@ -39,16 +42,16 @@ def getTagData():
         df = getPublicData.getArticleDataFrame()
         if df.empty:
             return 0, '', ''
-        
+
         # 使用pandas操作，性能更好
         max_like_article = df.loc[df['likeNum'].idxmax()]
         maxLikeNum = max_like_article['likeNum']
         maxLikeAuthorName = max_like_article['authorName']
-        
+
         # 统计城市分布（排除'无'）
         city_counts = df[df['region'] != '无']['region'].value_counts()
         maxCity = city_counts.index[0] if not city_counts.empty else ''
-        
+
         return len(df), maxLikeAuthorName, maxCity
     except Exception as e:
         print(f"获取标签数据失败: {e}")
@@ -77,14 +80,14 @@ def getCreatedNumEchartsData():
         df = getPublicData.getArticleDataFrame()
         if df.empty:
             return [], []
-        
+
         # 使用pandas groupby，性能更好
         date_counts = df.groupby('created_at').size().reset_index(name='count')
         date_counts = date_counts.sort_values('created_at', ascending=False)
-        
+
         xData = date_counts['created_at'].tolist()
         yData = date_counts['count'].tolist()
-        
+
         return xData, yData
     except Exception as e:
         print(f"获取时间数据失败: {e}")
@@ -106,7 +109,7 @@ def getTypeCharData():
         df = getPublicData.getArticleDataFrame()
         if df.empty:
             return []
-        
+
         # 使用pandas value_counts，性能更好
         type_counts = df['type'].value_counts()
         resultData = [{'name': name, 'value': count} for name, count in type_counts.items()]
@@ -136,7 +139,7 @@ def getCommentsUserCratedNumEchartsData():
         df = getPublicData.getCommentsDataFrame()
         if df.empty:
             return []
-        
+
         # 使用pandas value_counts，性能更好
         date_counts = df['created_at'].value_counts()
         resultData = [{'name': name, 'value': count} for name, count in date_counts.items()]
@@ -183,10 +186,10 @@ def getUserNameWordCloud():
             # 如果文件存在且在30分钟内，直接返回
             if time.time() - os.path.getmtime(output_path) < 1800:  # 30分钟
                 return output_path
-        
+
         text = ''
         stopwords = stopwordslist()
-        
+
         # 使用优化的数据获取
         df = getPublicData.getCommentsDataFrame()
         if not df.empty:
@@ -197,24 +200,24 @@ def getUserNameWordCloud():
             commentsList = getPublicData.getAllCommentsData()
             for comment in commentsList:
                 text += str(comment[5])
-        
+
         if not text.strip():
             print("没有找到用户名数据")
             return None
-        
+
         # 分词处理
         cut = jieba.cut(text)
         newCut = []
         for word in cut:
             if word not in stopwords and len(word.strip()) > 1:  # 过滤单字符
                 newCut.append(word)
-        
+
         if not newCut:
             print("分词后没有有效词汇")
             return None
-        
+
         string = ' '.join(newCut)
-        
+
         # 生成词云
         wc = WordCloud(
             width=1000, height=600,
@@ -225,19 +228,19 @@ def getUserNameWordCloud():
             relative_scaling=0.5
         )
         wc.generate_from_text(string)
-        
+
         # 绘制图片
         plt.figure(figsize=(10, 6))
         plt.imshow(wc, interpolation='bilinear')
         plt.axis('off')
-        
+
         # 保存到文件
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.close()  # 释放内存
-        
+
         print(f"词云已生成: {output_path}")
         return output_path
-        
+
     except Exception as e:
         print(f"生成词云失败: {e}")
         return None

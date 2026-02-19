@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 微博爬虫配置管理模块
 功能：集中管理爬虫配置、请求头、代理池和反反爬机制
@@ -12,15 +11,16 @@
 3. 根据需要调整请求频率和超时参数
 """
 
-import random
-import requests
-import time
 import json
+import logging
 import os
+import random
 import sys
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
-import logging
+
+import requests
 
 # 添加项目根目录到 Python 路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -43,10 +43,10 @@ class SpiderConfigManager:
     爬虫配置管理器
     统一管理所有爬虫相关配置和工具方法
     """
-    
+
     def __init__(self):
         """初始化配置管理器"""
-        
+
         # ===== 核心请求头配置 =====
         self.BASE_HEADERS = {
             'User-Agent': Config.WEIBO_USER_AGENT if Config else 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -63,7 +63,7 @@ class SpiderConfigManager:
             'Sec-Fetch-Mode': 'navigate',
             'Sec-Fetch-Site': 'none'
         }
-        
+
         # ===== User-Agent池配置 =====
         # 包含主流浏览器的最新版本，定期更新以保持真实性
         self.USER_AGENTS = [
@@ -71,24 +71,24 @@ class SpiderConfigManager:
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
-            
+
             # Windows Firefox
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0',
-            
+
             # Windows Edge
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0',
-            
+
             # macOS Chrome
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
-            
+
             # macOS Safari
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
         ]
-        
+
         # ===== 代理配置 =====
         # 从统一配置读取，如果可用
         if USE_UNIFIED_CONFIG and Config:
@@ -97,10 +97,10 @@ class SpiderConfigManager:
         else:
             self.USE_PROXY = True
             self.PROXY_FILE = 'spider/working_proxies.json'
-            
+
         self.working_proxies = []                # 可用代理列表
         self.proxy_lock = threading.Lock()       # 代理操作线程锁
-        
+
         # ===== 请求参数配置 =====
         # 从统一配置读取，如果可用
         if USE_UNIFIED_CONFIG and Config:
@@ -112,7 +112,7 @@ class SpiderConfigManager:
             self.DEFAULT_DELAY = (15, 30)
             self.MAX_RETRIES = 3
         self.RETRY_DELAY = 5                    # 重试间隔（秒）
-        
+
         # ===== 反反爬配置 =====
         self.RANDOM_HEADER_FIELDS = {
             'Sec-CH-UA': [
@@ -123,29 +123,29 @@ class SpiderConfigManager:
             'Sec-CH-UA-Mobile': ['?0', '?1'],
             'Sec-CH-UA-Platform': ['"Windows"', '"macOS"', '"Linux"'],
         }
-        
+
         # ===== 性能统计 =====
         self.request_count = 0
         self.success_count = 0
         self.failed_count = 0
         self.start_time = time.time()
-        
+
         # 初始化配置
         self._initialize()
-    
+
     def _initialize(self):
         """初始化配置管理器"""
         # 加载可用代理
         self._load_working_proxies()
-        
+
         # 创建代理文件目录
         proxy_dir = os.path.dirname(self.PROXY_FILE)
         if proxy_dir and not os.path.exists(proxy_dir):
             os.makedirs(proxy_dir)
-        
+
         logger.info("爬虫配置管理器初始化完成")
         logger.info(f"可用代理数量: {len(self.working_proxies)}")
-    
+
     def _load_working_proxies(self):
         """从文件加载可用代理列表"""
         try:
@@ -171,7 +171,7 @@ class SpiderConfigManager:
         except Exception as e:
             logger.error(f"加载代理文件失败: {e}")
             self.working_proxies = []
-    
+
     def _save_working_proxies(self):
         """保存可用代理列表到文件"""
         try:
@@ -180,49 +180,49 @@ class SpiderConfigManager:
             logger.debug(f"保存了 {len(self.working_proxies)} 个可用代理")
         except Exception as e:
             logger.error(f"保存代理文件失败: {e}")
-    
+
     def get_random_user_agent(self):
         """
         获取随机User-Agent
-        
+
         Returns:
             str: 随机选择的User-Agent字符串
         """
         return random.choice(self.USER_AGENTS)
-    
+
     def get_random_headers(self):
         """
         获取随机化的请求头
         每次请求使用不同的User-Agent和可选头部字段
-        
+
         Returns:
             dict: 随机化的请求头字典
         """
         headers = self.BASE_HEADERS.copy()
-        
+
         # 随机User-Agent
         headers['User-Agent'] = self.get_random_user_agent()
-        
+
         # 随机添加可选的反指纹识别头部
         for field, values in self.RANDOM_HEADER_FIELDS.items():
             if random.random() > 0.3:  # 70%概率添加
                 headers[field] = random.choice(values)
-        
+
         # 随机调整部分头部顺序（模拟不同浏览器行为）
         if random.random() > 0.5:
             headers['Accept-Encoding'] = 'gzip, deflate'
-        
+
         return headers
-    
+
     def test_proxy(self, proxy_ip, test_url='http://httpbin.org/ip', timeout=10):
         """
         测试代理IP的可用性
-        
+
         Args:
             proxy_ip: 代理地址 (格式: "ip:port")
             test_url: 测试URL
             timeout: 测试超时时间
-            
+
         Returns:
             bool: 代理是否可用
         """
@@ -231,7 +231,7 @@ class SpiderConfigManager:
                 'http': f'http://{proxy_ip}',
                 'https': f'http://{proxy_ip}'
             }
-            
+
             headers = self.get_random_headers()
             response = requests.get(
                 test_url,
@@ -239,7 +239,7 @@ class SpiderConfigManager:
                 headers=headers,
                 timeout=timeout
             )
-            
+
             if response.status_code == 200:
                 result = response.json()
                 logger.debug(f"代理测试成功: {proxy_ip} → IP: {result.get('origin', 'Unknown')}")
@@ -247,16 +247,16 @@ class SpiderConfigManager:
             else:
                 logger.debug(f"代理测试失败: {proxy_ip} (状态码: {response.status_code})")
                 return False
-                
+
         except Exception as e:
             logger.debug(f"代理测试异常: {proxy_ip} ({e})")
             return False
-    
+
     def add_proxy(self, proxy_ip):
         """
         添加新代理到可用列表
         自动测试可用性
-        
+
         Args:
             proxy_ip: 代理地址
         """
@@ -271,27 +271,27 @@ class SpiderConfigManager:
                 logger.warning(f"代理不可用: {proxy_ip}")
                 return False
         return True
-    
+
     def get_working_proxy(self, verify: bool = False):
         """
         获取一个可用的代理配置
         优先使用本地代理，不足时从代理池自动获取
-        
+
         Args:
             verify: 是否验证代理可用性（默认False以提高效率）
-        
+
         Returns:
             dict: 代理配置字典，失败返回None
         """
         if not self.USE_PROXY:
             return None
-        
+
         # 尝试从本地已验证的代理获取
         with self.proxy_lock:
             if self.working_proxies:
                 # 随机选择一个代理
                 proxy_ip = random.choice(self.working_proxies)
-                
+
                 # 如果需要验证，测试代理可用性
                 if verify:
                     if self.test_proxy(proxy_ip):
@@ -305,13 +305,13 @@ class SpiderConfigManager:
                         self._save_working_proxies()
                         logger.warning(f"移除失效代理: {proxy_ip}")
                         return None
-                
+
                 # 直接返回（不验证以提高效率）
                 return {
                     'http': f'http://{proxy_ip}',
                     'https': f'http://{proxy_ip}'
                 }
-        
+
         # 本地代理不足，尝试从代理池获取
         try:
             from proxy_pool import get_proxy_pool
@@ -324,35 +324,35 @@ class SpiderConfigManager:
             logger.debug("代理池模块未加载")
         except Exception as e:
             logger.warning(f"从代理池获取代理失败: {e}")
-        
+
         logger.warning("未找到可用代理，将使用直连")
         return None
-    
+
     def make_safe_request(self, url, method='GET', use_proxy=True, **kwargs):
         """
         发起安全的HTTP请求
         集成重试、代理、反反爬等机制
-        
+
         Args:
             url: 请求URL
             method: HTTP方法
             use_proxy: 是否使用代理
             **kwargs: requests库的其他参数
-            
+
         Returns:
             requests.Response: 响应对象
         """
         self.request_count += 1
-        
+
         # 设置默认参数
         kwargs.setdefault('headers', self.get_random_headers())
         kwargs.setdefault('timeout', self.DEFAULT_TIMEOUT)
-        
+
         # 请求间隔（反反爬）
         delay = random.uniform(*self.DEFAULT_DELAY)
         logger.debug(f"请求延迟: {delay:.2f}秒")
         time.sleep(delay)
-        
+
         # 重试机制
         last_exception = None
         for attempt in range(self.MAX_RETRIES):
@@ -368,10 +368,10 @@ class SpiderConfigManager:
                         logger.debug("使用直连")
                 else:
                     kwargs.pop('proxies', None)
-                
+
                 # 发起请求
                 response = requests.request(method, url, **kwargs)
-                
+
                 # 状态检查
                 if response.status_code == 200:
                     self.success_count += 1
@@ -390,16 +390,16 @@ class SpiderConfigManager:
                     raise Exception("429 Too Many Requests - 请求过于频繁")
                 else:
                     raise Exception(f"HTTP {response.status_code}")
-                    
+
             except Exception as e:
                 last_exception = e
                 logger.warning(f"请求失败 (尝试 {attempt + 1}/{self.MAX_RETRIES}): {e}")
-                
+
                 if attempt < self.MAX_RETRIES - 1:
                     retry_delay = self.RETRY_DELAY * (attempt + 1)  # 递增延迟
                     logger.info(f"等待 {retry_delay} 秒后重试...")
                     time.sleep(retry_delay)
-                    
+
                     # 移除当前代理（如果使用了代理）
                     if 'proxies' in kwargs:
                         current_proxy = kwargs.get('proxies', {}).get('http', '')
@@ -409,22 +409,22 @@ class SpiderConfigManager:
                                 if proxy_ip in self.working_proxies:
                                     self.working_proxies.remove(proxy_ip)
                                     logger.info(f"移除当前失效代理: {proxy_ip}")
-        
+
         # 所有重试失败
         self.failed_count += 1
         logger.error(f"请求最终失败: {url}")
         raise last_exception
-    
+
     def get_config_stats(self):
         """
         获取配置统计信息
-        
+
         Returns:
             dict: 统计信息字典
         """
         uptime = time.time() - self.start_time
         success_rate = (self.success_count / max(self.request_count, 1)) * 100
-        
+
         return {
             'user_agents_count': len(self.USER_AGENTS),
             'working_proxies_count': len(self.working_proxies),
@@ -439,17 +439,17 @@ class SpiderConfigManager:
             'delay_range': self.DEFAULT_DELAY,
             'max_retries': self.MAX_RETRIES
         }
-    
+
     def update_headers(self, new_headers):
         """
         更新基础请求头
-        
+
         Args:
             new_headers: 新的请求头字典
         """
         self.BASE_HEADERS.update(new_headers)
         logger.info("请求头已更新")
-    
+
     def reload_proxies(self):
         """重新加载代理列表"""
         self._load_working_proxies()
@@ -462,7 +462,7 @@ _config_manager = None
 def get_config_manager():
     """
     获取全局配置管理器实例（单例模式）
-    
+
     Returns:
         SpiderConfigManager: 配置管理器实例
     """
@@ -493,7 +493,7 @@ def test_proxy(proxy_dict):
     """测试代理（向后兼容）"""
     if not proxy_dict:
         return True
-    
+
     manager = get_config_manager()
     proxy_ip = proxy_dict.get('http', '').replace('http://', '')
     return manager.test_proxy(proxy_ip)

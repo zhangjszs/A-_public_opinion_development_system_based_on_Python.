@@ -1,9 +1,10 @@
-from typing import List, Dict, Any, Tuple
+from typing import Any, Dict, List, Tuple
 
 from sqlalchemy import desc
 
-from .base_repository import BaseRepository
 from models.comment import Comment
+
+from .base_repository import BaseRepository
 
 
 class CommentRepository(BaseRepository):

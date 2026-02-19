@@ -4,41 +4,42 @@ sentiment_model.py  —— 2025‑05‑04 完整修正版
 可选: imbalanced‑learn (若需 SMOTE 等过采样)
 """
 from __future__ import annotations
+
 import warnings
-import joblib
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-from pathlib import Path
 from collections import Counter
+from pathlib import Path
 
-from sklearn.model_selection import (
-    train_test_split,
-    StratifiedKFold,
-    cross_validate,
-)
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.pipeline import Pipeline
-from sklearn.metrics import (
-    confusion_matrix,
-    ConfusionMatrixDisplay,
-    classification_report,
-    RocCurveDisplay,
-    f1_score,
-    balanced_accuracy_score,
-)
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import LinearSVC
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.utils.class_weight import compute_class_weight
+import joblib
 
 # -------------------------------------------------------------------
 # Matplotlib 中文支持
 # -------------------------------------------------------------------
 import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    ConfusionMatrixDisplay,
+    RocCurveDisplay,
+    balanced_accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+)
+from sklearn.model_selection import (
+    StratifiedKFold,
+    cross_validate,
+    train_test_split,
+)
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import Pipeline
+from sklearn.svm import LinearSVC
+from sklearn.utils.class_weight import compute_class_weight
+
 matplotlib.rcParams["font.family"] = ["SimHei", "Microsoft YaHei", "SimSun"]
 matplotlib.rcParams["axes.unicode_minus"] = False
 

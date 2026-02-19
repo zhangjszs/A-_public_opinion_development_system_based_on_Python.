@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from flask import jsonify, g
+from flask import g, jsonify
 
 
 def _timestamp() -> str:

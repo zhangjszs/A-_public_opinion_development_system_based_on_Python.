@@ -1,7 +1,11 @@
-from typing import List, Dict, Any, Tuple, Optional
-from .base_repository import BaseRepository
-from models.article import Article
+from typing import Any, Dict, List, Optional, Tuple
+
 from sqlalchemy import desc
+
+from models.article import Article
+
+from .base_repository import BaseRepository
+
 
 class ArticleRepository(BaseRepository):
     def __init__(self):
@@ -18,10 +22,10 @@ class ArticleRepository(BaseRepository):
         offset: int = 0,
     ) -> Tuple[List[Dict[str, Any]], int]:
         query = self.session.query(Article)
-        
+
         if keyword:
             query = query.filter(Article.content.like(f"%{keyword}%"))
-            
+
         if article_type:
             query = query.filter(Article.type == article_type)
 
@@ -30,11 +34,11 @@ class ArticleRepository(BaseRepository):
 
         if start_time and end_time:
             query = query.filter(Article.created_at.between(start_time, end_time))
-            
+
         total = query.count()
-        
+
         articles = query.order_by(desc(Article.created_at)).limit(limit).offset(offset).all()
-        
+
         result = []
         for a in articles:
             result.append({
@@ -53,7 +57,7 @@ class ArticleRepository(BaseRepository):
                 'authorDetail': a.authorDetail,
                 'isVip': a.isVip
             })
-            
+
         return result, total
 
     def get_latest_update_time(self) -> Optional[str]:

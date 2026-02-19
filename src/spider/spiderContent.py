@@ -1,27 +1,33 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 微博文章爬虫模块
 功能：爬取微博文章数据，支持分类爬取和关键词搜索
 特性：请求重试、数据去重、完善的异常处理
 """
 
-import time
-import requests
 import csv
-import os
-import re
-import random
-import threading
 import logging
+import os
+import random
+import re
 import sys
+import threading
+import time
 from datetime import datetime
-from typing import Dict, Optional, List, Any
+from typing import Any, Dict, List, Optional
+
+import requests
 
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from config import HEADERS, DEFAULT_TIMEOUT, DEFAULT_DELAY, get_random_headers, get_working_proxy
+from config import (
+    DEFAULT_DELAY,
+    DEFAULT_TIMEOUT,
+    HEADERS,
+    get_random_headers,
+    get_working_proxy,
+)
 from utils.deduplicator import article_deduplicator
 
 # 配置日志
@@ -41,7 +47,7 @@ def init():
     data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
     os.makedirs(data_dir, exist_ok=True)
     article_path = os.path.join(data_dir, 'articleData.csv')
-    
+
     if not os.path.exists(article_path):
         with open(article_path, 'w', encoding='utf8', newline='') as csvfile:
             writer = csv.writer(csvfile)
@@ -79,16 +85,16 @@ def init():
 def writerRow(row: List[Any]) -> bool:
     """
     线程安全的CSV行写入
-    
+
     Args:
         row: 要写入的数据行
-        
+
     Returns:
         bool: 写入是否成功
     """
     data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
     article_path = os.path.join(data_dir, 'articleData.csv')
-    
+
     try:
         with _csv_write_lock:
             with open(article_path, 'a', encoding='utf8', newline='') as csvfile:
@@ -103,18 +109,18 @@ def writerRow(row: List[Any]) -> bool:
 def get_json(url: str, params: Dict[str, Any], retries: int = MAX_RETRIES) -> Optional[Dict]:
     """
     发送GET请求并返回JSON数据（带重试机制）
-    
+
     Args:
         url: 请求URL
         params: 请求参数
         retries: 剩余重试次数
-        
+
     Returns:
         JSON数据或None
     """
     headers = get_random_headers()
     proxy = get_working_proxy()
-    
+
     for attempt in range(retries):
         try:
             response = requests.get(
@@ -124,7 +130,7 @@ def get_json(url: str, params: Dict[str, Any], retries: int = MAX_RETRIES) -> Op
                 proxies=proxy,
                 timeout=REQUEST_TIMEOUT
             )
-            
+
             if response.status_code == 200:
                 try:
                     return response.json()
@@ -132,31 +138,31 @@ def get_json(url: str, params: Dict[str, Any], retries: int = MAX_RETRIES) -> Op
                     logger.error(f"JSON解析失败: {e}")
                     logger.debug(f"响应内容: {response.text[:200]}...")
                     return None
-                    
+
             elif response.status_code == 403:
                 logger.warning("请求被拒绝(403)，可能Cookie已过期")
                 # 403错误不重试，直接返回
                 return None
-                
+
             elif response.status_code == 429:
                 logger.warning("请求频率过高(429)，等待后重试")
                 time.sleep(RETRY_DELAY_BASE * (attempt + 2))
-                
+
             else:
                 logger.warning(f"请求失败，状态码: {response.status_code}")
                 if attempt < retries - 1:
                     time.sleep(RETRY_DELAY_BASE * (attempt + 1))
-                    
+
         except requests.exceptions.Timeout:
             logger.warning(f"请求超时 (尝试 {attempt + 1}/{retries})")
             if attempt < retries - 1:
                 time.sleep(RETRY_DELAY_BASE * (attempt + 1))
-                
+
         except requests.exceptions.RequestException as e:
             logger.error(f"请求异常: {e}")
             if attempt < retries - 1:
                 time.sleep(RETRY_DELAY_BASE * (attempt + 1))
-    
+
     logger.error(f"请求最终失败: {url}")
     return None
 
@@ -180,7 +186,7 @@ def extract_at_users(text: str) -> str:
 def extract_pic_urls(article: Dict) -> str:
     """提取图片URL列表"""
     pic_urls = []
-    
+
     # 方式1: pic_ids + pic_infos
     if 'pic_infos' in article and article['pic_infos']:
         for pic_id, pic_info in article['pic_infos'].items():
@@ -188,12 +194,12 @@ def extract_pic_urls(article: Dict) -> str:
                 pic_urls.append(pic_info['original'].get('url', ''))
             elif 'large' in pic_info:
                 pic_urls.append(pic_info['large'].get('url', ''))
-    
+
     # 方式2: pic_ids 直接拼接
     elif 'pic_ids' in article and article['pic_ids']:
         for pic_id in article['pic_ids']:
             pic_urls.append(f'https://wx1.sinaimg.cn/large/{pic_id}.jpg')
-    
+
     return '|'.join(pic_urls) if pic_urls else ''
 
 
@@ -219,30 +225,30 @@ def extract_video_url(article: Dict) -> str:
 def parse_created_time(created_at: str) -> str:
     """
     解析微博时间格式
-    
+
     Args:
         created_at: 原始时间字符串
-        
+
     Returns:
         格式化后的时间字符串
     """
     if not created_at:
         return ''
-    
+
     # 尝试多种时间格式
     time_formats = [
         "%a %b %d %H:%M:%S %z %Y",  # 标准格式: Mon Jan 01 12:00:00 +0800 2024
         "%Y-%m-%d %H:%M:%S",         # 简单格式
         "%Y-%m-%dT%H:%M:%S",         # ISO格式
     ]
-    
+
     for fmt in time_formats:
         try:
             parsed = datetime.strptime(created_at, fmt)
             return parsed.strftime("%Y-%m-%d %H:%M:%S")
         except ValueError:
             continue
-    
+
     # 所有格式都失败，返回原始值
     logger.warning(f"无法解析时间格式: {created_at}")
     return created_at
@@ -251,43 +257,43 @@ def parse_created_time(created_at: str) -> str:
 def parse_json(response: List[Dict], type_name: str) -> int:
     """
     解析微博JSON数据，提取完整字段
-    
+
     Args:
         response: 微博数据列表
         type_name: 类型名称
-        
+
     Returns:
         int: 成功处理的微博数量
     """
     processed_count = 0
-    
+
     for article in response:
         try:
             article_id = str(article.get('id', ''))
-            
+
             # 检查是否重复
             if article_deduplicator.is_duplicate(article_id):
                 logger.debug(f"跳过重复文章: {article_id}")
                 continue
-            
+
             # === 基础字段 ===
             likeNum = article.get('attitudes_count', 0)
             commentsLen = article.get('comments_count', 0)
             reposts_count = article.get('reposts_count', 0)
-            
+
             # IP属地
             region = article.get('region_name', '').replace('发布于 ', '') or '无'
-            
+
             # 正文内容
             content = article.get('text_raw', '') or article.get('text', '')
             contentLen = article.get('textLength', len(content))
-            
+
             # 是否长文本
             is_long_text = article.get('isLongText', False)
-            
+
             # 发布时间（使用改进的解析函数）
             created_at = parse_created_time(article.get('created_at', ''))
-            
+
             # 详情URL
             detailUrl = ''
             try:
@@ -297,29 +303,29 @@ def parse_json(response: List[Dict], type_name: str) -> int:
                     detailUrl = f'https://weibo.com/{user_id}/{mblogid}'
             except Exception as e:
                 logger.debug(f"构建详情URL失败: {e}")
-            
+
             # === 用户信息 ===
             user = article.get('user', {})
             authorAvatar = user.get('avatar_large', '') or user.get('avatar_hd', '')
             authorName = user.get('screen_name', '')
             authorDetail = 'https://weibo.com' + user.get('profile_url', '')
             isVip = user.get('v_plus', 0) or user.get('mbrank', 0)
-            
+
             # 用户认证信息
             verified_type = user.get('verified_type', -1)
             verified_reason = user.get('verified_reason', '')
-            
+
             # 粉丝数和关注数
             followers_count = user.get('followers_count', 0)
             friends_count = user.get('friends_count', 0)
-            
+
             # === 附加字段 ===
             source = article.get('source', '').replace('来自', '').strip()
             topics = extract_topics(content)
             at_users = extract_at_users(content)
             pic_urls = extract_pic_urls(article)
             video_url = extract_video_url(article)
-            
+
             # === 转发信息 ===
             retweeted_id = ''
             retweeted_text = ''
@@ -330,7 +336,7 @@ def parse_json(response: List[Dict], type_name: str) -> int:
                 retweeted_text = retweeted_status.get('text_raw', '') or retweeted_status.get('text', '')
                 retweeted_user_info = retweeted_status.get('user', {})
                 retweeted_user = retweeted_user_info.get('screen_name', '') if retweeted_user_info else '[已删除]'
-            
+
             # 写入CSV
             success = writerRow([
                 article_id,
@@ -361,35 +367,35 @@ def parse_json(response: List[Dict], type_name: str) -> int:
                 retweeted_text,
                 retweeted_user
             ])
-            
+
             if success:
                 # 添加到去重过滤器
                 article_deduplicator.add(article_id)
                 processed_count += 1
-                
+
         except Exception as e:
             logger.error(f"解析微博数据失败: {e}, ID: {article.get('id', 'unknown')}")
-    
+
     return processed_count
 
 
 def search_weibo(keyword: str, pageNum: int = 10) -> int:
     """
     根据关键词搜索微博
-    
+
     Args:
         keyword: 搜索关键词
         pageNum: 爬取页数
-        
+
     Returns:
         int: 成功处理的微博总数
     """
     search_url = 'https://weibo.com/ajax/statuses/search'
     init()
-    
+
     total_processed = 0
     logger.info(f'开始搜索关键词: {keyword}，计划爬取 {pageNum} 页')
-    
+
     for page in range(1, pageNum + 1):
         # 延时防爬
         if isinstance(DEFAULT_DELAY, tuple):
@@ -397,9 +403,9 @@ def search_weibo(keyword: str, pageNum: int = 10) -> int:
         else:
             delay = DEFAULT_DELAY
         time.sleep(delay)
-        
+
         logger.info(f'正在爬取关键词 [{keyword}] 的第 {page}/{pageNum} 页')
-        
+
         params = {
             'q': keyword,
             'type': 'all',
@@ -409,33 +415,33 @@ def search_weibo(keyword: str, pageNum: int = 10) -> int:
             'page': page,
             'count': 25
         }
-        
+
         response = get_json(search_url, params)
         if response is None:
             logger.warning(f'请求失败，跳过第 {page} 页')
             continue
-        
+
         if 'data' not in response or 'list' not in response['data']:
             logger.warning(f'响应格式异常，跳过第 {page} 页')
             continue
-        
+
         statuses = response['data']['list']
-        
+
         # 过滤掉非微博内容
         valid_statuses = [s for s in statuses if 'text_raw' in s or 'text' in s]
-        
+
         if valid_statuses:
             count = parse_json(valid_statuses, f"搜索:{keyword}")
             total_processed += count
             logger.info(f'第 {page} 页处理完成，新增 {count} 条微博')
         else:
             logger.info(f"第 {page} 页未找到有效微博数据")
-        
+
         # 检查是否还有更多数据
         if len(valid_statuses) < 10:
             logger.info("数据量不足，可能已到末尾")
             break
-    
+
     logger.info(f'搜索完成，共处理 {total_processed} 条微博')
     return total_processed
 
@@ -443,13 +449,13 @@ def search_weibo(keyword: str, pageNum: int = 10) -> int:
 def start(typeNum: int = 10, pageNum: int = 5, mode: str = 'category', keyword: Optional[str] = None) -> int:
     """
     启动爬虫
-    
+
     Args:
         typeNum: 爬取的类型数量
         pageNum: 每个类型的爬取页数
         mode: 'category' (分类) or 'search' (关键词搜索)
         keyword: 搜索关键词
-        
+
     Returns:
         int: 成功处理的微博总数
     """
@@ -458,20 +464,20 @@ def start(typeNum: int = 10, pageNum: int = 5, mode: str = 'category', keyword: 
             logger.error("搜索模式必须提供关键词！")
             return 0
         return search_weibo(keyword, pageNum)
-    
+
     # 分类爬取模式
     articleUrl = 'https://weibo.com/ajax/feed/hottimeline'
     init()
-    
+
     total_processed = 0
     typeNumCount = 0
     base_dir = os.path.dirname(os.path.dirname(__file__))
     nav_path = os.path.join(base_dir, 'data', 'navData.csv')
-    
+
     if not os.path.exists(nav_path):
         logger.error(f"导航文件不存在: {nav_path}")
         return 0
-    
+
     try:
         with open(nav_path, 'r', encoding='utf8') as readerFile:
             reader = csv.reader(readerFile)
@@ -480,15 +486,15 @@ def start(typeNum: int = 10, pageNum: int = 5, mode: str = 'category', keyword: 
             except StopIteration:
                 logger.error("导航文件为空")
                 return 0
-            
+
             for nav in reader:
                 if typeNumCount >= typeNum:
                     break
-                
+
                 if len(nav) < 3:
                     logger.warning(f"跳过无效导航行: {nav}")
                     continue
-                
+
                 for page in range(pageNum):
                     # 处理延时
                     if isinstance(DEFAULT_DELAY, tuple):
@@ -496,9 +502,9 @@ def start(typeNum: int = 10, pageNum: int = 5, mode: str = 'category', keyword: 
                     else:
                         delay = DEFAULT_DELAY
                     time.sleep(delay)
-                    
+
                     logger.info(f'正在爬取类型：{nav[0]} 第 {page + 1}/{pageNum} 页')
-                    
+
                     params = {
                         'group_id': nav[1],
                         'containerid': nav[2],
@@ -506,33 +512,33 @@ def start(typeNum: int = 10, pageNum: int = 5, mode: str = 'category', keyword: 
                         'count': 25,
                         'extparam': 'discover|new_feed'
                     }
-                    
+
                     if page == 0:
                         params['since_id'] = '0'
                         params['refresh'] = '0'
                     else:
                         params['refresh'] = '2'
-                    
+
                     response = get_json(articleUrl, params)
                     if response is None:
                         logger.warning(f'请求失败，跳过类型：{nav[0]} 第{page + 1}页')
                         continue
-                    
+
                     if 'statuses' not in response:
                         logger.warning(f'响应格式异常，跳过类型：{nav[0]} 第{page + 1}页')
                         continue
-                    
+
                     count = parse_json(response['statuses'], nav[0])
                     total_processed += count
-                
+
                 typeNumCount += 1
-    
+
     except Exception as e:
         logger.error(f"爬取过程发生错误: {e}", exc_info=True)
-    
+
     # 保存去重状态
     article_deduplicator.save()
-    
+
     logger.info(f'分类爬取完成，共处理 {total_processed} 条微博')
     return total_processed
 

@@ -1,7 +1,9 @@
-from flask import Flask,session,render_template,redirect,Blueprint,request
-from utils import getHomeData,getTableData,getEchartsData
-from snownlp import SnowNLP
 import logging
+
+from flask import Blueprint, Flask, redirect, render_template, request, session
+from snownlp import SnowNLP
+
+from utils import getEchartsData, getHomeData, getTableData
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +34,7 @@ def home():
 def tabelData():
     username = session.get('username')
     hotWordList = getTableData.getTableDataPageData()
-    
+
     # 检查hotWordList是否为空
     if not hotWordList or len(hotWordList) == 0:
         logger.warning("词频数据为空，使用默认值")
@@ -45,7 +47,7 @@ def tabelData():
         defaultHotWordNum = 0
         for hotWord in hotWordList:
             if defaultHotWord == hotWord[0]:defaultHotWordNum=hotWord[1]
-    
+
     emotionValue = SnowNLP(defaultHotWord).sentiments
     if emotionValue > 0.5:
         emotionValue = '正面'

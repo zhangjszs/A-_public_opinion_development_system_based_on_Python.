@@ -1,10 +1,12 @@
-import requests
 import json
 import traceback
 
+import requests
+
+
 def test_api():
     base_url = "http://127.0.0.1:5000"
-    
+
     # 1. 测试今日统计
     print("-" * 30)
     print("测试今日统计 API...")
@@ -25,7 +27,7 @@ def test_api():
     print("测试刷新数据 API...")
     try:
         resp = requests.post(
-            f"{base_url}/api/spider/refresh", 
+            f"{base_url}/api/spider/refresh",
             json={"page_num": 1},
             headers={"Content-Type": "application/json"},
             timeout=60

@@ -1,11 +1,16 @@
+import logging
 import time
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
+
+from config.settings import Config
 from repositories.user_repository import UserRepository
-from utils.password_hasher import hash_password, verify_password, check_password_strength
 from utils.jwt_handler import create_token
 from utils.log_sanitizer import SafeLogger
-from config.settings import Config
-import logging
+from utils.password_hasher import (
+    check_password_strength,
+    hash_password,
+    verify_password,
+)
 
 logger = SafeLogger('auth_service', logging.INFO)
 

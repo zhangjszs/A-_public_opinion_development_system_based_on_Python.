@@ -1,6 +1,8 @@
-from utils.getPublicData import getAllCommentsData
 import jieba
 import jieba.analyse as analyse
+
+from utils.getPublicData import getAllCommentsData
+
 targetTxt = 'comment_1_fenci.txt'
 
 def stopwordslist():

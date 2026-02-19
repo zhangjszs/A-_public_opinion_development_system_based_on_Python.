@@ -1,4 +1,6 @@
 import os
+from urllib.parse import urlparse
+
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -18,6 +20,21 @@ def _get_secret_key() -> str | None:
     if env != "production":
         return os.urandom(32).hex()
     return None
+
+
+def _parse_redis_url(url: str) -> dict[str, str | int]:
+    parsed = urlparse(url)
+    db_raw = (parsed.path or "/0").lstrip("/") or "0"
+    try:
+        db = int(db_raw)
+    except ValueError:
+        db = 0
+    return {
+        "host": parsed.hostname or "localhost",
+        "port": parsed.port or 6379,
+        "db": db,
+        "password": parsed.password or "",
+    }
 
 class Config:
     # Flask Settings
@@ -40,7 +57,7 @@ class Config:
     DB_PASSWORD = os.getenv('DB_PASSWORD', 'root')
     DB_NAME = os.getenv('DB_NAME', 'weibo_analysis')
     DB_CHARSET = 'utf8mb4'
-    
+
     DB_POOL_SIZE = int(os.getenv('DB_POOL_SIZE', 10))
     DB_POOL_RECYCLE = 3600
     DB_POOL_TIMEOUT = 30
@@ -49,9 +66,33 @@ class Config:
     def get_database_url(cls):
         return f"mysql+pymysql://{cls.DB_USER}:{cls.DB_PASSWORD}@{cls.DB_HOST}:{cls.DB_PORT}/{cls.DB_NAME}?charset={cls.DB_CHARSET}"
 
+    @classmethod
+    def get_redis_connection_params(cls) -> dict:
+        return {
+            'host': cls.REDIS_HOST,
+            'port': cls.REDIS_PORT,
+            'db': cls.REDIS_DB,
+            'password': cls.REDIS_PASSWORD if cls.REDIS_PASSWORD else None,
+            'decode_responses': True,
+        }
+
     # Redis / Celery Settings
-    CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-    CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+    REDIS_URL = os.getenv('REDIS_URL') or os.getenv('CELERY_BROKER_URL') or 'redis://localhost:6379/0'
+    _REDIS_PARSED = _parse_redis_url(REDIS_URL)
+    REDIS_HOST = os.getenv('REDIS_HOST', str(_REDIS_PARSED['host']))
+    REDIS_PORT = int(os.getenv('REDIS_PORT', str(_REDIS_PARSED['port'])))
+    REDIS_DB = int(os.getenv('REDIS_DB', str(_REDIS_PARSED['db'])))
+    REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', str(_REDIS_PARSED['password']))
+
+    CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', REDIS_URL)
+    CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', REDIS_URL)
+
+    # LLM Settings
+    LLM_API_KEY = os.getenv('LLM_API_KEY', '')
+    LLM_API_URL = os.getenv('LLM_API_URL', 'https://api.openai.com/v1/chat/completions')
+    LLM_MODEL = os.getenv('LLM_MODEL', 'gpt-4o-mini')
+    LLM_TIMEOUT = int(os.getenv('LLM_TIMEOUT', 30))
+    LLM_CACHE_TTL = int(os.getenv('LLM_CACHE_TTL', 3600))
 
     # Path Settings
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -66,7 +107,7 @@ class Config:
     SEND_FILE_MAX_AGE_DEFAULT = 0 if IS_DEVELOPMENT else 43200
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
     PERMANENT_SESSION_LIFETIME = 86400 * 7 # 7 days
-    
+
     # Logging
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
     LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -80,6 +121,8 @@ class Config:
                 raise RuntimeError('JWT_SECRET_KEY must be set in production (or reuse SECRET_KEY)')
             if not cls.ALLOWED_ORIGINS:
                 raise RuntimeError('ALLOWED_ORIGINS must be set in production')
+            if not cls.ADMIN_USERS:
+                raise RuntimeError('ADMIN_USERS must be set in production')
 
 # Late binding for properties that depend on class variables
 Config.SQLALCHEMY_DATABASE_URI = Config.get_database_url()

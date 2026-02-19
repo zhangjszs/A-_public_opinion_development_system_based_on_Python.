@@ -1,6 +1,9 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime
-from database import Base
 import datetime
+
+from sqlalchemy import Column, DateTime, Integer, String, Text
+
+from database import Base
+
 
 class Comment(Base):
     __tablename__ = 'comments'
@@ -11,6 +14,6 @@ class Comment(Base):
     likeNum = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     user = Column(String(100))
-    
+
     def __repr__(self):
         return f'<Comment {self.id!r}>'

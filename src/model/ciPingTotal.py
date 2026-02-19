@@ -1,5 +1,7 @@
-import jieba
 import re
+
+import jieba
+
 
 def main():
     # 打开要处理的文章

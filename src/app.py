@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 微博舆情分析系统 - Flask主应用
 功能：Web应用主入口，路由管理，用户认证中间件
@@ -13,23 +12,23 @@
 - 安全防护：路径拦截，静态文件保护
 """
 
-from flask import Flask, session, render_template, redirect, request, jsonify, g
-from flask_wtf.csrf import CSRFProtect
-from flask_wtf.csrf import CSRFError
-from flask_cors import CORS
-import re
-import os
-import time
 import logging
+import os
+import re
+import time
 import uuid
 from datetime import datetime
 
+from flask import Flask, g, jsonify, redirect, render_template, request, session
+from flask_cors import CORS
+from flask_wtf.csrf import CSRFError, CSRFProtect
+
 # 导入统一配置模块
 from config.settings import Config
-from utils.jwt_handler import verify_token
-from utils.api_response import ok, error
-from utils.authz import admin_required
 from database import db_session
+from utils.api_response import error, ok
+from utils.authz import admin_required
+from utils.jwt_handler import verify_token
 
 # 确保日志目录存在
 os.makedirs(Config.LOG_DIR, exist_ok=True)
@@ -138,16 +137,16 @@ logger.info(f"Flask应用配置加载完成 [环境: {Config.FLASK_ENV}, 调试�
 # ===== 蓝图注册 =====
 # 导入并注册应用蓝图模块
 try:
-    from views.page import page  # 页面视图蓝图
-    from views.user import user  # 用户认证蓝图
-    from views.api import api    # API视图蓝图
-    from views.data import db    # 数据API蓝图
-    from views.api.spider_api import spider_bp  # 爬虫管理蓝图
+    from views.api import api  # API视图蓝图
     from views.api.alert_api import bp as alert_bp  # 预警管理蓝图
+    from views.api.platform_api import bp as platform_bp  # 多平台数据蓝图
     from views.api.propagation_api import bp as propagation_bp  # 传播分析蓝图
     from views.api.report_api import bp as report_bp  # 报告生成蓝图
-    from views.api.platform_api import bp as platform_bp  # 多平台数据蓝图
-    
+    from views.api.spider_api import spider_bp  # 爬虫管理蓝图
+    from views.data import db  # 数据API蓝图
+    from views.page import page  # 页面视图蓝图
+    from views.user import user  # 用户认证蓝图
+
     app.register_blueprint(page.pb)  # 注册页面蓝图
     app.register_blueprint(user.ub)  # 注册用户蓝图
     app.register_blueprint(api.bp)   # 注册API蓝图
@@ -157,19 +156,18 @@ try:
     app.register_blueprint(propagation_bp)   # 注册传播分析蓝图
     app.register_blueprint(report_bp)   # 注册报告生成蓝图
     app.register_blueprint(platform_bp)   # 注册多平台数据蓝图
-    
-    # 排除蓝图的CSRF保护（允许JSON请求）
+
+    # API 蓝图排除 CSRF（使用 Bearer Token 鉴权）
     csrf.exempt(api.bp)
     csrf.exempt(db)
-    csrf.exempt(user.ub)
     csrf.exempt(spider_bp)
     csrf.exempt(alert_bp)
     csrf.exempt(propagation_bp)
     csrf.exempt(report_bp)
     csrf.exempt(platform_bp)
-    
+
     logger.info("蓝图注册完成: page, user, api, data, spider, alert, propagation, report, platform")
-    
+
 except ImportError as e:
     logger.error(f"蓝图导入失败: {e}")
     raise
@@ -179,7 +177,7 @@ except ImportError as e:
 def is_user_logged_in():
     """
     检查用户登录状态
-    
+
     Returns:
         bool: 用户是否已登录
     """
@@ -189,7 +187,7 @@ def get_client_ip():
     """
     获取客户端真实IP地址
     处理代理和负载均衡情况
-    
+
     Returns:
         str: 客户端IP地址
     """
@@ -239,7 +237,7 @@ def health_check():
     """
     健康检查端点
     用于监控系统状态和负载均衡健康检查
-    
+
     Returns:
         JSON: 系统状态信息
     """
@@ -275,7 +273,7 @@ def health_details():
 def session_check():
     """
     检查用户会话状态
-    
+
     Returns:
         JSON: 会话状态信息
     """
@@ -285,7 +283,7 @@ def session_check():
             'authenticated': True,
             'user': user
         }), 200
-            
+
     except Exception as e:
         logger.error(f"会话检查失败: {e}")
         return error('会话检查过程中发生错误', code=500), 500
@@ -295,7 +293,7 @@ def session_check():
 def session_extend():
     """
     延长用户会话
-    
+
     Returns:
         JSON: 延长结果
     """
@@ -304,7 +302,7 @@ def session_extend():
         username = user.get('username', '')
         logger.info(f"用户 {username} 延长会话（JWT） | IP: {get_client_ip()}")
         return ok({'extended': True, 'user': user}, msg='会话已成功延长'), 200
-        
+
     except Exception as e:
         logger.error(f"会话延长失败: {e}")
         return error('会话延长过程中发生错误', code=500), 500
@@ -315,7 +313,7 @@ def session_extend():
 def before_request():
     """
     请求前置处理中间件
-    
+
     功能：
     1. 静态资源直接放行
     2. 登录/注册页面无需认证
@@ -328,11 +326,11 @@ def before_request():
     log_request_info()
 
     g.request_id = request.headers.get('X-Request-Id') or uuid.uuid4().hex
-    
+
     # 静态资源放行（CSS、JS、图片等）
     if request.path.startswith('/static'):
         return None
-    
+
     # 公开访问的端点（无需登录）
     public_endpoints = [
         '/user/login',      # 登录页面
@@ -341,10 +339,10 @@ def before_request():
         '/health',          # 健康检查
         '/'                 # 首页（会重定向到登录）
     ]
-    
+
     if request.path in public_endpoints:
         return None
-        
+
     # API端点特殊处理 - 允许特定API无需登录
     if request.path.startswith('/api/'):
         # 允许的公开API
@@ -352,23 +350,23 @@ def before_request():
             '/api/auth/login',
             '/api/auth/register'
         ]
-        
+
         # 检查是否是公开API
         if request.path in public_apis or any(request.path.startswith(p) for p in public_apis):
             return None
-            
+
         auth_result = _require_jwt_auth()
         if auth_result is not None:
             return auth_result
         return None
-    
+
     # 数据API端点 - JWT保护（用于Vue前端）
     if request.path.startswith('/getAllData/'):
         auth_result = _require_jwt_auth()
         if auth_result is not None:
             return auth_result
         return None
-    
+
     # 旧版 Jinja 模板页面 (/page/*) 需要 session 登录验证
     if request.path.startswith('/page/'):
         if not is_user_logged_in():
@@ -377,7 +375,7 @@ def before_request():
             if request.query_string:
                 redirect_url += '?' + request.query_string.decode('utf-8')
             return redirect(f'/user/login?redirect={redirect_url}')
-    
+
     # 其他路径直接放行（Vue 前端路由由前端自行管理认证）
     return None
 
@@ -386,15 +384,15 @@ def before_request():
 def after_request(response):
     """
     请求后置处理中间件
-    
+
     功能：
     1. 添加安全响应头
     2. 处理跨域请求
     3. 记录响应状态
-    
+
     Args:
         response: Flask响应对象
-        
+
     Returns:
         response: 处理后的响应对象
     """
@@ -420,20 +418,20 @@ def after_request(response):
             "script-src 'self' 'unsafe-inline'; "
             "connect-src 'self'"
         )
-    
+
     # 缓存控制（根据内容类型）
     if request.path.startswith('/static'):
         response.headers['Cache-Control'] = 'public, max-age=300'  # 静态文件缓存5分钟
     else:
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'  # 页面不缓存
-    
+
     # 记录响应状态
     if response.status_code >= 400:
         logger.warning(f"响应错误: {response.status_code} | 路径: {request.path}")
 
     if getattr(g, 'request_id', None):
         response.headers['X-Request-Id'] = g.request_id
-    
+
     return response
 
 @app.teardown_appcontext
@@ -447,19 +445,19 @@ def page_not_found(error):
     """
     404错误处理器
     当访问不存在的页面时显示友好的错误页面
-    
+
     Args:
         error: 错误对象
-        
+
     Returns:
         tuple: (模板, 状态码)
     """
     logger.warning(f"404错误: {request.path} | IP: {get_client_ip()}")
-    
+
     # API请求返回JSON错误
     if request.path.startswith('/api/') or request.path.startswith('/getAllData/'):
         return error('请求的资源不存在', code=404), 404
-    
+
     # 网页请求返回HTML错误页面
     return render_template('404.html'), 404
 
@@ -469,19 +467,19 @@ def internal_server_error(error):
     """
     500错误处理器
     处理服务器内部错误
-    
+
     Args:
         error: 错误对象
-        
+
     Returns:
         tuple: (响应, 状态码)
     """
     logger.error(f"500错误: {error} | 路径: {request.path} | IP: {get_client_ip()}")
-    
+
     # API请求返回JSON错误
     if request.path.startswith('/api/') or request.path.startswith('/getAllData/'):
         return error('服务器内部错误，请稍后重试', code=500), 500
-    
+
     # 网页请求返回错误页面
     try:
         return render_template('error.html', error_message='服务器内部错误'), 500
@@ -497,10 +495,10 @@ def forbidden(error):
     处理权限不足错误
     """
     logger.warning(f"403错误: 权限不足 | 路径: {request.path} | IP: {get_client_ip()}")
-    
+
     if request.path.startswith('/api/') or request.path.startswith('/getAllData/'):
         return error('权限不足', code=403), 403
-    
+
     return render_template('error.html', error_message='权限不足'), 403
 
 
@@ -513,7 +511,8 @@ def unauthorized(error):
 
 @app.errorhandler(CSRFError)
 def handle_csrf_error(err):
-    if request.path.startswith('/api/') or request.path.startswith('/getAllData/'):
+    accepts_json = request.headers.get('Accept', '').startswith('application/json')
+    if request.path.startswith('/api/') or request.path.startswith('/getAllData/') or request.is_json or accepts_json:
         return error('CSRF 校验失败', code=400), 400
     return render_template('error.html', error_message='CSRF 校验失败'), 400
 
@@ -524,7 +523,7 @@ def catch_all(path):
     """
     捕获所有未定义的路径
     仅拦截恶意请求，其他返回默认404
-    
+
     注意：Vue 客户端路由（/home, /hot-words 等）在开发环境由 Vite 代理处理，
     不会到达此处。生产环境应由 Nginx 转发到 index.html。
     """
@@ -538,12 +537,12 @@ def catch_all(path):
         r'admin\.php',       # 管理页面
         r'login\.php',       # PHP登录页面
     ]
-    
+
     for pattern in malicious_patterns:
         if re.search(pattern, path, re.IGNORECASE):
             logger.warning(f"检测到可疑请求: /{path} | IP: {get_client_ip()}")
             return '', 404  # 直接返回404，不提供任何信息
-    
+
     # 其他未知路径返回404（不做重定向，避免与Vue Router冲突）
     logger.info(f"未定义路径: /{path} | IP: {get_client_ip()}")
     return render_template('404.html'), 404
@@ -556,10 +555,10 @@ def initialize_app():
     """初始化应用"""
     # 记录启动时间
     app.start_time = time.time()
-    
+
     # 创建必要目录
     create_app_directories()
-    
+
     # 记录启动信息
     logger.info("=" * 50)
     logger.info("微博舆情分析系统启动")
@@ -584,7 +583,7 @@ if __name__ == '__main__':
             threaded=True,           # 支持多线程
             use_reloader=Config.IS_DEVELOPMENT  # 仅开发环境启用自动重载
         )
-        
+
     except Exception as e:
         logger.error(f"应用启动失败: {e}")
         raise

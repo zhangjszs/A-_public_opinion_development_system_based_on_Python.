@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 报告生成模块
 功能：PDF报告生成、PPT报告生成、Word报告生成
@@ -8,20 +7,28 @@
 import io
 import logging
 import os
-from datetime import datetime
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 try:
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import cm
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.platypus import (
+        Image,
+        PageBreak,
+        Paragraph,
+        SimpleDocTemplate,
+        Spacer,
+        Table,
+        TableStyle,
+    )
     REPORTLAB_AVAILABLE = True
 except ImportError:
     REPORTLAB_AVAILABLE = False
@@ -29,9 +36,9 @@ except ImportError:
 
 try:
     from pptx import Presentation
-    from pptx.util import Inches, Pt
     from pptx.dml.color import RgbColor
     from pptx.enum.text import PP_ALIGN
+    from pptx.util import Inches, Pt
     PPTX_AVAILABLE = True
 except ImportError:
     PPTX_AVAILABLE = False
@@ -52,18 +59,18 @@ class ReportConfig:
 
 class PDFReportGenerator:
     """PDF报告生成器"""
-    
+
     def __init__(self):
         self.styles = None
         self._init_styles()
-    
+
     def _init_styles(self):
         """初始化样式"""
         if not REPORTLAB_AVAILABLE:
             return
-        
+
         self.styles = getSampleStyleSheet()
-        
+
         try:
             font_path = self._find_chinese_font()
             if font_path:
@@ -73,7 +80,7 @@ class PDFReportGenerator:
                 self.chinese_font = 'Helvetica'
         except:
             self.chinese_font = 'Helvetica'
-        
+
         self.styles.add(ParagraphStyle(
             name='ChineseTitle',
             fontName=self.chinese_font,
@@ -82,7 +89,7 @@ class PDFReportGenerator:
             alignment=1,
             spaceAfter=20
         ))
-        
+
         self.styles.add(ParagraphStyle(
             name='ChineseHeading',
             fontName=self.chinese_font,
@@ -91,7 +98,7 @@ class PDFReportGenerator:
             spaceBefore=15,
             spaceAfter=10
         ))
-        
+
         self.styles.add(ParagraphStyle(
             name='ChineseBody',
             fontName=self.chinese_font,
@@ -100,7 +107,7 @@ class PDFReportGenerator:
             spaceBefore=6,
             spaceAfter=6
         ))
-    
+
     def _find_chinese_font(self) -> Optional[str]:
         """查找中文字体"""
         font_paths = [
@@ -110,12 +117,12 @@ class PDFReportGenerator:
             "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
             "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
         ]
-        
+
         for path in font_paths:
             if os.path.exists(path):
                 return path
         return None
-    
+
     def generate(
         self,
         data: Dict[str, Any],
@@ -124,24 +131,24 @@ class PDFReportGenerator:
     ) -> Optional[str]:
         """
         生成PDF报告
-        
+
         Args:
             data: 报告数据
             output_path: 输出路径
             config: 报告配置
-            
+
         Returns:
             str: 生成的文件路径
         """
         if not REPORTLAB_AVAILABLE:
             logger.error("ReportLab未安装")
             return None
-        
+
         config = config or ReportConfig()
-        
+
         if output_path is None:
             output_path = f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-        
+
         try:
             doc = SimpleDocTemplate(
                 output_path,
@@ -151,9 +158,9 @@ class PDFReportGenerator:
                 topMargin=2*cm,
                 bottomMargin=2*cm
             )
-            
+
             story = []
-            
+
             story.append(Paragraph(config.title, self.styles['ChineseTitle']))
             story.append(Paragraph(config.subtitle, self.styles['ChineseBody']))
             story.append(Paragraph(
@@ -161,11 +168,11 @@ class PDFReportGenerator:
                 self.styles['ChineseBody']
             ))
             story.append(Spacer(1, 30))
-            
+
             if 'summary' in data:
                 story.append(Paragraph("一、数据概览", self.styles['ChineseHeading']))
                 summary = data['summary']
-                
+
                 summary_data = [
                     ['指标', '数值'],
                     ['总文章数', str(summary.get('total_articles', 0))],
@@ -174,7 +181,7 @@ class PDFReportGenerator:
                     ['中性评价', str(summary.get('neutral_count', 0))],
                     ['负面评价', str(summary.get('negative_count', 0))],
                 ]
-                
+
                 table = Table(summary_data, colWidths=[8*cm, 6*cm])
                 table.setStyle(TableStyle([
                     ('FONTNAME', (0, 0), (-1, -1), self.chinese_font),
@@ -186,21 +193,21 @@ class PDFReportGenerator:
                 ]))
                 story.append(table)
                 story.append(Spacer(1, 20))
-            
+
             if 'sentiment_analysis' in data:
                 story.append(Paragraph("二、情感分析", self.styles['ChineseHeading']))
                 sentiment = data['sentiment_analysis']
-                
+
                 for key, value in sentiment.items():
                     story.append(Paragraph(
                         f"• {key}: {value}",
                         self.styles['ChineseBody']
                     ))
                 story.append(Spacer(1, 20))
-            
+
             if 'hot_topics' in data:
                 story.append(Paragraph("三、热门话题", self.styles['ChineseHeading']))
-                
+
                 topics_data = [['排名', '话题', '热度']]
                 for i, topic in enumerate(data['hot_topics'][:10], 1):
                     topics_data.append([
@@ -208,7 +215,7 @@ class PDFReportGenerator:
                         topic.get('name', '')[:30],
                         str(topic.get('heat', 0))
                     ])
-                
+
                 table = Table(topics_data, colWidths=[2*cm, 10*cm, 3*cm])
                 table.setStyle(TableStyle([
                     ('FONTNAME', (0, 0), (-1, -1), self.chinese_font),
@@ -220,26 +227,26 @@ class PDFReportGenerator:
                 ]))
                 story.append(table)
                 story.append(Spacer(1, 20))
-            
+
             if 'alerts' in data:
                 story.append(Paragraph("四、预警记录", self.styles['ChineseHeading']))
-                
+
                 for alert in data['alerts'][:10]:
                     story.append(Paragraph(
                         f"• [{alert.get('level', 'info')}] {alert.get('title', '')}: {alert.get('message', '')}",
                         self.styles['ChineseBody']
                     ))
-            
+
             story.append(Spacer(1, 30))
             story.append(Paragraph(
                 f"报告生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
                 self.styles['ChineseBody']
             ))
-            
+
             doc.build(story)
             logger.info(f"PDF报告已生成: {output_path}")
             return output_path
-            
+
         except Exception as e:
             logger.error(f"PDF生成失败: {e}")
             return None
@@ -247,10 +254,10 @@ class PDFReportGenerator:
 
 class PPTReportGenerator:
     """PPT报告生成器"""
-    
+
     def __init__(self):
         self.prs = None
-    
+
     def generate(
         self,
         data: Dict[str, Any],
@@ -263,46 +270,46 @@ class PPTReportGenerator:
         if not PPTX_AVAILABLE:
             logger.error("python-pptx未安装")
             return None
-        
+
         config = config or ReportConfig()
-        
+
         if output_path is None:
             output_path = f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pptx"
-        
+
         try:
             self.prs = Presentation()
             self.prs.slide_width = Inches(13.333)
             self.prs.slide_height = Inches(7.5)
-            
+
             self._add_title_slide(config)
-            
+
             if 'summary' in data:
                 self._add_summary_slide(data['summary'])
-            
+
             if 'sentiment_analysis' in data:
                 self._add_sentiment_slide(data['sentiment_analysis'])
-            
+
             if 'hot_topics' in data:
                 self._add_topics_slide(data['hot_topics'])
-            
+
             if 'alerts' in data:
                 self._add_alerts_slide(data['alerts'])
-            
+
             self._add_end_slide()
-            
+
             self.prs.save(output_path)
             logger.info(f"PPT报告已生成: {output_path}")
             return output_path
-            
+
         except Exception as e:
             logger.error(f"PPT生成失败: {e}")
             return None
-    
+
     def _add_title_slide(self, config: ReportConfig):
         """添加标题幻灯片"""
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
-        
+
         title_box = slide.shapes.add_textbox(
             Inches(0.5), Inches(2.5), Inches(12.333), Inches(1.5)
         )
@@ -312,7 +319,7 @@ class PPTReportGenerator:
         p.font.size = Pt(44)
         p.font.bold = True
         p.alignment = PP_ALIGN.CENTER
-        
+
         subtitle_box = slide.shapes.add_textbox(
             Inches(0.5), Inches(4.2), Inches(12.333), Inches(0.8)
         )
@@ -321,12 +328,12 @@ class PPTReportGenerator:
         p.text = f"生成日期: {datetime.now().strftime(config.date_format)}"
         p.font.size = Pt(20)
         p.alignment = PP_ALIGN.CENTER
-    
+
     def _add_summary_slide(self, summary: Dict):
         """添加概览幻灯片"""
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
-        
+
         title_box = slide.shapes.add_textbox(
             Inches(0.5), Inches(0.3), Inches(12.333), Inches(0.8)
         )
@@ -335,7 +342,7 @@ class PPTReportGenerator:
         p.text = "数据概览"
         p.font.size = Pt(32)
         p.font.bold = True
-        
+
         metrics = [
             ('总文章数', summary.get('total_articles', 0)),
             ('总评论数', summary.get('total_comments', 0)),
@@ -343,11 +350,11 @@ class PPTReportGenerator:
             ('中性评价', summary.get('neutral_count', 0)),
             ('负面评价', summary.get('negative_count', 0)),
         ]
-        
+
         for i, (label, value) in enumerate(metrics):
             left = Inches(0.5 + (i % 3) * 4.2)
             top = Inches(1.5 + (i // 3) * 2.5)
-            
+
             box = slide.shapes.add_textbox(left, top, Inches(3.8), Inches(2))
             tf = box.text_frame
             p = tf.paragraphs[0]
@@ -355,17 +362,17 @@ class PPTReportGenerator:
             p.font.size = Pt(48)
             p.font.bold = True
             p.alignment = PP_ALIGN.CENTER
-            
+
             p2 = tf.add_paragraph()
             p2.text = label
             p2.font.size = Pt(18)
             p2.alignment = PP_ALIGN.CENTER
-    
+
     def _add_sentiment_slide(self, sentiment: Dict):
         """添加情感分析幻灯片"""
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
-        
+
         title_box = slide.shapes.add_textbox(
             Inches(0.5), Inches(0.3), Inches(12.333), Inches(0.8)
         )
@@ -374,23 +381,23 @@ class PPTReportGenerator:
         p.text = "情感分析"
         p.font.size = Pt(32)
         p.font.bold = True
-        
+
         content_box = slide.shapes.add_textbox(
             Inches(0.5), Inches(1.5), Inches(12.333), Inches(5.5)
         )
         tf = content_box.text_frame
-        
+
         for key, value in sentiment.items():
             p = tf.add_paragraph()
             p.text = f"• {key}: {value}"
             p.font.size = Pt(20)
             p.space_after = Pt(12)
-    
+
     def _add_topics_slide(self, topics: List[Dict]):
         """添加热门话题幻灯片"""
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
-        
+
         title_box = slide.shapes.add_textbox(
             Inches(0.5), Inches(0.3), Inches(12.333), Inches(0.8)
         )
@@ -399,30 +406,30 @@ class PPTReportGenerator:
         p.text = "热门话题 Top 10"
         p.font.size = Pt(32)
         p.font.bold = True
-        
+
         rows = min(len(topics), 10)
         cols = 2
-        
+
         for i, topic in enumerate(topics[:10]):
             left = Inches(0.5 + (i % 2) * 6.4)
             top = Inches(1.3 + (i // 2) * 1.1)
-            
+
             box = slide.shapes.add_textbox(left, top, Inches(6), Inches(0.9))
             tf = box.text_frame
             p = tf.paragraphs[0]
             p.text = f"{i+1}. {topic.get('name', '')[:25]}"
             p.font.size = Pt(18)
-            
+
             p2 = tf.add_paragraph()
             p2.text = f"热度: {topic.get('heat', 0)}"
             p2.font.size = Pt(14)
             p2.font.color.rgb = RgbColor(100, 100, 100)
-    
+
     def _add_alerts_slide(self, alerts: List[Dict]):
         """添加预警幻灯片"""
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
-        
+
         title_box = slide.shapes.add_textbox(
             Inches(0.5), Inches(0.3), Inches(12.333), Inches(0.8)
         )
@@ -431,30 +438,30 @@ class PPTReportGenerator:
         p.text = "预警记录"
         p.font.size = Pt(32)
         p.font.bold = True
-        
+
         content_box = slide.shapes.add_textbox(
             Inches(0.5), Inches(1.3), Inches(12.333), Inches(5.5)
         )
         tf = content_box.text_frame
-        
+
         for alert in alerts[:8]:
             p = tf.add_paragraph()
             level = alert.get('level', 'info')
             p.text = f"[{level.upper()}] {alert.get('title', '')}"
             p.font.size = Pt(16)
             p.space_after = Pt(8)
-            
+
             p2 = tf.add_paragraph()
             p2.text = f"  {alert.get('message', '')}"
             p2.font.size = Pt(14)
             p2.font.color.rgb = RgbColor(100, 100, 100)
             p2.space_after = Pt(16)
-    
+
     def _add_end_slide(self):
         """添加结束幻灯片"""
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
-        
+
         title_box = slide.shapes.add_textbox(
             Inches(0.5), Inches(3), Inches(12.333), Inches(1.5)
         )
@@ -468,11 +475,11 @@ class PPTReportGenerator:
 
 class ReportGenerator:
     """统一报告生成器"""
-    
+
     def __init__(self):
         self.pdf_generator = PDFReportGenerator()
         self.ppt_generator = PPTReportGenerator()
-    
+
     def generate_report(
         self,
         data: Dict[str, Any],
@@ -482,13 +489,13 @@ class ReportGenerator:
     ) -> Optional[str]:
         """
         生成报告
-        
+
         Args:
             data: 报告数据
             format: 格式
             output_path: 输出路径
             config: 配置
-            
+
         Returns:
             str: 生成的文件路径
         """
@@ -499,7 +506,7 @@ class ReportGenerator:
         else:
             logger.error(f"不支持的格式: {format}")
             return None
-    
+
     def generate_all(
         self,
         data: Dict[str, Any],
@@ -508,12 +515,12 @@ class ReportGenerator:
     ) -> Dict[str, str]:
         """
         生成所有格式报告
-        
+
         Returns:
             Dict[str, str]: 格式到文件路径的映射
         """
         results = {}
-        
+
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -522,15 +529,15 @@ class ReportGenerator:
         else:
             pdf_path = None
             ppt_path = None
-        
+
         pdf_result = self.generate_report(data, 'pdf', pdf_path, config)
         if pdf_result:
             results['pdf'] = pdf_result
-        
+
         ppt_result = self.generate_report(data, 'ppt', ppt_path, config)
         if ppt_result:
             results['ppt'] = ppt_result
-        
+
         return results
 
 

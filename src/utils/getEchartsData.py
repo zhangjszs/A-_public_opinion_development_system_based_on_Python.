@@ -1,13 +1,15 @@
-from utils import getPublicData
+import logging
+import os
+
 import jieba
 import matplotlib.pyplot as plt
-from wordcloud import WordCloud, ImageColorGenerator
-from PIL import Image                   # 图片处理
 import numpy as np
+from PIL import Image  # 图片处理
 from snownlp import SnowNLP
-import os
+from wordcloud import ImageColorGenerator, WordCloud
+
 from config.settings import BASE_DIR
-import logging
+from utils import getPublicData
 
 logger = logging.getLogger(__name__)
 
@@ -71,14 +73,14 @@ def getArticleCharThreeData(defaultType):
 def getGeoCharDataOne():
     """
     获取评论地理分布数据
-    
+
     Returns:
         list: 城市分布列表
     """
     try:
         cityList = getPublicData.cityList
         commentList = getPublicData.getAllCommentsData()
-        
+
         cityDic = {}
         for comment in commentList:
             if comment[3] == '无':
@@ -96,10 +98,10 @@ def getGeoCharDataOne():
                 'name': key,
                 'value': value
             })
-        
+
         logger.info(f"获取评论地理分布数据成功，共 {len(cityDicList)} 个省份")
         return cityDicList
-        
+
     except Exception as e:
         logger.error(f"获取评论地理分布数据失败: {e}")
         return []
@@ -108,14 +110,14 @@ def getGeoCharDataOne():
 def getGeoCharDataTwo():
     """
     获取文章地理分布数据
-    
+
     Returns:
         list: 城市分布列表
     """
     try:
         cityList = getPublicData.cityList
         articleList = getPublicData.getAllData()
-        
+
         cityDic = {}
         for article in articleList:
             if article[4] == '无':
@@ -126,17 +128,17 @@ def getGeoCharDataTwo():
                         cityDic[j['province']] = 1
                     else:
                         cityDic[j['province']] += 1
-        
+
         cityDicList = []
         for key, value in cityDic.items():
             cityDicList.append({
                 'name': key,
                 'value': value
             })
-        
+
         logger.info(f"获取文章地理分布数据成功，共 {len(cityDicList)} 个省份")
         return cityDicList
-        
+
     except Exception as e:
         logger.error(f"获取文章地理分布数据失败: {e}")
         return []
@@ -179,6 +181,7 @@ def stopwordslist():
     return stopwords
 
 import threading
+
 _plt_lock = threading.Lock()
 
 def getContentCloud():
@@ -205,7 +208,7 @@ def getContentCloud():
     wc.generate_from_text(string)
 
     save_path = get_abs_path('static/contentCloud.jpg')
-    
+
     # 加锁防止多线程绘图冲突
     with _plt_lock:
         try:
@@ -216,7 +219,7 @@ def getContentCloud():
             plt.savefig(save_path, dpi=500)
         finally:
             plt.close()
-            
+
     return '/static/contentCloud.jpg'
 
 def getCommentContentCloud():
@@ -254,7 +257,7 @@ def getCommentContentCloud():
             plt.savefig(save_path, dpi=500)
         finally:
             plt.close()
-            
+
     return '/static/commentCloud.jpg'
 
 def getYuQingCharDataOne():

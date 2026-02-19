@@ -1,17 +1,20 @@
-import requests
 import csv
 import os
-import numpy as np
-from datetime import datetime
-import time
 import random
-from config import HEADERS, DEFAULT_TIMEOUT, get_random_headers, get_working_proxy
+import time
+from datetime import datetime
+
+import numpy as np
+import requests
+
+from config import DEFAULT_TIMEOUT, HEADERS, get_random_headers, get_working_proxy
+
 
 def init():
     data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
     os.makedirs(data_dir, exist_ok=True)
     nav_path = os.path.join(data_dir, 'navData.csv')
-    
+
     if not os.path.exists(nav_path):
         with open(nav_path,'w',encoding='utf8',newline='') as csvfile:
             wirter = csv.writer(csvfile)
@@ -24,7 +27,7 @@ def init():
 def wirterRow(row):
     data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
     nav_path = os.path.join(data_dir, 'navData.csv')
-    
+
     with open(nav_path,'a',encoding='utf8',newline='') as csvfile:
             wirter = csv.writer(csvfile)
             wirter.writerow(row)
@@ -33,16 +36,16 @@ def get_html(url):
     # 使用随机headers和代理
     headers = get_random_headers()
     proxy = get_working_proxy()
-    
+
     params = {
         'is_new_segment':1,
         'fetch_hot':1
     }
     try:
         response = requests.get(
-            url, 
-            headers=headers, 
-            params=params, 
+            url,
+            headers=headers,
+            params=params,
             proxies=proxy,
             timeout=DEFAULT_TIMEOUT
         )

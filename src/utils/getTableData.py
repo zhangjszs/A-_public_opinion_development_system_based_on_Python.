@@ -1,8 +1,10 @@
-from utils.getPublicData import *
-from datetime import datetime
-from snownlp import SnowNLP
-from utils.query import query_dataframe
 import logging
+from datetime import datetime
+
+from snownlp import SnowNLP
+
+from utils.getPublicData import *
+from utils.query import query_dataframe
 
 logger = logging.getLogger(__name__)
 
@@ -14,10 +16,10 @@ def getTableDataPageData():
 def getTableData(hotWord):
     """
     根据关键词获取评论数据（优化版：使用数据库查询代替Python过滤）
-    
+
     Args:
         hotWord: 搜索关键词
-        
+
     Returns:
         list: 匹配的评论列表
     """
@@ -27,7 +29,7 @@ def getTableData(hotWord):
         # MySQL使用%s作为占位符
         # 只查询数据库中实际存在的字段
         df = query_dataframe('''
-            SELECT 
+            SELECT
                 articleId,
                 created_at,
                 like_counts,
@@ -37,20 +39,20 @@ def getTableData(hotWord):
                 authorGender,
                 authorAddress,
                 authorAvatar
-            FROM comments 
+            FROM comments
             WHERE content LIKE %s
             ORDER BY created_at DESC
             LIMIT 1000
         ''', params=(f'%{hotWord}%',))
-        
+
         # 转换为列表格式以保持向后兼容
         if df.empty:
             logger.info(f"未找到包含关键词 '{hotWord}' 的评论")
             return []
-        
+
         logger.info(f"找到 {len(df)} 条包含关键词 '{hotWord}' 的评论")
         return df.values.tolist()
-        
+
     except Exception as e:
         logger.error(f"查询评论数据失败: {e}")
         # 降级到原始方法

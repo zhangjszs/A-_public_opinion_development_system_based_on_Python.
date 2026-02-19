@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 爬虫管理 API
 功能：提供爬虫概览、同步爬取、日志查询等接口
 """
 
-import os
-import time
 import json
-import threading
 import logging
+import os
+import threading
+import time
 from datetime import datetime
+
 from flask import Blueprint, request
+
 from config.settings import Config
-from utils.api_response import ok, error
+from utils.api_response import error, ok
 from utils.authz import admin_required
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,9 @@ spider_bp = Blueprint('spider_api', __name__, url_prefix='/api/spider')
 _spider_state = {
     'running': False,
     'current_task': None,
+    'current_task_id': None,
+    'current_task_type': None,
+    'last_finalized_task_id': None,
     'progress': 0,
     'message': '',
     'history': [],  # 最近的爬取记录
@@ -47,6 +51,131 @@ def _add_history(action, status, detail='', count=0):
     return record
 
 
+def _progress_to_percent(progress_meta: dict) -> int:
+    if not isinstance(progress_meta, dict):
+        return 0
+    current = progress_meta.get('current', 0)
+    total = progress_meta.get('total', 0)
+    if isinstance(total, int) and total > 0:
+        return min(100, int((max(current, 0) / total) * 100))
+    return int(progress_meta.get('progress', 0) or 0)
+
+
+def _extract_result_count(result: dict) -> int:
+    if not isinstance(result, dict):
+        return 0
+    return int(
+        result.get('imported')
+        or result.get('total_articles')
+        or result.get('processed_articles')
+        or result.get('total_comments_pages')
+        or 0
+    )
+
+
+def dispatch_spider_task(crawl_type: str, keyword: str = '', page_num: int = 3, article_limit: int = 50):
+    from tasks.celery_spider import (
+        spider_comments_task,
+        spider_hot_task,
+        spider_search_task,
+    )
+
+    crawl_type = (crawl_type or 'hot').strip()
+    page_num = max(1, min(int(page_num), 10))
+    article_limit = max(1, min(int(article_limit), 100))
+
+    if crawl_type == 'search':
+        if not keyword.strip():
+            raise ValueError('关键词搜索模式下 keyword 不能为空')
+        task = spider_search_task.delay(keyword.strip(), page_num)
+        task_label = f'关键词搜索: {keyword.strip()}'
+    elif crawl_type == 'comments':
+        task = spider_comments_task.delay(article_limit)
+        task_label = '爬取评论'
+    else:
+        task = spider_hot_task.delay(page_num)
+        task_label = '刷新热门微博'
+        crawl_type = 'hot'
+
+    return {
+        'task_id': task.id,
+        'task_label': task_label,
+        'crawl_type': crawl_type,
+        'keyword': keyword.strip(),
+        'page_num': page_num,
+        'article_limit': article_limit,
+    }
+
+
+def register_submitted_task(dispatch_result: dict) -> None:
+    with _spider_lock:
+        _spider_state['running'] = True
+        _spider_state['current_task'] = dispatch_result['task_label']
+        _spider_state['current_task_type'] = dispatch_result['crawl_type']
+        _spider_state['current_task_id'] = dispatch_result['task_id']
+        _spider_state['progress'] = 0
+        _spider_state['message'] = '任务已提交，等待执行...'
+
+
+def _refresh_task_state() -> None:
+    task_id = _spider_state.get('current_task_id')
+    if not task_id:
+        return
+
+    from tasks.celery_spider import get_task_progress
+
+    try:
+        result = get_task_progress(task_id)
+    except Exception as e:
+        logger.warning(f"查询任务状态失败: task_id={task_id}, error={e}")
+        return
+
+    state = result.get('state')
+    if state in ('PENDING', 'PROGRESS'):
+        _spider_state['running'] = True
+        progress_meta = result.get('progress', {}) if state == 'PROGRESS' else {}
+        _spider_state['progress'] = _progress_to_percent(progress_meta) if state == 'PROGRESS' else 0
+        _spider_state['message'] = (
+            progress_meta.get('status') if isinstance(progress_meta, dict) else ''
+        ) or result.get('status', '任务执行中...')
+        return
+
+    if state == 'SUCCESS':
+        _spider_state['running'] = False
+        _spider_state['progress'] = 100
+        _spider_state['message'] = '任务完成'
+        if _spider_state.get('last_finalized_task_id') != task_id:
+            task_result = result.get('result', {})
+            _add_history(
+                _spider_state.get('current_task') or '爬虫任务',
+                'success',
+                f"task_id={task_id}",
+                _extract_result_count(task_result),
+            )
+            _spider_state['last_finalized_task_id'] = task_id
+        _spider_state['current_task_id'] = None
+        _spider_state['current_task_type'] = None
+        _spider_state['current_task'] = None
+        return
+
+    if state == 'FAILURE':
+        _spider_state['running'] = False
+        _spider_state['progress'] = 0
+        error_msg = result.get('error', '任务失败')
+        _spider_state['message'] = str(error_msg)
+        if _spider_state.get('last_finalized_task_id') != task_id:
+            _add_history(
+                _spider_state.get('current_task') or '爬虫任务',
+                'error',
+                f"task_id={task_id}: {error_msg}",
+                0,
+            )
+            _spider_state['last_finalized_task_id'] = task_id
+        _spider_state['current_task_id'] = None
+        _spider_state['current_task_type'] = None
+        _spider_state['current_task'] = None
+
+
 @spider_bp.route('/overview', methods=['GET'])
 @admin_required
 def spider_overview():
@@ -54,7 +183,8 @@ def spider_overview():
     获取爬虫概览数据：文章/评论/用户总数、最近文章时间等
     """
     try:
-        from utils.query import querys, query_dataframe
+        _refresh_task_state()
+        from utils.query import query_dataframe, querys
 
         # 统计各表数量
         article_count = 0
@@ -148,6 +278,7 @@ def spider_overview():
             'latestCommentTime': latest_comment_time,
             'isRunning': _spider_state['running'],
             'currentTask': _spider_state['current_task'],
+            'currentTaskId': _spider_state['current_task_id'],
             'progress': _spider_state['progress'],
             'message': _spider_state['message'],
             'dailyTrend': daily_trend,
@@ -164,18 +295,21 @@ def spider_overview():
 @admin_required
 def spider_crawl():
     """
-    触发同步爬取任务（在后台线程中执行，不依赖 Celery）
+    触发异步爬取任务（统一通过 Celery 编排）
     Body:
         type: 'hot' | 'search' | 'comments'
         keyword: 搜索关键词（type=search 时必填）
         pageNum: 爬取页数（默认 3）
     """
+    _refresh_task_state()
+
     with _spider_lock:
         if _spider_state['running']:
             return ok(
                 {
                     'currentTask': _spider_state['current_task'],
                     'progress': _spider_state['progress'],
+                    'task_id': _spider_state['current_task_id'],
                 },
                 msg='已有爬虫任务正在运行，请等待完成',
                 code=409
@@ -184,66 +318,34 @@ def spider_crawl():
     data = request.json or {}
     crawl_type = data.get('type', 'hot')
     keyword = data.get('keyword', '')
-    page_num = min(int(data.get('pageNum', 3)), 10)
+    page_num = data.get('pageNum', 3)
+    article_limit = data.get('article_limit', 50)
 
-    # 参数校验
-    if crawl_type == 'search' and not keyword.strip():
-        return error('关键词搜索模式下 keyword 不能为空', code=400), 400
+    try:
+        dispatch_result = dispatch_spider_task(
+            crawl_type=crawl_type,
+            keyword=keyword,
+            page_num=page_num,
+            article_limit=article_limit,
+        )
+    except ValueError as ve:
+        return error(str(ve), code=400), 400
+    except Exception as e:
+        logger.error(f"提交爬虫任务失败: {e}")
+        return error('任务提交失败', code=500), 500
 
-    # 在后台线程执行爬取
-    def run_crawl():
-        try:
-            with _spider_lock:
-                _spider_state['running'] = True
-                _spider_state['progress'] = 0
-
-            if crawl_type == 'hot':
-                _spider_state['current_task'] = '刷新热门微博'
-                _spider_state['message'] = '正在爬取热门微博...'
-                count = _crawl_hot(page_num)
-                _add_history('刷新热门微博', 'success', f'爬取 {page_num} 页', count)
-
-            elif crawl_type == 'search':
-                _spider_state['current_task'] = f'搜索: {keyword}'
-                _spider_state['message'] = f'正在搜索 "{keyword}"...'
-                count = _crawl_search(keyword, page_num)
-                _add_history(f'关键词搜索: {keyword}', 'success', f'爬取 {page_num} 页', count)
-
-            elif crawl_type == 'comments':
-                _spider_state['current_task'] = '爬取评论'
-                _spider_state['message'] = '正在爬取评论数据...'
-                count = _crawl_comments()
-                _add_history('爬取评论', 'success', '', count)
-
-            _spider_state['message'] = '爬取完成'
-            _spider_state['progress'] = 100
-
-        except Exception as e:
-            logger.error(f"爬虫任务失败: {e}")
-            _spider_state['message'] = f'爬取失败: {e}'
-            _add_history(
-                _spider_state['current_task'] or crawl_type,
-                'error',
-                str(e),
-            )
-        finally:
-            with _spider_lock:
-                _spider_state['running'] = False
-                _spider_state['current_task'] = None
-                _spider_state['progress'] = 0
-
-    thread = threading.Thread(target=run_crawl, daemon=True)
-    thread.start()
-
-    task_label = {
-        'hot': '刷新热门微博',
-        'search': f'搜索: {keyword}',
-        'comments': '爬取评论',
-    }.get(crawl_type, crawl_type)
+    register_submitted_task(dispatch_result)
 
     return ok(
-        {'type': crawl_type, 'keyword': keyword, 'pageNum': page_num},
-        msg=f'爬虫任务已启动: {task_label}'
+        {
+            'type': dispatch_result['crawl_type'],
+            'keyword': dispatch_result['keyword'],
+            'pageNum': dispatch_result['page_num'],
+            'article_limit': dispatch_result['article_limit'],
+            'task_id': dispatch_result['task_id'],
+            'check_url': f"/api/tasks/{dispatch_result['task_id']}/status",
+        },
+        msg=f"爬虫任务已提交: {dispatch_result['task_label']}"
     ), 200
 
 
@@ -283,9 +385,11 @@ def spider_logs():
 @admin_required
 def spider_status():
     """获取当前爬虫运行状态"""
+    _refresh_task_state()
     return ok({
         'isRunning': _spider_state['running'],
         'currentTask': _spider_state['current_task'],
+        'currentTaskId': _spider_state['current_task_id'],
         'progress': _spider_state['progress'],
         'message': _spider_state['message'],
     }), 200
@@ -295,8 +399,10 @@ def spider_status():
 
 def _crawl_hot(page_num=3):
     """同步爬取热门微博并导入数据库"""
-    import requests as req
     import random
+
+    import requests as req
+
     from utils.query import querys
 
     cookie = os.getenv('WEIBO_COOKIE', '')
@@ -378,8 +484,10 @@ def _crawl_hot(page_num=3):
 
 def _crawl_search(keyword, page_num=3):
     """同步关键词搜索爬取"""
-    import requests as req
     import random
+
+    import requests as req
+
     from utils.query import querys
 
     cookie = os.getenv('WEIBO_COOKIE', '')
@@ -476,8 +584,9 @@ def _crawl_comments():
             logger.warning("没有文章可爬取评论")
             return 0
 
-        import requests as req
         import random
+
+        import requests as req
 
         cookie = os.getenv('WEIBO_COOKIE', '')
         headers = {

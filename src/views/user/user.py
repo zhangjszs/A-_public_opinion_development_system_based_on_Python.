@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 用户认证模块
 功能：处理用户登录、注册和登出操作
@@ -7,15 +6,17 @@
 作者：微博舆情分析系统
 """
 
-from flask import session, render_template, redirect, Blueprint, request, jsonify
-from utils.errorResponse import *
-from utils.input_validator import validate_username, validate_password, sanitize_input
-from utils.log_sanitizer import SafeLogger
-from utils.jwt_handler import jwt_required
-from utils.api_response import ok, error
-from services.auth_service import AuthService
-import time
 import logging
+import time
+
+from flask import Blueprint, jsonify, redirect, render_template, request, session
+
+from services.auth_service import AuthService
+from utils.api_response import error, ok
+from utils.errorResponse import *
+from utils.input_validator import sanitize_input, validate_password, validate_username
+from utils.jwt_handler import jwt_required
+from utils.log_sanitizer import SafeLogger
 
 logger = SafeLogger('user_auth', logging.INFO)
 auth_service = AuthService()
@@ -45,20 +46,20 @@ def login():
             request.form = dict(request.form)
             username_raw = request.form.get('username', '').strip()
             password_raw = request.form.get('password', '').strip()
-        
+
         # 输入验证
         username_validation = validate_username(username_raw)
         if not username_validation['valid']:
             if is_api_request:
                 return error(username_validation['message'], code=400), 400
             return errorResponse(username_validation['message']), 400
-        
+
         password_validation = validate_password(password_raw)
         if not password_validation['valid']:
             if is_api_request:
                 return error(password_validation['message'], code=400), 400
             return errorResponse(password_validation['message']), 400
-        
+
         username = sanitize_input(username_raw, max_length=20)
         password = password_raw
 
@@ -72,7 +73,7 @@ def login():
             session['user_id'] = user_info['id']
             session['createTime'] = user_info['createTime']
             session.permanent = True
-            
+
             if is_api_request:
                 return ok(data, msg=msg), 200
             else:
@@ -109,14 +110,14 @@ def register():
             username_raw = request.form.get('username', '').strip()
             password_raw = request.form.get('password', '').strip()
             confirm_raw = (request.form.get('confirmPassword', '') or request.form.get('passwordCheked', '')).strip()
-        
+
         username = sanitize_input(username_raw, max_length=20)
         password = password_raw
         confirm = confirm_raw
-        
+
         # 调用 Service 层
         success, msg = auth_service.register(username, password, confirm)
-        
+
         if success:
             if is_api_request:
                 return ok(None, msg=msg), 200
@@ -125,12 +126,12 @@ def register():
             if is_api_request:
                 return error(msg, code=400), 400
             return errorResponse(msg), 400
-            
+
     else:
         return render_template('register.html')
 
 
-@ub.route('/logOut', methods=['GET', 'POST'])
+@ub.route('/logOut', methods=['POST'])
 def logOut():
     """
     用户登出功能
@@ -139,12 +140,12 @@ def logOut():
     current_user = session.get('username', 'Unknown')
     session.clear()
     logger.info(f"用户登出: {current_user}")
-    
+
     is_api_request = (
-        request.is_json or 
+        request.is_json or
         request.headers.get('Accept', '').startswith('application/json')
     )
-    
+
     if is_api_request:
         return jsonify({'code': 200, 'msg': '登出成功'})
     return redirect('/user/login')

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 常量定义模块
 功能：集中定义项目中使用的所有业务常量
@@ -39,7 +38,7 @@ ARTICLE_DISTRIBUTION_BUCKETS: Final[int] = 14
 COMMENT_DISTRIBUTION_BUCKETS: Final[int] = 29
 """评论数划分为29个区间进行统计"""
 
-# 评论点赞分布统计区间数量  
+# 评论点赞分布统计区间数量
 COMMENT_LIKE_DISTRIBUTION_BUCKETS: Final[int] = 99
 """评论点赞数划分为99个区间进行统计"""
 
@@ -98,6 +97,7 @@ TABLE_USER: Final[str] = 'user'
 # ========== 文件路径常量 ==========
 
 import os
+
 from config.settings import Config
 
 # ========== 文件路径常量 ==========

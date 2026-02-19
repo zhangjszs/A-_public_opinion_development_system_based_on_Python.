@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 多平台数据API
 统一查询不同平台的数据
 """
 
-from flask import Blueprint, request
-from datetime import datetime, timedelta
-import random
 import logging
+import random
+from datetime import datetime, timedelta
 
-from utils.api_response import ok, error
+from flask import Blueprint, request
+
+from utils.api_response import error, ok
 from utils.rate_limiter import rate_limit
 
 logger = logging.getLogger(__name__)
@@ -27,14 +27,14 @@ def generate_demo_data(platform: str, count: int = 20):
         'zhihu': {'name': '知乎', 'icon': '💡'},
         'bilibili': {'name': 'B站', 'icon': '📺'},
     }
-    
+
     platform_info = platforms.get(platform, platforms['weibo'])
-    
+
     topics = [
         '人工智能', '科技创新', '新能源', '数字经济', '绿色发展',
         '智慧城市', '乡村振兴', '教育改革', '医疗健康', '文化传承'
     ]
-    
+
     users = [
         ('user_001', '科技博主', True, 50000),
         ('user_002', '行业专家', True, 30000),
@@ -42,14 +42,14 @@ def generate_demo_data(platform: str, count: int = 20):
         ('user_004', '普通网友', False, 1000),
         ('user_005', '热心市民', False, 500),
     ]
-    
+
     data = []
     base_time = datetime.now() - timedelta(hours=24)
-    
+
     for i in range(count):
         user = random.choice(users)
         topic = random.choice(topics)
-        
+
         item = {
             'platform': platform,
             'platform_name': platform_info['name'],
@@ -71,7 +71,7 @@ def generate_demo_data(platform: str, count: int = 20):
             'location': random.choice(['北京', '上海', '广东', '浙江', None]),
         }
         data.append(item)
-    
+
     return data
 
 
@@ -86,7 +86,7 @@ def list_platforms():
         {'id': 'bilibili', 'name': 'B站', 'icon': '📺', 'enabled': False},
         {'id': 'kuaishou', 'name': '快手', 'icon': '🎬', 'enabled': False},
     ]
-    
+
     return ok({'platforms': platforms}), 200
 
 
@@ -95,25 +95,25 @@ def list_platforms():
 def get_platform_data(platform: str):
     """获取指定平台数据"""
     valid_platforms = ['weibo', 'wechat', 'douyin', 'zhihu', 'bilibili']
-    
+
     if platform not in valid_platforms:
         return error('无效的平台ID', code=400), 400
-    
+
     page = request.args.get('page', 1, type=int)
     page_size = request.args.get('page_size', 20, type=int)
     page_size = min(page_size, 100)
-    
+
     demo_mode = request.args.get('demo', 'true').lower() == 'true'
-    
+
     if demo_mode:
         all_data = generate_demo_data(platform, 50)
     else:
         all_data = generate_demo_data(platform, 20)
-    
+
     start = (page - 1) * page_size
     end = start + page_size
     page_data = all_data[start:end]
-    
+
     return ok({
         'platform': platform,
         'data': page_data,
@@ -133,15 +133,15 @@ def get_all_platforms_data():
     platforms = request.args.get('platforms', 'weibo,wechat,douyin,zhihu').split(',')
     page_size = request.args.get('page_size', 10, type=int)
     demo_mode = request.args.get('demo', 'true').lower() == 'true'
-    
+
     results = {}
-    
+
     for platform in platforms:
         if demo_mode:
             data = generate_demo_data(platform, page_size)
         else:
             data = generate_demo_data(platform, page_size)
-        
+
         results[platform] = {
             'count': len(data),
             'total_likes': sum(item['like_count'] for item in data),
@@ -149,7 +149,7 @@ def get_all_platforms_data():
             'total_views': sum(item['view_count'] for item in data),
             'data': data[:5]
         }
-    
+
     return ok({
         'platforms': results,
         'summary': {
@@ -168,9 +168,9 @@ def get_platform_stats(platform: str):
         platforms = ['weibo', 'wechat', 'douyin', 'zhihu']
     else:
         platforms = [platform]
-    
+
     stats = {}
-    
+
     for p in platforms:
         stats[p] = {
             'total_content': random.randint(5000, 50000),
@@ -185,7 +185,7 @@ def get_platform_stats(platform: str):
                 {'name': '新能源', 'count': random.randint(60, 600)},
             ]
         }
-    
+
     return ok(stats), 200
 
 
@@ -195,15 +195,15 @@ def compare_platforms():
     """对比多个平台数据"""
     data = request.json
     platforms = data.get('platforms', ['weibo', 'wechat'])
-    
+
     if len(platforms) < 2:
         return error('至少需要2个平台进行对比', code=400), 400
-    
+
     comparison = {}
-    
+
     for platform in platforms:
         platform_data = generate_demo_data(platform, 20)
-        
+
         comparison[platform] = {
             'total_content': len(platform_data),
             'avg_likes': sum(item['like_count'] for item in platform_data) / len(platform_data),
@@ -215,7 +215,7 @@ def compare_platforms():
                 'negative': sum(1 for item in platform_data if item['sentiment'] == 'negative'),
             }
         }
-    
+
     return ok({
         'comparison': comparison,
         'metrics': ['total_content', 'avg_likes', 'avg_comments', 'avg_views']

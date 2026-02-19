@@ -1,6 +1,9 @@
-from typing import List, Dict, Any, Optional
-from database import db_session
+from typing import Any, Dict, List, Optional
+
 from sqlalchemy.exc import SQLAlchemyError
+
+from database import db_session
+
 
 class BaseRepository:
     """
@@ -18,7 +21,7 @@ class BaseRepository:
 
     def count(self) -> int:
         return self.session.query(self.model).count()
-        
+
     def save(self, obj):
         try:
             self.session.add(obj)

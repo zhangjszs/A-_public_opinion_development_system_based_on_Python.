@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 报告生成API路由
 功能：PDF/PPT报告生成、下载、模板管理
 """
 
-from flask import Blueprint, request, jsonify, g, send_file
-from datetime import datetime
 import logging
 import os
 import tempfile
+from datetime import datetime
 
-from utils.api_response import ok, error
+from flask import Blueprint, g, jsonify, request, send_file
+
+from utils.api_response import error, ok
 from utils.rate_limiter import rate_limit
-from utils.report_generator import report_generator, ReportConfig
+from utils.report_generator import ReportConfig, report_generator
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ def get_demo_report_data():
 def generate_report():
     """
     生成报告
-    
+
     Body:
         format: 报告格式
         title: 报告标题
@@ -70,35 +70,35 @@ def generate_report():
     """
     try:
         data = request.json or {}
-        
+
         format_type = data.get('format', 'pdf').lower()
         title = data.get('title', '舆情分析报告')
         report_data = data.get('data') or get_demo_report_data()
-        
+
         if format_type not in ['pdf', 'ppt']:
             return error('不支持的报告格式，请选择 pdf 或 ppt', code=400), 400
-        
+
         config = ReportConfig(
             title=title,
             subtitle=f"自动生成于 {datetime.now().strftime('%Y年%m月%d日 %H:%M')}",
             author='微博舆情分析系统'
         )
-        
+
         temp_dir = tempfile.gettempdir()
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        
+
         if format_type == 'pdf':
             output_path = os.path.join(temp_dir, f"report_{timestamp}.pdf")
         else:
             output_path = os.path.join(temp_dir, f"report_{timestamp}.pptx")
-        
+
         result_path = report_generator.generate_report(
             report_data,
             format=format_type,
             output_path=output_path,
             config=config
         )
-        
+
         if result_path:
             return ok({
                 'file_path': result_path,
@@ -108,7 +108,7 @@ def generate_report():
             }, msg='报告生成成功'), 200
         else:
             return error('报告生成失败', code=500), 500
-            
+
     except Exception as e:
         logger.error(f"报告生成失败: {e}")
         return error('报告生成失败', code=500), 500
@@ -122,19 +122,19 @@ def generate_all_reports():
         data = request.json or {}
         title = data.get('title', '舆情分析报告')
         report_data = data.get('data') or get_demo_report_data()
-        
+
         config = ReportConfig(
             title=title,
             subtitle=f"自动生成于 {datetime.now().strftime('%Y年%m月%d日 %H:%M')}",
             author='微博舆情分析系统'
         )
-        
+
         temp_dir = tempfile.gettempdir()
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         output_dir = os.path.join(temp_dir, f"reports_{timestamp}")
-        
+
         results = report_generator.generate_all(report_data, output_dir, config)
-        
+
         if results:
             return ok({
                 'files': {
@@ -148,7 +148,7 @@ def generate_all_reports():
             }, msg='报告生成成功'), 200
         else:
             return error('报告生成失败', code=500), 500
-            
+
     except Exception as e:
         logger.error(f"批量报告生成失败: {e}")
         return error('报告生成失败', code=500), 500
@@ -160,16 +160,16 @@ def download_report(filename: str):
     try:
         temp_dir = tempfile.gettempdir()
         file_path = os.path.join(temp_dir, filename)
-        
+
         if not os.path.exists(file_path):
             return error('文件不存在', code=404), 404
-        
+
         return send_file(
             file_path,
             as_attachment=True,
             download_name=filename
         )
-        
+
     except Exception as e:
         logger.error(f"文件下载失败: {e}")
         return error('文件下载失败', code=500), 500
@@ -181,12 +181,12 @@ def preview_report(filename: str):
     try:
         temp_dir = tempfile.gettempdir()
         file_path = os.path.join(temp_dir, filename)
-        
+
         if not os.path.exists(file_path):
             return error('文件不存在', code=404), 404
-        
+
         return send_file(file_path)
-        
+
     except Exception as e:
         logger.error(f"文件预览失败: {e}")
         return error('文件预览失败', code=500), 500
@@ -215,7 +215,7 @@ def get_templates():
             'sections': ['summary', 'sentiment', 'topics', 'alerts', 'propagation', 'kol']
         }
     ]
-    
+
     return ok({'templates': templates}), 200
 
 

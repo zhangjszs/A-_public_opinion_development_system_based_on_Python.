@@ -1,6 +1,8 @@
-from .getPublicData import getAllData,getAllCiPingTotal,getAllCommentsData
 import pandas as pd
 from snownlp import SnowNLP
+
+from .getPublicData import getAllCiPingTotal, getAllCommentsData, getAllData
+
 allData = getAllData()
 commentList = getAllCommentsData()
 #

@@ -1,12 +1,15 @@
 import json
+import logging
 import os
 import re
 import sys
-import logging
+
 import pandas as pd
-from .query import querys, query_dataframe
-from .cache import cache_result
+
 from config.settings import Config
+
+from .cache import cache_result
+from .query import query_dataframe, querys
 
 sys.path.append('model')
 
@@ -97,14 +100,14 @@ def getAllCiPingTotal():
     data = []
     try:
         csv_path = os.path.join(Config.MODEL_DIR, 'comment_1_fenci_qutingyongci_cipin.csv')
-        
+
         # 读取文件内容
         with open(csv_path, 'r', encoding='utf-8') as f:
             for line in f:
                 line = line.strip()
                 if not line:
                     continue
-                
+
                 # 使用正则表达式提取词频数据
                 # 格式：('哈哈', 157)
                 match = re.search(r'\(([^,]+),\s*(\d+)\)', line)
@@ -112,7 +115,7 @@ def getAllCiPingTotal():
                     word = match.group(1).strip().strip("'\"")
                     count = int(match.group(2))
                     data.append([word, count])
-        
+
         logger.info(f"成功读取词频数据，共 {len(data)} 个词")
         return data
     except Exception as e:
@@ -125,10 +128,10 @@ def getAllCommentsData():
     try:
         # 只查询必要字段，提升性能
         df = query_dataframe('''
-            SELECT articleId, created_at, like_counts, region, content, 
-                   authorName, authorGender, authorAddress, authorAvatar 
-            FROM comments 
-            ORDER BY created_at DESC 
+            SELECT articleId, created_at, like_counts, region, content,
+                   authorName, authorGender, authorAddress, authorAvatar
+            FROM comments
+            ORDER BY created_at DESC
             LIMIT 1000
         ''')  # 限制返回数量，避免内存溢出
         return df.values.tolist()
@@ -151,10 +154,10 @@ def getArticleDataFrame():
 def getCommentsDataFrame():
     """直接返回评论数据的DataFrame"""
     return query_dataframe('''
-        SELECT articleId, created_at, like_counts, region, content, 
-               authorName, authorGender, authorAddress, authorAvatar 
-        FROM comments 
-        ORDER BY created_at DESC 
+        SELECT articleId, created_at, like_counts, region, content,
+               authorName, authorGender, authorAddress, authorAvatar
+        FROM comments
+        ORDER BY created_at DESC
         LIMIT 1000
     ''')
 
@@ -179,8 +182,8 @@ def getTopArticlesByLikes(limit=10):
 def getArticlesByDateRange(start_date, end_date):
     """按日期范围获取文章"""
     return query_dataframe('''
-        SELECT * FROM article 
-        WHERE created_at BETWEEN %s AND %s 
+        SELECT * FROM article
+        WHERE created_at BETWEEN %s AND %s
         ORDER BY created_at DESC
     ''', params=[start_date, end_date])
 

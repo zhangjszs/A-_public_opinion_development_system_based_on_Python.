@@ -1,8 +1,10 @@
-from snownlp import SnowNLP
 import csv
-from index import main as indexMain,getCommentList
-from ciPingTotal import main as ciPingTotalMain
 import os
+
+from ciPingTotal import main as ciPingTotalMain
+from index import getCommentList
+from index import main as indexMain
+from snownlp import SnowNLP
 
 
 def targetFile():

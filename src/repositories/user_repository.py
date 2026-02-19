@@ -1,6 +1,9 @@
-from typing import Optional, Dict, Any
-from .base_repository import BaseRepository
+from typing import Any, Dict, Optional
+
 from models.user import User
+
+from .base_repository import BaseRepository
+
 
 class UserRepository(BaseRepository):
     def __init__(self):

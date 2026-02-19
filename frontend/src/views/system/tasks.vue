@@ -88,8 +88,8 @@
 
       <div v-if="taskResult" class="task-result">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="状态">{{ taskResult.status || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="进度">{{ taskResult.progress ?? '-' }}</el-descriptions-item>
+          <el-descriptions-item label="状态">{{ taskResult.state || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="进度">{{ taskResult.progress != null ? taskResult.progress + '%' : '-' }}</el-descriptions-item>
           <el-descriptions-item label="消息" :span="2">{{ taskResult.message || '-' }}</el-descriptions-item>
         </el-descriptions>
       </div>

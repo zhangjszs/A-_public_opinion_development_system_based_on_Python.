@@ -416,36 +416,39 @@ def spider_comments_task(self, article_limit: int = 50) -> Dict[str, Any]:
         raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
 
 
+def _build_task_response(result, task_id: str) -> dict:
+    """将 Celery AsyncResult 映射为统一的五字段结构"""
+    state = result.state
+    response = {
+        "task_id": task_id,
+        "state": state,
+        "progress": 0,
+        "message": "",
+        "result": {},
+    }
+    if state == "PENDING":
+        response["message"] = "任务等待中..."
+    elif state == "PROGRESS":
+        info = result.info or {}
+        current = info.get("current", 0)
+        total = info.get("total", 1) or 1
+        response["progress"] = int(current / total * 100)
+        response["message"] = info.get("status", "")
+    elif state == "SUCCESS":
+        response["progress"] = 100
+        response["result"] = result.result or {}
+        response["message"] = "任务完成"
+    elif state == "FAILURE":
+        response["message"] = str(result.info)
+    return response
+
+
 @celery_app.task(bind=True)
 def get_task_progress(self, task_id: str) -> Dict[str, Any]:
-    """
-    查询任务进度
-    
-    Args:
-        task_id: 任务ID
-        
-    Returns:
-        dict: 任务状态和进度信息
-    """
+    """查询任务进度，返回统一的五字段结构"""
     from celery.result import AsyncResult
-    
     result = AsyncResult(task_id, app=celery_app)
-    
-    response = {
-        'task_id': task_id,
-        'state': result.state,
-    }
-    
-    if result.state == 'PENDING':
-        response['status'] = '任务等待中...'
-    elif result.state == 'PROGRESS':
-        response['progress'] = result.info
-    elif result.state == 'SUCCESS':
-        response['result'] = result.result
-    elif result.state == 'FAILURE':
-        response['error'] = str(result.info)
-    
-    return response
+    return _build_task_response(result, task_id)
 
 
 def search_weibo_generator(keyword: str, page_num: int) -> Generator[Dict, None, None]:

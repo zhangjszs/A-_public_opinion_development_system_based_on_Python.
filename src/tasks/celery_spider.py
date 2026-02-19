@@ -10,7 +10,8 @@ import sys
 import time
 import csv
 import logging
-from typing import Generator, Dict, Any
+from datetime import datetime
+from typing import Generator, Dict, Any, List, Tuple
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -20,6 +21,154 @@ from tasks.celery_config import celery_app
 from config.settings import Config
 
 logger = logging.getLogger(__name__)
+
+
+def _upsert_articles_batch(rows: List[Tuple], batch_size: int = 200) -> int:
+    if not rows:
+        return 0
+
+    from utils.query import engine
+    from sqlalchemy import text as sa_text
+
+    sql = """INSERT INTO article
+        (id, likeNum, commentsLen, reposts_count, region, content,
+         contentLen, created_at, type, detailUrl, authorAvatar,
+         authorName, authorDetail, isVip)
+        VALUES (:p0, :p1, :p2, :p3, :p4, :p5, :p6, :p7, :p8, :p9, :p10, :p11, :p12, :p13)
+        ON DUPLICATE KEY UPDATE
+        likeNum=VALUES(likeNum),
+        commentsLen=VALUES(commentsLen),
+        reposts_count=VALUES(reposts_count)"""
+
+    inserted = 0
+    with engine.connect() as conn:
+        for idx in range(0, len(rows), batch_size):
+            batch = rows[idx: idx + batch_size]
+            params = [
+                {f"p{j}": v for j, v in enumerate(row)}
+                for row in batch
+            ]
+            conn.execute(sa_text(sql), params)
+            inserted += len(batch)
+        conn.commit()
+
+    return inserted
+
+
+@celery_app.task(bind=True, max_retries=2, default_retry_delay=60)
+def spider_hot_task(self, page_num: int = 3) -> Dict[str, Any]:
+    """
+    热门微博刷新任务（异步）
+    统一用于 /api/spider/crawl(type=hot) 和 /api/spider/refresh。
+    """
+    task_id = self.request.id
+    page_num = max(1, min(int(page_num), 10))
+
+    cookie = os.getenv('WEIBO_COOKIE', '')
+    if not cookie:
+        return {
+            'status': 'failed',
+            'task_id': task_id,
+            'error': 'WEIBO_COOKIE未配置',
+        }
+
+    import random
+    import requests
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Cookie': cookie,
+        'Accept': 'application/json, text/plain, */*',
+        'Referer': 'https://weibo.com/',
+    }
+
+    rows: List[Tuple] = []
+    crawled = 0
+
+    try:
+        for page in range(page_num):
+            self.update_state(
+                state='PROGRESS',
+                meta={
+                    'current': page + 1,
+                    'total': page_num,
+                    'status': f'正在爬取第 {page + 1}/{page_num} 页热门微博',
+                    'crawled': crawled,
+                }
+            )
+
+            url = 'https://weibo.com/ajax/feed/hottimeline'
+            params = {
+                'group_id': 102803,
+                'max_id': 0,
+                'count': 20,
+                'refresh_type': 1,
+            }
+            try:
+                response = requests.get(url, headers=headers, params=params, timeout=15)
+                if response.status_code != 200:
+                    logger.warning(f"[任务{task_id}] 第{page + 1}页返回异常状态: {response.status_code}")
+                    continue
+
+                payload = response.json()
+                statuses = payload.get('statuses', []) if isinstance(payload, dict) else []
+                for item in statuses:
+                    user = item.get('user', {}) or {}
+                    rows.append((
+                        item.get('id', ''),
+                        item.get('attitudes_count', 0),
+                        item.get('comments_count', 0),
+                        item.get('reposts_count', 0),
+                        (item.get('region_name', '') or '无').replace('发布于 ', '')[:50],
+                        item.get('text_raw', '')[:2000],
+                        item.get('textLength', 0),
+                        datetime.now().strftime('%Y-%m-%d'),
+                        '热门',
+                        f"https://weibo.com/{user.get('id', '')}/{item.get('mblogid', '')}",
+                        user.get('avatar_large', '')[:500],
+                        user.get('screen_name', '')[:100],
+                        f"https://weibo.com/u/{user.get('id', '')}",
+                        user.get('v_plus', 0),
+                    ))
+                crawled = len(rows)
+            except Exception as page_exc:
+                logger.warning(f"[任务{task_id}] 第{page + 1}页爬取失败: {page_exc}")
+                continue
+
+            time.sleep(random.uniform(0.5, 1.0))
+
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'current': page_num,
+                'total': page_num,
+                'status': '正在批量入库...',
+                'crawled': crawled,
+            }
+        )
+
+        imported = _upsert_articles_batch(rows)
+
+        try:
+            from utils.cache import clear_all_cache
+            clear_all_cache()
+        except Exception as cache_exc:
+            logger.warning(f"[任务{task_id}] 清理缓存失败: {cache_exc}")
+
+        result = {
+            'status': 'success',
+            'task_id': task_id,
+            'pages': page_num,
+            'crawled': crawled,
+            'imported': imported,
+            'completed_at': time.strftime('%Y-%m-%d %H:%M:%S'),
+        }
+        logger.info(f"[任务{task_id}] 热门微博刷新完成: {result}")
+        return result
+
+    except Exception as exc:
+        logger.error(f"[任务{task_id}] 热门微博刷新失败: {exc}")
+        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
 def spider_search_task(self, keyword: str, page_num: int = 3) -> Dict[str, Any]:

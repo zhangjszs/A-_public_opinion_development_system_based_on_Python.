@@ -197,22 +197,22 @@ def spider_overview():
             result = querys('SELECT COUNT(*) as cnt FROM article', [], 'select')
             if result:
                 article_count = result[0][0] if isinstance(result[0], (list, tuple)) else result[0].get('cnt', 0)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("查询 article 数量失败: %s", e)
 
         try:
             result = querys('SELECT COUNT(*) as cnt FROM comments', [], 'select')
             if result:
                 comment_count = result[0][0] if isinstance(result[0], (list, tuple)) else result[0].get('cnt', 0)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("查询 comments 数量失败: %s", e)
 
         try:
             result = querys('SELECT COUNT(*) as cnt FROM user', [], 'select')
             if result:
                 user_count = result[0][0] if isinstance(result[0], (list, tuple)) else result[0].get('cnt', 0)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("查询 user 数量失败: %s", e)
 
         try:
             result = querys('SELECT MAX(created_at) as latest FROM article', [], 'select')
@@ -220,8 +220,8 @@ def spider_overview():
                 val = result[0][0] if isinstance(result[0], (list, tuple)) else result[0].get('latest', '')
                 if val:
                     latest_article_time = str(val)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("查询 article 最新时间失败: %s", e)
 
         try:
             result = querys('SELECT MAX(created_at) as latest FROM comments', [], 'select')
@@ -229,8 +229,8 @@ def spider_overview():
                 val = result[0][0] if isinstance(result[0], (list, tuple)) else result[0].get('latest', '')
                 if val:
                     latest_comment_time = str(val)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("查询 comments 最新时间失败: %s", e)
 
         # 获取每日文章数趋势（最近 7 天）
         daily_trend = []
@@ -475,8 +475,8 @@ def _crawl_hot(page_num=3):
     try:
         from utils.cache import clear_cache
         clear_cache()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("清除缓存失败: %s", e)
 
     logger.info(f"热门微博刷新完成: 爬取{len(articles)}条, 导入{imported}条")
     return imported
@@ -561,8 +561,8 @@ def _crawl_search(keyword, page_num=3):
     try:
         from utils.cache import clear_cache
         clear_cache()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("清除缓存失败: %s", e)
 
     logger.info(f"关键词搜索完成 [{keyword}]: 爬取{len(articles)}条, 导入{imported}条")
     return imported
@@ -639,8 +639,8 @@ def _crawl_comments():
         try:
             from utils.cache import clear_cache
             clear_cache()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("清除缓存失败: %s", e)
 
         logger.info(f"评论爬取完成: 导入{total_imported}条")
         return total_imported

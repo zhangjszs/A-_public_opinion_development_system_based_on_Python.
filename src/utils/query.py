@@ -48,7 +48,9 @@ def querys(sql: str, params: list | None = None, type: str = "no_select") -> Any
         params = []
 
     start = time.time()
-    # pymysql 风格 %s 占位符转为 SQLAlchemy :param 风格
+    # 将 pymysql 风格的位置占位符 %s 替换为 SQLAlchemy 命名参数 :p0, :p1, ...
+    # 注意：此替换基于字符串匹配，不解析 SQL 语法。
+    # 若 SQL 字符串字面量中包含 %s（如 LIKE '%s%'），请改用 :param 风格直接传入。
     named_params = {f"p{i}": v for i, v in enumerate(params)}
     named_sql = sql
     for i in range(len(params)):

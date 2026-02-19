@@ -94,6 +94,14 @@ class Config:
     LLM_TIMEOUT = int(os.getenv('LLM_TIMEOUT', 30))
     LLM_CACHE_TTL = int(os.getenv('LLM_CACHE_TTL', 3600))
 
+    # Spider Settings
+    WEIBO_COOKIE = os.getenv('WEIBO_COOKIE', '')
+    WEIBO_USER_AGENT = os.getenv('WEIBO_USER_AGENT', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+    SPIDER_TIMEOUT = int(os.getenv('SPIDER_TIMEOUT', 45))
+    SPIDER_DELAY = float(os.getenv('SPIDER_DELAY', 15))
+    SPIDER_RETRIES = int(os.getenv('SPIDER_MAX_RETRIES', 3))  # env var: SPIDER_MAX_RETRIES
+    SPIDER_USE_PROXY = os.getenv('SPIDER_USE_PROXY', 'True').lower() == 'true'
+
     # Path Settings
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     LOG_DIR = os.path.join(BASE_DIR, 'logs')
@@ -101,6 +109,7 @@ class Config:
     STATIC_DIR = os.path.join(BASE_DIR, 'static')
     CACHE_DIR = os.path.join(BASE_DIR, 'cache')
     MODEL_DIR = os.path.join(BASE_DIR, 'model')
+    SPIDER_DIR = os.path.join(BASE_DIR, 'spider')
 
     # App Settings
     JSON_AS_ASCII = False

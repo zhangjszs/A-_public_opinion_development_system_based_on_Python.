@@ -1,6 +1,5 @@
 """S10: 验证统一后的数据访问层"""
-import pytest
-from unittest.mock import patch, MagicMock
+import inspect
 
 
 def test_query_dataframe_uses_engine():
@@ -19,7 +18,6 @@ def test_query_dataframe_uses_engine():
 def test_querys_function_exists():
     """querys() 函数签名保持不变"""
     from utils.query import querys
-    import inspect
     sig = inspect.signature(querys)
     params = list(sig.parameters.keys())
     assert 'sql' in params

@@ -37,7 +37,7 @@ class AuthService:
             'user': {
                 'id': user.get('id'),
                 'username': username,
-                'createTime': str(user.get('createTime', '')),
+                'create_time': str(user.get('create_time', '')),
                 'is_admin': bool(Config.ADMIN_USERS and username in Config.ADMIN_USERS),
             }
         }

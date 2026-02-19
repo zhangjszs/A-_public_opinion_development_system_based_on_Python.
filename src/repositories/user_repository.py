@@ -16,10 +16,10 @@ class UserRepository(BaseRepository):
                 'id': user.id,
                 'username': user.username,
                 'password': user.password,
-                'createTime': user.createTime
+                'create_time': user.create_time
             }
         return None
 
     def create(self, username: str, password_hash: str, create_time: str) -> None:
-        user = User(username=username, password=password_hash, createTime=create_time)
+        user = User(username=username, password=password_hash, create_time=create_time)
         self.save(user)

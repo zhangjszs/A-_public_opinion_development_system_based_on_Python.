@@ -87,7 +87,7 @@ def api_me():
     try:
         from utils.query import querys
         users = querys(
-            'SELECT id, username, createTime FROM user WHERE id = %s',
+            'SELECT id, username, createTime AS create_time FROM user WHERE id = %s',
             [user['user_id']],
             'select'
         )
@@ -97,7 +97,7 @@ def api_me():
         return ok({
             'id': info.get('id'),
             'username': info.get('username'),
-            'createTime': str(info.get('createTime', '')),
+            'create_time': str(info.get('create_time', '')),
             'is_admin': is_admin_user(info),
         }), 200
     except Exception as e:

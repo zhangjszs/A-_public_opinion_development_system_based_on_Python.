@@ -11,12 +11,12 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(50), unique=True, nullable=False)
     password = Column(String(100), nullable=False)
-    createTime = Column(DateTime, default=datetime.datetime.utcnow)
+    create_time = Column(DateTime, default=datetime.datetime.utcnow)
 
-    def __init__(self, username=None, password=None, createTime=None):
+    def __init__(self, username=None, password=None, create_time=None):
         self.username = username
         self.password = password
-        self.createTime = createTime
+        self.create_time = create_time
 
     def __repr__(self):
         return f'<User {self.username!r}>'

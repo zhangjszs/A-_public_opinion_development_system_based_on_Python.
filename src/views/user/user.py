@@ -71,7 +71,7 @@ def login():
             user_info = data['user']
             session['username'] = user_info['username']
             session['user_id'] = user_info['id']
-            session['createTime'] = user_info['createTime']
+            session['create_time'] = user_info['create_time']
             session.permanent = True
 
             if is_api_request:
@@ -164,7 +164,7 @@ def get_user_info():
     from utils.query import querys
     try:
         users = querys(
-            'SELECT id, username, createTime FROM user WHERE id = %s',
+            'SELECT id, username, createTime AS create_time FROM user WHERE id = %s',
             [user['user_id']],
             'select'
         )
@@ -176,7 +176,7 @@ def get_user_info():
                 'data': {
                     'id': user_info.get('id'),
                     'username': user_info.get('username'),
-                    'createTime': str(user_info.get('createTime', ''))
+                    'create_time': str(user_info.get('create_time', ''))
                 }
             })
         else:

@@ -347,8 +347,8 @@ def get_model_info():
                 with open(summary_path, 'r', encoding='utf-8') as f:
                     summary = json.load(f)
                     info['training_samples'] = summary.get('total_comments')
-            except:
-                pass
+            except Exception as e:
+                logger.debug("读取训练摘要文件失败: %s", e)
 
         return ok(info), 200
 

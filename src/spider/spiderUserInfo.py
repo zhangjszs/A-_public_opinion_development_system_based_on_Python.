@@ -153,7 +153,7 @@ class UserInfoSpider:
                         extracted_data['friend_info'] = int(friend_match[0])
                     else:
                         extracted_data['friend_info'] = 0
-                except:
+                except Exception:
                     extracted_data['friend_info'] = 0
 
             return extracted_data
@@ -271,10 +271,8 @@ class UserInfoSpider:
                                     parts = detail_url.replace('https://weibo.com/', '').split('/')
                                     if len(parts) >= 1:
                                         self.user_ids.add(parts[0])
-                            except:
+                            except Exception:
                                 continue
-
-        # 从评论数据中收集用户ID
         data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
         comments_path = os.path.join(data_dir, 'commentsData.csv')
 

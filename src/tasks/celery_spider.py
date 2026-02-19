@@ -361,8 +361,8 @@ def spider_comments_task(self, article_limit: int = 50) -> Dict[str, Any]:
                                 parts = detail_url.replace('https://weibo.com/', '').split('/')
                                 if len(parts) >= 1:
                                     uid = parts[0]
-                            except:
-                                pass
+                            except Exception as e:
+                                logger.debug("解析 detail_url 失败: %s", e)
 
                     # 延时
                     import random

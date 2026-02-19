@@ -78,7 +78,7 @@ class PDFReportGenerator:
                 self.chinese_font = 'Chinese'
             else:
                 self.chinese_font = 'Helvetica'
-        except:
+        except Exception:
             self.chinese_font = 'Helvetica'
 
         self.styles.add(ParagraphStyle(

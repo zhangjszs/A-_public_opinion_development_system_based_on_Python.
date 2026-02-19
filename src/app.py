@@ -483,8 +483,8 @@ def internal_server_error(error):
     # 网页请求返回错误页面
     try:
         return render_template('error.html', error_message='服务器内部错误'), 500
-    except:
-        # 如果模板加载失败，返回纯文本
+    except Exception as e:
+        logger.error("模板加载失败，返回纯文本: %s", e)
         return '服务器内部错误，请稍后重试', 500
 
 

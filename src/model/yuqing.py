@@ -27,10 +27,8 @@ def targetFile():
             elif value < 0.5:
                 bad += 1
                 rateData.append([i[4], '负面'])
-        except:
+        except Exception:
             continue
-
-    for i in rateData:
         with open(targetFile, 'a+', encoding='utf-8', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(i)
@@ -40,9 +38,8 @@ def main():
         os.remove('./target.csv')
         os.remove("./comment_1_fenci.txt")
         os.remove("./comment_1_fenci_qutingyongci_cipin.csv")
-    except:
+    except Exception:
         pass
-    indexMain()
     ciPingTotalMain()
     targetFile()
 

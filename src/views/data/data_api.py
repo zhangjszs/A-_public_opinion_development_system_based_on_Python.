@@ -163,7 +163,7 @@ def get_table_data():
                         emotion_value = '负面'
                     else:
                         emotion_value = '中性'
-                except:
+                except Exception:
                     emotion_value = '中性'
         else:
             logger.info("hot_word为空，跳过搜索")

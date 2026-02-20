@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { useTabsStore } from '@/stores/tabs'
 
 const routes = [
   {
@@ -114,6 +115,24 @@ const routes = [
         name: 'TaskCenter',
         component: () => import('@/views/system/tasks.vue'),
         meta: { title: '任务中心', icon: 'Tickets', adminOnly: true }
+      },
+      {
+        path: 'profile',
+        name: 'UserProfile',
+        component: () => import('@/views/user/Profile.vue'),
+        meta: { title: '个人中心', icon: 'User' }
+      },
+      {
+        path: 'favorites',
+        name: 'UserFavorites',
+        component: () => import('@/views/user/Favorites.vue'),
+        meta: { title: '我的收藏', icon: 'Star' }
+      },
+      {
+        path: 'help',
+        name: 'Help',
+        component: () => import('@/views/system/Help.vue'),
+        meta: { title: '帮助中心', icon: 'QuestionFilled' }
       }
     ]
   },
@@ -198,6 +217,9 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
+  // Register tab for authenticated routes
+  const tabsStore = useTabsStore()
+  tabsStore.addTab(to)
   next()
 })
 

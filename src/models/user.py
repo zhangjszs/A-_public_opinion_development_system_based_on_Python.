@@ -11,7 +11,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(50), unique=True, nullable=False)
     password = Column(String(100), nullable=False)
-    create_time = Column(DateTime, default=datetime.datetime.utcnow)
+    create_time = Column('createTime', DateTime, default=datetime.datetime.utcnow)
 
     def __init__(self, username=None, password=None, create_time=None):
         self.username = username

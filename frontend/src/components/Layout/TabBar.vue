@@ -6,7 +6,12 @@
         :key="tab.name"
         class="tab-item"
         :class="{ 'is-active': tab.name === tabsStore.activeTab }"
+        role="tab"
+        :aria-selected="tab.name === tabsStore.activeTab"
+        :aria-label="tab.title"
+        tabindex="0"
         @click="handleTabClick(tab)"
+        @keydown.enter.prevent="handleTabClick(tab)"
         @contextmenu.prevent="showContextMenu($event, tab)"
       >
         <el-icon v-if="tab.icon" class="tab-icon">
@@ -26,6 +31,7 @@
     <!-- Right-click context menu -->
     <div
       v-if="contextMenu.visible"
+      ref="contextMenuRef"
       class="context-menu"
       :style="{ top: contextMenu.y + 'px', left: contextMenu.x + 'px' }"
       v-click-outside="hideContextMenu"
@@ -38,7 +44,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTabsStore } from '@/stores/tabs'
 
@@ -50,8 +56,10 @@ const contextMenu = reactive({
   visible: false,
   x: 0,
   y: 0,
-  targetTab: null
+  targetTabName: null
 })
+
+const contextMenuRef = ref(null)
 
 function handleTabClick(tab) {
   tabsStore.setActiveTab(tab.name, router)
@@ -71,23 +79,35 @@ function showContextMenu(e, tab) {
   contextMenu.visible = true
   contextMenu.x = e.clientX
   contextMenu.y = e.clientY
-  contextMenu.targetTab = tab
+  contextMenu.targetTabName = tab.name
+  nextTick(() => {
+    if (contextMenuRef.value) {
+      const rect = contextMenuRef.value.getBoundingClientRect()
+      if (rect.right > window.innerWidth) {
+        contextMenu.x = e.clientX - rect.width
+      }
+      if (rect.bottom > window.innerHeight) {
+        contextMenu.y = e.clientY - rect.height
+      }
+    }
+  })
 }
 
 function hideContextMenu() {
   contextMenu.visible = false
-  contextMenu.targetTab = null
+  contextMenu.targetTabName = null
 }
 
 function closeCurrentTab() {
-  if (contextMenu.targetTab?.closable) {
-    tabsStore.closeTab(contextMenu.targetTab.name, router)
+  const tab = tabsStore.tabs.find(t => t.name === contextMenu.targetTabName)
+  if (tab?.closable) {
+    tabsStore.closeTab(tab.name, router)
   }
   hideContextMenu()
 }
 
 function closeOtherTabs() {
-  const keepName = contextMenu.targetTab?.name || tabsStore.activeTab
+  const keepName = contextMenu.targetTabName || tabsStore.activeTab
   tabsStore.closeOtherTabs(keepName, router)
   hideContextMenu()
 }
@@ -97,18 +117,32 @@ function closeAllTabs() {
   hideContextMenu()
 }
 
-// Click-outside directive (inline)
+// Click-outside directive (inline, WeakMap-based to avoid memory leaks)
+const _clickOutsideHandlers = new WeakMap()
 const vClickOutside = {
   mounted(el, binding) {
-    el._clickOutside = (e) => {
+    const handler = (e) => {
       if (!el.contains(e.target)) binding.value(e)
     }
-    document.addEventListener('click', el._clickOutside)
+    _clickOutsideHandlers.set(el, handler)
+    document.addEventListener('click', handler)
   },
   unmounted(el) {
-    document.removeEventListener('click', el._clickOutside)
+    const handler = _clickOutsideHandlers.get(el)
+    if (handler) {
+      document.removeEventListener('click', handler)
+      _clickOutsideHandlers.delete(el)
+    }
   }
 }
+
+function onKeydown(e) {
+  if (e.key === 'Escape' && contextMenu.visible) {
+    hideContextMenu()
+  }
+}
+onMounted(() => document.addEventListener('keydown', onKeydown))
+onUnmounted(() => document.removeEventListener('keydown', onKeydown))
 </script>
 
 <style lang="scss" scoped>

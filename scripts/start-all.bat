@@ -35,15 +35,15 @@ if "%ERRORLEVEL%"=="0" (
 echo.
 
 echo [1/3] Starting Backend Server (Flask, Port 5000)...
-start "Backend - Flask" cmd /k "cd /d %~dp0 && python run.py"
+start "Backend - Flask" cmd /k "cd /d %~dp0.. && python run.py"
 
 echo [2/3] Starting Celery Worker...
 timeout /t 2 /nobreak >nul
-start "Celery Worker" cmd /k "cd /d %~dp0src && celery -A tasks.celery_worker worker --loglevel=info --pool=solo"
+start "Celery Worker" cmd /k "cd /d %~dp0..\src && celery -A tasks.celery_worker worker --loglevel=info --pool=solo"
 
 echo [3/3] Starting Frontend Server (Vite, Port 3000)...
 timeout /t 2 /nobreak >nul
-start "Frontend - Vite" cmd /k "cd /d %~dp0frontend && npm run dev"
+start "Frontend - Vite" cmd /k "cd /d %~dp0..\frontend && npm run dev"
 
 echo.
 echo ================================================
@@ -52,7 +52,7 @@ echo   Backend URL:  http://127.0.0.1:5000
 echo   Frontend URL: http://localhost:3000
 echo ================================================
 echo.
-echo   Tip: Use "start.bat stop" to stop all services
+echo   Tip: Use "start-all.bat stop" to stop all services
 echo.
 echo Press any key to exit this window...
 pause >nul

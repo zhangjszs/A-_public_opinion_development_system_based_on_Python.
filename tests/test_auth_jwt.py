@@ -90,6 +90,30 @@ class TestLoginAPI:
         data = response.get_json()
         assert data is not None
         assert 'code' in data or 'error' in data
+
+    def test_user_login_requires_csrf_token(self, client):
+        """测试 /user/login 在 JSON 请求下仍执行 CSRF 校验"""
+        response = client.post(
+            '/user/login',
+            json={'username': 'testuser', 'password': 'wrongpassword'},
+            headers={'Accept': 'application/json'}
+        )
+
+        assert response.status_code == 400
+        data = response.get_json()
+        assert data is not None
+        assert data.get('msg') == 'CSRF 校验失败'
+
+    def test_api_login_is_csrf_exempt(self, client):
+        """测试 /api/auth/login 作为 Token API 不受 CSRF 限制"""
+        response = client.post(
+            '/api/auth/login',
+            json={'username': 'bad', 'password': 'bad'}
+        )
+        assert response.status_code in [400, 401]
+        data = response.get_json()
+        assert data is not None
+        assert data.get('msg') != 'CSRF 校验失败'
     
     def test_user_info_requires_token(self, client):
         """测试用户信息接口需要 Token"""

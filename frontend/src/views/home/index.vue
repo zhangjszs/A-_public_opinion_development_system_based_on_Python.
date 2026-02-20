@@ -303,7 +303,12 @@ const refreshData = async () => {
     ElMessage.info('开始刷新数据...')
     const res = await refreshSpiderData({ page_num: 3 })
     if (res.code === 200) {
-      ElMessage.success(`刷新成功，共爬取 ${res.data.crawled} 条数据`)
+      const taskId = res.data?.task_id
+      if (taskId) {
+        ElMessage.success(`刷新任务已提交，Task ID: ${taskId}`)
+      } else {
+        ElMessage.success(res.msg || '刷新成功')
+      }
       await loadData()
     } else {
       ElMessage.error(res.msg || '刷新失败')

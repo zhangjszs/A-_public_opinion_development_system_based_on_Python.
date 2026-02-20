@@ -110,31 +110,32 @@ const registerRules = {
 
 const handleRegister = async () => {
   if (!registerFormRef.value) return
-  
-  await registerFormRef.value.validate(async (valid) => {
-    if (!valid) return
-    
-    loading.value = true
-    
-    try {
-      const res = await register(
-        registerForm.username,
-        registerForm.password,
-        registerForm.confirmPassword
-      )
-      
-      if (res.code === 200) {
-        ElMessage.success('注册成功，请登录')
-        router.push('/login')
-      } else {
-        ElMessage.error(res.msg || '注册失败')
-      }
-    } catch (error) {
-      ElMessage.error('注册失败')
-    } finally {
-      loading.value = false
+
+  try {
+    await registerFormRef.value.validate()
+  } catch {
+    return
+  }
+
+  loading.value = true
+  try {
+    const res = await register(
+      registerForm.username,
+      registerForm.password,
+      registerForm.confirmPassword
+    )
+
+    if (res.code === 200) {
+      ElMessage.success('注册成功，请登录')
+      router.push('/login')
+    } else {
+      ElMessage.error(res.msg || '注册失败')
     }
-  })
+  } catch (error) {
+    ElMessage.error('注册失败')
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 

@@ -197,6 +197,14 @@ logs/
 *.tmp
 *.temp
 nul
+tmp*/
+
+# Project specific - Audit reports (regenerate with: bandit -r src/, pip-audit)
+bandit-report.json
+pip-audit-report.json
+
+# Legacy conda environment (use docs/env/environment.yml instead)
+environment.yml
 
 # Project specific - IDE
 .idea/

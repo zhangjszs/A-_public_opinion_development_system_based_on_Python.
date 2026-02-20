@@ -39,7 +39,6 @@
         
         <div class="form-options">
           <el-checkbox v-model="rememberMe">记住我</el-checkbox>
-          <router-link to="/forgot-password" class="forgot-link">忘记密码？</router-link>
         </div>
         
         <el-form-item>
@@ -94,25 +93,27 @@ const loginRules = {
 
 const handleLogin = async () => {
   if (!loginFormRef.value) return
-  
-  await loginFormRef.value.validate(async (valid) => {
-    if (!valid) return
-    
-    loading.value = true
-    
+
+  try {
+    await loginFormRef.value.validate()
+  } catch {
+    return
+  }
+
+  loading.value = true
+  try {
     const result = await userStore.doLogin(loginForm.username, loginForm.password)
-    
-    loading.value = false
-    
+
     if (result.success) {
       ElMessage.success('登录成功')
-      
       const redirect = route.query.redirect || '/home'
       router.push(redirect)
     } else {
       ElMessage.error(result.msg || '登录失败')
     }
-  })
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -206,18 +207,9 @@ const handleLogin = async () => {
 
 .form-options {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   margin-bottom: 24px;
-  
-  .forgot-link {
-    font-size: 14px;
-    color: $primary-color;
-    
-    &:hover {
-      text-decoration: underline;
-    }
-  }
 }
 
 .login-footer {

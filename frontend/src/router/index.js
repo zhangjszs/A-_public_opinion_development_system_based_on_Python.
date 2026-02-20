@@ -217,9 +217,11 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // Register tab for authenticated routes
-  const tabsStore = useTabsStore()
-  tabsStore.addTab(to)
+  // Register tab for authenticated, non-error routes
+  if (!to.meta?.public) {
+    const tabsStore = useTabsStore()
+    tabsStore.addTab(to)
+  }
   next()
 })
 

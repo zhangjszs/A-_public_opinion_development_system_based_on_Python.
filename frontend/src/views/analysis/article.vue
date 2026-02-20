@@ -133,9 +133,17 @@
         <el-table-column prop="likeNum" label="赞" width="90" align="center" />
         <el-table-column prop="commentsLen" label="评" width="90" align="center" />
         <el-table-column prop="reposts_count" label="转" width="90" align="center" />
-        <el-table-column label="操作" width="110" fixed="right" align="center">
+        <el-table-column label="操作" width="160" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" link :icon="View" @click="openDetail(row)">查看</el-button>
+            <el-button
+              :type="favoriteMap[row.id] ? 'warning' : 'default'"
+              link
+              :icon="favoriteMap[row.id] ? StarFilled : Star"
+              @click="toggleFavorite(row)"
+            >
+              {{ favoriteMap[row.id] ? '已收藏' : '收藏' }}
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -186,10 +194,11 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Search, Refresh, Download, View } from '@element-plus/icons-vue'
+import { Search, Refresh, Download, View, Star, StarFilled } from '@element-plus/icons-vue'
 import BaseChart from '@/components/Charts/BaseChart.vue'
 import { getArticleData } from '@/api/stats'
 import { getArticles } from '@/api/content'
+import { addFavorite, removeFavorite, batchCheckFavorites } from '@/api/favorites'
 import { downloadCsv } from '@/utils'
 
 const loading = ref(false)
@@ -333,6 +342,7 @@ const filters = ref({ keyword: '', type: '', dateRange: [] })
 
 const detailVisible = ref(false)
 const detailRow = ref(null)
+const favoriteMap = ref({})
 
 const normalizeDates = () => {
   const [start, end] = filters.value.dateRange || []
@@ -363,6 +373,17 @@ const loadList = async () => {
     ElMessage.error('加载文章列表失败')
   } finally {
     listLoading.value = false
+  }
+
+  // Batch check favorites for loaded articles
+  const ids = listData.value.map(a => String(a.id)).filter(Boolean)
+  if (ids.length) {
+    try {
+      const favRes = await batchCheckFavorites(ids)
+      if (favRes.code === 200) {
+        favoriteMap.value = { ...favoriteMap.value, ...favRes.data.favorites }
+      }
+    } catch { /* ignore */ }
   }
 }
 
@@ -430,6 +451,20 @@ onMounted(() => {
   loadData()
   loadList()
 })
+
+const toggleFavorite = async (row) => {
+  const id = String(row.id)
+  const isFav = favoriteMap.value[id]
+  try {
+    const res = isFav ? await removeFavorite(id) : await addFavorite(id)
+    if (res.code === 200) {
+      favoriteMap.value = { ...favoriteMap.value, [id]: !isFav }
+      ElMessage.success(isFav ? '已取消收藏' : '收藏成功')
+    }
+  } catch {
+    ElMessage.error('操作失败')
+  }
+}
 </script>
 
 <style lang="scss" scoped>

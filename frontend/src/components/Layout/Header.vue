@@ -29,6 +29,18 @@
         </span>
         <template #dropdown>
           <el-dropdown-menu class="user-dropdown">
+            <el-dropdown-item command="profile">
+              <el-icon><User /></el-icon>
+              个人中心
+            </el-dropdown-item>
+            <el-dropdown-item command="favorites">
+              <el-icon><Star /></el-icon>
+              我的收藏
+            </el-dropdown-item>
+            <el-dropdown-item command="help">
+              <el-icon><QuestionFilled /></el-icon>
+              帮助中心
+            </el-dropdown-item>
             <el-dropdown-item command="theme">
               <el-icon><component :is="isDark ? 'Sunny' : 'Moon'" /></el-icon>
               {{ isDark ? '切换亮色模式' : '切换暗黑模式' }}
@@ -65,6 +77,15 @@ const isDark = computed(() => appStore.theme === 'dark')
 
 const handleCommand = (command) => {
   switch (command) {
+    case 'profile':
+      router.push('/profile')
+      break
+    case 'favorites':
+      router.push('/favorites')
+      break
+    case 'help':
+      router.push('/help')
+      break
     case 'theme':
       appStore.toggleTheme()
       break

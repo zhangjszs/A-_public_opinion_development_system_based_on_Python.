@@ -1,4 +1,5 @@
 import { ref, onMounted, onUnmounted } from 'vue'
+import { formatNumber, formatPercent, formatDate, formatRelativeTime, debounce, throttle, copyToClipboard } from '@/utils'
 
 export function useDebounce(fn, delay = 300) {
   let timer = null
@@ -71,7 +72,7 @@ export function useCopyToClipboard() {
   
   const copy = async (text) => {
     try {
-      await navigator.clipboard.writeText(text)
+      await copyToClipboard(text)
       copied.value = true
       setTimeout(() => {
         copied.value = false
@@ -128,84 +129,15 @@ export function useLocalStorage() {
 }
 
 export function useNumberFormat() {
-  const format = (num, decimals = 2) => {
-    if (num === null || num === undefined) return '-'
-    
-    if (num >= 100000000) {
-      return (num / 100000000).toFixed(decimals) + '亿'
-    }
-    if (num >= 10000) {
-      return (num / 10000).toFixed(decimals) + '万'
-    }
-    if (num >= 1000) {
-      return (num / 1000).toFixed(decimals) + 'k'
-    }
-    
-    return num.toLocaleString()
-  }
-  
-  const formatPercent = (value, decimals = 2) => {
-    if (value === null || value === undefined) return '-%'
-    return (value * 100).toFixed(decimals) + '%'
-  }
-  
   return {
-    format,
+    format: formatNumber,
     formatPercent
   }
 }
 
 export function useDateFormat() {
-  const format = (date, pattern = 'YYYY-MM-DD HH:mm:ss') => {
-    if (!date) return '-'
-    
-    const d = new Date(date)
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    const hour = String(d.getHours()).padStart(2, '0')
-    const minute = String(d.getMinutes()).padStart(2, '0')
-    const second = String(d.getSeconds()).padStart(2, '0')
-    
-    return pattern
-      .replace('YYYY', year)
-      .replace('MM', month)
-      .replace('DD', day)
-      .replace('HH', hour)
-      .replace('mm', minute)
-      .replace('ss', second)
-  }
-  
-  const formatRelative = (date) => {
-    if (!date) return '-'
-    
-    const now = new Date()
-    const target = new Date(date)
-    const diff = now - target
-    
-    const seconds = Math.floor(diff / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const hours = Math.floor(minutes / 60)
-    const days = Math.floor(hours / 24)
-    
-    if (seconds < 60) {
-      return '刚刚'
-    }
-    if (minutes < 60) {
-      return `${minutes}分钟前`
-    }
-    if (hours < 24) {
-      return `${hours}小时前`
-    }
-    if (days < 7) {
-      return `${days}天前`
-    }
-    
-    return format(date, 'YYYY-MM-DD')
-  }
-  
   return {
-    format,
-    formatRelative
+    format: formatDate,
+    formatRelative: formatRelativeTime
   }
 }

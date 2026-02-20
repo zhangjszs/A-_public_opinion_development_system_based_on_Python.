@@ -20,6 +20,7 @@ import uuid
 from datetime import datetime
 
 from flask import Flask, g, jsonify, redirect, render_template, request, session
+from flask_compress import Compress
 from flask_cors import CORS
 from flask_wtf.csrf import CSRFError, CSRFProtect
 
@@ -61,6 +62,11 @@ def create_app_directories():
 
 # 创建Flask应用实例
 app = Flask(__name__)
+
+# ===== 响应压缩 =====
+Compress(app)
+app.config['COMPRESS_ALGORITHM'] = ['br', 'gzip', 'deflate']
+app.config['COMPRESS_MIN_SIZE'] = 500  # 仅压缩 > 500 bytes 的响应
 
 # ===== CSRF保护配置 =====
 # 初始化CSRF保护
@@ -143,6 +149,8 @@ try:
     from views.api.propagation_api import bp as propagation_bp  # 传播分析蓝图
     from views.api.report_api import bp as report_bp  # 报告生成蓝图
     from views.api.spider_api import spider_bp  # 爬虫管理蓝图
+    from views.api.favorites_api import favorites_bp  # 收藏管理蓝图
+    from views.api.audit_api import audit_bp  # 审计日志蓝图
     from views.data import db  # 数据API蓝图
     from views.page import page  # 页面视图蓝图
     from views.user import user  # 用户认证蓝图
@@ -156,6 +164,8 @@ try:
     app.register_blueprint(propagation_bp)   # 注册传播分析蓝图
     app.register_blueprint(report_bp)   # 注册报告生成蓝图
     app.register_blueprint(platform_bp)   # 注册多平台数据蓝图
+    app.register_blueprint(favorites_bp)   # 注册收藏管理蓝图
+    app.register_blueprint(audit_bp)   # 注册审计日志蓝图
 
     # API 蓝图排除 CSRF（使用 Bearer Token 鉴权）
     csrf.exempt(api.bp)
@@ -165,6 +175,8 @@ try:
     csrf.exempt(propagation_bp)
     csrf.exempt(report_bp)
     csrf.exempt(platform_bp)
+    csrf.exempt(favorites_bp)
+    csrf.exempt(audit_bp)
 
     logger.info("蓝图注册完成: page, user, api, data, spider, alert, propagation, report, platform")
 

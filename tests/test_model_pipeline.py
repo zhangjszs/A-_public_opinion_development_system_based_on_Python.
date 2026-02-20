@@ -46,7 +46,7 @@ class TestModelDataProcessor:
     
     def test_load_stop_words(self, temp_model_dir, stop_words_file):
         """测试停用词加载"""
-        from model.improved_index import ModelDataProcessor
+        from model.index import ModelDataProcessor
         
         processor = ModelDataProcessor(str(temp_model_dir))
         
@@ -56,7 +56,7 @@ class TestModelDataProcessor:
     
     def test_clean_and_segment_text(self, temp_model_dir, sample_comments):
         """测试文本清洗和分词"""
-        from model.improved_index import ModelDataProcessor
+        from model.index import ModelDataProcessor
         
         processor = ModelDataProcessor(str(temp_model_dir))
         result = processor.clean_and_segment_text(sample_comments)
@@ -67,7 +67,7 @@ class TestModelDataProcessor:
     
     def test_clean_and_segment_empty_input(self, temp_model_dir):
         """测试空输入处理"""
-        from model.improved_index import ModelDataProcessor
+        from model.index import ModelDataProcessor
         
         processor = ModelDataProcessor(str(temp_model_dir))
         result = processor.clean_and_segment_text([])
@@ -76,7 +76,7 @@ class TestModelDataProcessor:
     
     def test_write_segmented_text(self, temp_model_dir):
         """测试分词结果写入"""
-        from model.improved_index import ModelDataProcessor
+        from model.index import ModelDataProcessor
         
         processor = ModelDataProcessor(str(temp_model_dir))
         test_text = "测试 分词 结果"
@@ -92,7 +92,7 @@ class TestModelDataProcessor:
     
     def test_calculate_word_frequency(self, temp_model_dir):
         """测试词频计算"""
-        from model.improved_index import ModelDataProcessor
+        from model.index import ModelDataProcessor
         
         processor = ModelDataProcessor(str(temp_model_dir))
         
@@ -106,7 +106,7 @@ class TestModelDataProcessor:
     
     def test_process_data_pipeline(self, temp_model_dir, sample_comments):
         """测试完整数据处理流水线"""
-        from model.improved_index import ModelDataProcessor
+        from model.index import ModelDataProcessor
         
         with patch.object(ModelDataProcessor, 'get_comment_list', return_value=sample_comments):
             processor = ModelDataProcessor(str(temp_model_dir))
@@ -134,7 +134,7 @@ class TestSentimentAnalyzer:
     
     def test_preprocess_comments(self, temp_model_dir):
         """测试评论预处理"""
-        from model.improved_yuqing import SentimentAnalyzer
+        from model.yuqing import SentimentAnalyzer
         
         analyzer = SentimentAnalyzer(str(temp_model_dir))
         comments = [
@@ -149,7 +149,7 @@ class TestSentimentAnalyzer:
     
     def test_preprocess_comments_filters_short(self, temp_model_dir):
         """测试过滤短文本"""
-        from model.improved_yuqing import SentimentAnalyzer
+        from model.yuqing import SentimentAnalyzer
         
         analyzer = SentimentAnalyzer(str(temp_model_dir))
         comments = [
@@ -163,7 +163,7 @@ class TestSentimentAnalyzer:
     
     def test_analyze_sentiment(self, temp_model_dir, mock_model):
         """测试情感分析"""
-        from model.improved_yuqing import SentimentAnalyzer
+        from model.yuqing import SentimentAnalyzer
         
         analyzer = SentimentAnalyzer(str(temp_model_dir))
         analyzer.model = mock_model
@@ -177,7 +177,7 @@ class TestSentimentAnalyzer:
     
     def test_generate_summary_statistics(self, temp_model_dir):
         """测试统计汇总生成"""
-        from model.improved_yuqing import SentimentAnalyzer
+        from model.yuqing import SentimentAnalyzer
         
         analyzer = SentimentAnalyzer(str(temp_model_dir))
         results = [
@@ -213,7 +213,7 @@ class TestWordFrequencyAnalyzer:
     
     def test_read_segmented_text(self, temp_model_dir, segmented_text_file):
         """测试读取分词文本"""
-        from model.improved_ciPingTotal import WordFrequencyAnalyzer
+        from model.ciPingTotal import WordFrequencyAnalyzer
         
         analyzer = WordFrequencyAnalyzer(str(temp_model_dir))
         content = analyzer.read_segmented_text()
@@ -223,7 +223,7 @@ class TestWordFrequencyAnalyzer:
     
     def test_filter_words(self, temp_model_dir):
         """测试词语过滤"""
-        from model.improved_ciPingTotal import WordFrequencyAnalyzer
+        from model.ciPingTotal import WordFrequencyAnalyzer
         
         analyzer = WordFrequencyAnalyzer(str(temp_model_dir))
         words = ['测试', '的', '123', '!!', '分析', '结果']
@@ -237,7 +237,7 @@ class TestWordFrequencyAnalyzer:
     
     def test_calculate_frequency(self, temp_model_dir, segmented_text_file):
         """测试词频计算"""
-        from model.improved_ciPingTotal import WordFrequencyAnalyzer
+        from model.ciPingTotal import WordFrequencyAnalyzer
         
         analyzer = WordFrequencyAnalyzer(str(temp_model_dir))
         content = analyzer.read_segmented_text()
@@ -249,7 +249,7 @@ class TestWordFrequencyAnalyzer:
     
     def test_save_frequency_results(self, temp_model_dir, segmented_text_file):
         """测试保存词频结果"""
-        from model.improved_ciPingTotal import WordFrequencyAnalyzer
+        from model.ciPingTotal import WordFrequencyAnalyzer
         
         analyzer = WordFrequencyAnalyzer(str(temp_model_dir))
         word_freq = [('测试', 10), ('分词', 8), ('分析', 6)]
@@ -261,7 +261,7 @@ class TestWordFrequencyAnalyzer:
     
     def test_generate_frequency_report(self, temp_model_dir):
         """测试生成词频报告"""
-        from model.improved_ciPingTotal import WordFrequencyAnalyzer
+        from model.ciPingTotal import WordFrequencyAnalyzer
         
         analyzer = WordFrequencyAnalyzer(str(temp_model_dir))
         word_freq = [('测试', 10), ('分词', 8), ('分析', 6), ('结果', 2)]

@@ -14,17 +14,20 @@ from config.settings import Config
 from services.article_service import ArticleService
 from services.auth_service import AuthService
 from services.comment_service import CommentService
+from repositories.user_repository import UserRepository
 from services.sentiment_service import SentimentService
 from utils.api_response import error, ok
 from utils.authz import admin_required, is_admin_user
 from utils.input_validator import sanitize_input, validate_password, validate_username
 from utils.log_sanitizer import SafeLogger
 from utils.rate_limiter import rate_limit
+from services.audit_service import audit_log
 
 logger = SafeLogger('api', logging.INFO)
 article_service = ArticleService()
 auth_service = AuthService()
 comment_service = CommentService()
+user_repo = UserRepository()
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -47,7 +50,10 @@ def api_login():
         username = sanitize_input(username_raw, max_length=20)
         success, msg, payload = auth_service.login(username, password_raw)
         if success:
+            user_data = payload.get('user', {})
+            audit_log(user_data.get('id'), username, 'login', '登录成功', request.remote_addr)
             return ok(payload, msg=msg), 200
+        audit_log(None, username, 'login_failed', '登录失败', request.remote_addr)
         return error(msg, code=401), 401
     except Exception as e:
         logger.error(f"API登录异常: {e}")
@@ -73,6 +79,7 @@ def api_register():
         username = sanitize_input(username_raw, max_length=20)
         success, msg = auth_service.register(username, password_raw, confirm_raw)
         if success:
+            audit_log(None, username, 'register', '注册成功', request.remote_addr)
             return ok(msg=msg), 200
         return error(msg, code=400), 400
     except Exception as e:
@@ -85,18 +92,16 @@ def api_me():
     if not user:
         return error('未认证', code=401), 401
     try:
-        from utils.query import querys
-        users = querys(
-            'SELECT id, username, createTime AS create_time FROM user WHERE id = %s',
-            [user['user_id']],
-            'select'
-        )
-        if not users:
+        info = user_repo.find_by_id(user['user_id'])
+        if not info:
             return error('用户不存在', code=404), 404
-        info = users[0]
         return ok({
             'id': info.get('id'),
             'username': info.get('username'),
+            'nickname': info.get('nickname') or info.get('username'),
+            'email': info.get('email', ''),
+            'bio': info.get('bio', ''),
+            'avatar_color': info.get('avatar_color', '#2563EB'),
             'create_time': str(info.get('create_time', '')),
             'is_admin': is_admin_user(info),
         }), 200
@@ -107,6 +112,118 @@ def api_me():
 @bp.route('/auth/logout', methods=['POST'])
 def api_logout():
     return ok(), 200
+
+
+@bp.route('/user/profile', methods=['GET'])
+def get_user_profile():
+    """获取用户完整个人资料"""
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return error('未认证', code=401), 401
+    try:
+        info = user_repo.find_by_id(user['user_id'])
+        if not info:
+            return error('用户不存在', code=404), 404
+        return ok({
+            'id': info.get('id'),
+            'username': info.get('username'),
+            'nickname': info.get('nickname') or '',
+            'email': info.get('email') or '',
+            'bio': info.get('bio') or '',
+            'avatar_color': info.get('avatar_color') or '#2563EB',
+            'create_time': str(info.get('create_time', '')),
+            'is_admin': is_admin_user(info),
+        }), 200
+    except Exception as e:
+        logger.error(f"获取用户资料异常: {e}")
+        return error('服务器内部错误', code=500), 500
+
+
+@bp.route('/user/profile', methods=['PUT'])
+def update_user_profile():
+    """更新用户个人资料"""
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return error('未认证', code=401), 401
+    try:
+        data = request.get_json(silent=True) or {}
+        updates = {}
+
+        nickname = data.get('nickname')
+        if nickname is not None:
+            nickname = str(nickname).strip()[:50]
+            updates['nickname'] = nickname
+
+        email = data.get('email')
+        if email is not None:
+            email = str(email).strip()[:100]
+            if email and '@' not in email:
+                return error('邮箱格式不正确', code=400), 400
+            updates['email'] = email
+
+        bio = data.get('bio')
+        if bio is not None:
+            updates['bio'] = str(bio).strip()[:200]
+
+        avatar_color = data.get('avatar_color')
+        if avatar_color is not None:
+            avatar_color = str(avatar_color).strip()
+            if len(avatar_color) == 7 and avatar_color.startswith('#'):
+                updates['avatar_color'] = avatar_color
+
+        if not updates:
+            return error('没有需要更新的字段', code=400), 400
+
+        success = user_repo.update_profile(user['user_id'], **updates)
+        if success:
+            return ok(msg='资料更新成功'), 200
+        return error('更新失败', code=500), 500
+    except Exception as e:
+        logger.error(f"更新用户资料异常: {e}")
+        return error('服务器内部错误', code=500), 500
+
+
+@bp.route('/user/password', methods=['PUT'])
+def change_user_password():
+    """修改用户密码"""
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return error('未认证', code=401), 401
+    try:
+        data = request.get_json(silent=True) or {}
+        old_password = (data.get('oldPassword') or '').strip()
+        new_password = (data.get('newPassword') or '').strip()
+        confirm_password = (data.get('confirmPassword') or '').strip()
+
+        if not old_password or not new_password:
+            return error('请填写完整的密码信息', code=400), 400
+
+        if new_password != confirm_password:
+            return error('两次输入的新密码不一致', code=400), 400
+
+        password_validation = validate_password(new_password)
+        if not password_validation['valid']:
+            return error(password_validation['message'], code=400), 400
+
+        # Verify old password
+        from utils.password_hasher import verify_password, hash_password
+        info = user_repo.find_by_id(user['user_id'])
+        if not info:
+            return error('用户不存在', code=404), 404
+
+        if not verify_password(old_password, info.get('password', '')):
+            return error('旧密码不正确', code=400), 400
+
+        new_hash = hash_password(new_password)
+        success = user_repo.update_password(user['user_id'], new_hash)
+        if success:
+            logger.info(f"User {user['user_id']} changed password")
+            audit_log(user['user_id'], info.get('username', ''), 'change_password', '密码修改成功', request.remote_addr)
+            return ok(msg='密码修改成功'), 200
+        return error('密码修改失败', code=500), 500
+    except Exception as e:
+        logger.error(f"修改密码异常: {e}")
+        return error('服务器内部错误', code=500), 500
 
 @bp.route('/stats/summary', methods=['GET'])
 def get_stats_summary():

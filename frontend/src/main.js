@@ -9,8 +9,11 @@ import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import App from './App.vue'
 import router from './router'
 import './styles/index.scss'
+import { lazyLoad } from './directives/lazyLoad'
 
 const app = createApp(App)
+
+app.directive('lazy', lazyLoad)
 
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)

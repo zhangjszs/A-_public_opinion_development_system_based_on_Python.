@@ -13,10 +13,11 @@
         <el-header class="header" :class="{ 'mobile-header': isMobile }">
           <Header @toggle="toggleSidebar" :is-mobile="isMobile" @toggleMobile="toggleMobileMenu" />
         </el-header>
+        <TabBar v-if="!isMobile" />
         <el-main class="main-content" :class="{ 'mobile-content': isMobile }">
           <router-view v-slot="{ Component }">
             <transition name="fade" mode="out-in">
-              <keep-alive>
+              <keep-alive :include="tabsStore.cachedViews">
                 <component :is="Component" />
               </keep-alive>
             </transition>
@@ -34,7 +35,11 @@ import { useAppStore } from '@/stores/app'
 import Sidebar from './Sidebar.vue'
 import Header from './Header.vue'
 import MobileNav from './MobileNav.vue'
+import TabBar from './TabBar.vue'
+import { useTabsStore } from '@/stores/tabs'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
+
+const tabsStore = useTabsStore()
 
 const locale = zhCn
 const appStore = useAppStore()
@@ -97,7 +102,7 @@ onUnmounted(() => {
   background: $background-color;
   padding: 24px;
   overflow: auto;
-  height: calc(100vh - 64px);
+  height: calc(100vh - 64px - 40px);
   
   // Custom scrollbar
   &::-webkit-scrollbar {

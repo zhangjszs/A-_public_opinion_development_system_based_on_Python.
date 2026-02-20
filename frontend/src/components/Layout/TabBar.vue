@@ -229,7 +229,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
   background: $surface-color;
   border: 1px solid $border-color-light;
   border-radius: 6px;
-  box-shadow: $box-shadow-md;
+  box-shadow: $box-shadow-base;
   z-index: 9999;
   min-width: 120px;
   padding: 4px 0;

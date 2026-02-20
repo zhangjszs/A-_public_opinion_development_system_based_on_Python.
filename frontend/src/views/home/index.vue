@@ -1,125 +1,106 @@
 <template>
   <div class="home-container">
-    <el-row :gutter="24" class="stat-row">
-      <el-col :xs="24" :sm="12" :md="6">
-        <StatCard
-          :value="statsData.articleCount"
-          label="总文章数"
-          icon="Document"
-          bg-color="#EFF6FF"
-          icon-color="#2563EB"
-        />
-      </el-col>
-      <el-col :xs="24" :sm="12" :md="6">
-        <StatCard
-          :value="statsData.todayCount"
-          label="今日新增"
-          icon="TrendCharts"
-          bg-color="#ECFDF5"
-          icon-color="#059669"
-        />
-      </el-col>
-      <el-col :xs="24" :sm="12" :md="6">
-        <StatCard
-          :value="statsData.topAuthor"
-          label="最火作者"
-          icon="User"
-          bg-color="#FFFBEB"
-          icon-color="#D97706"
-        />
-      </el-col>
-      <el-col :xs="24" :sm="12" :md="6">
-        <StatCard
-          :value="statsData.topRegion"
-          label="热门地区"
-          icon="Location"
-          bg-color="#FFF1F2"
-          icon-color="#E11D48"
-        />
-      </el-col>
-    </el-row>
-    
-    <el-row :gutter="24" class="mb-4">
-      <el-col :span="24">
-        <el-card class="chart-card">
-          <template #header>
-            <div class="card-header">
-              <span class="header-title">文章发布时间分布</span>
-              <el-button type="primary" plain size="small" :icon="Refresh" @click="refreshData">
-                刷新数据
-              </el-button>
-            </div>
-          </template>
-          <BaseChart
-            ref="lineChartRef"
-            :options="lineChartOptions"
-            height="350px"
-          />
-        </el-card>
-      </el-col>
-    </el-row>
-    
-    <el-row :gutter="24">
-      <el-col :xs="24" :lg="8">
-        <el-card class="chart-card">
-          <template #header>
-            <span class="header-title">评论点赞量 Top 5</span>
-          </template>
-          <div class="top-comments">
-            <div
-              v-for="(comment, index) in topComments"
-              :key="index"
-              class="comment-item"
-            >
-              <div class="comment-avatar">
-                {{ comment.user.charAt(0) }}
+    <div class="dashboard-toolbar">
+      <el-button :icon="Setting" circle size="small" @click="showSettings = true" title="自定义布局" />
+    </div>
+
+    <template v-for="widget in widgetList" :key="widget.key">
+      <!-- 统计卡片 -->
+      <el-row v-if="widget.key === 'stats' && widget.visible" :gutter="24" class="stat-row">
+        <el-col :xs="24" :sm="12" :md="6">
+          <StatCard :value="statsData.articleCount" label="总文章数" icon="Document" bg-color="#EFF6FF" icon-color="#2563EB" />
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="6">
+          <StatCard :value="statsData.todayCount" label="今日新增" icon="TrendCharts" bg-color="#ECFDF5" icon-color="#059669" />
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="6">
+          <StatCard :value="statsData.topAuthor" label="最火作者" icon="User" bg-color="#FFFBEB" icon-color="#D97706" />
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="6">
+          <StatCard :value="statsData.topRegion" label="热门地区" icon="Location" bg-color="#FFF1F2" icon-color="#E11D48" />
+        </el-col>
+      </el-row>
+
+      <!-- 时间线图表 -->
+      <el-row v-if="widget.key === 'timeline' && widget.visible" :gutter="24" class="mb-4">
+        <el-col :span="24">
+          <el-card class="chart-card">
+            <template #header>
+              <div class="card-header">
+                <span class="header-title">文章发布时间分布</span>
+                <el-button type="primary" plain size="small" :icon="Refresh" @click="refreshData">刷新数据</el-button>
               </div>
-              <div class="comment-info">
-                <div class="comment-header">
-                  <span class="comment-user">{{ comment.user }}</span>
-                  <span class="comment-likes">
-                    <el-icon><StarFilled /></el-icon> {{ comment.likes }}
-                  </span>
+            </template>
+            <BaseChart ref="lineChartRef" :options="lineChartOptions" height="350px" />
+          </el-card>
+        </el-col>
+      </el-row>
+
+      <!-- 图表区 -->
+      <el-row v-if="widget.key === 'charts' && widget.visible" :gutter="24">
+        <el-col :xs="24" :lg="8">
+          <el-card class="chart-card">
+            <template #header><span class="header-title">评论点赞量 Top 5</span></template>
+            <div class="top-comments">
+              <div v-for="(comment, index) in topComments" :key="index" class="comment-item">
+                <div class="comment-avatar">{{ comment.user.charAt(0) }}</div>
+                <div class="comment-info">
+                  <div class="comment-header">
+                    <span class="comment-user">{{ comment.user }}</span>
+                    <span class="comment-likes"><el-icon><StarFilled /></el-icon> {{ comment.likes }}</span>
+                  </div>
+                  <div class="comment-content" :title="comment.content">{{ comment.content }}</div>
                 </div>
-                <div class="comment-content" :title="comment.content">{{ comment.content }}</div>
               </div>
             </div>
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :lg="8">
+          <el-card class="chart-card">
+            <template #header><span class="header-title">文章类型占比</span></template>
+            <BaseChart ref="pieChartRef" :options="pieChartOptions" height="350px" />
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :lg="8">
+          <el-card class="chart-card">
+            <template #header><span class="header-title">评论用户时间占比</span></template>
+            <BaseChart ref="timePieChartRef" :options="timePieChartOptions" height="350px" />
+          </el-card>
+        </el-col>
+      </el-row>
+    </template>
+
+    <!-- 自定义布局抽屉 -->
+    <el-drawer v-model="showSettings" title="仪表盘布局设置" size="320px" :append-to-body="true">
+      <div class="widget-settings">
+        <p class="settings-tip">拖拽调整顺序，切换显示/隐藏，选择宽度</p>
+        <VueDraggable v-model="widgetList" handle=".drag-handle" @end="saveWidgetList">
+          <div class="widget-item" v-for="opt in widgetList" :key="opt.key">
+            <el-icon class="drag-handle"><Rank /></el-icon>
+            <el-switch v-model="opt.visible" @change="saveWidgetList" />
+            <span class="widget-label">{{ opt.label }}</span>
+            <el-tooltip :content="opt.span === 24 ? '切换为半宽' : '切换为全宽'" placement="top">
+              <el-button
+                :icon="opt.span === 24 ? 'Grid' : 'FullScreen'"
+                circle
+                size="small"
+                class="span-btn"
+                @click="toggleSpan(opt)"
+              />
+            </el-tooltip>
           </div>
-        </el-card>
-      </el-col>
-      
-      <el-col :xs="24" :lg="8">
-        <el-card class="chart-card">
-          <template #header>
-            <span class="header-title">文章类型占比</span>
-          </template>
-          <BaseChart
-            ref="pieChartRef"
-            :options="pieChartOptions"
-            height="350px"
-          />
-        </el-card>
-      </el-col>
-      
-      <el-col :xs="24" :lg="8">
-        <el-card class="chart-card">
-          <template #header>
-            <span class="header-title">评论用户时间占比</span>
-          </template>
-          <BaseChart
-            ref="timePieChartRef"
-            :options="timePieChartOptions"
-            height="350px"
-          />
-        </el-card>
-      </el-col>
-    </el-row>
+        </VueDraggable>
+        <el-divider />
+        <el-button type="primary" plain size="small" @click="resetWidgets">恢复默认布局</el-button>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { Refresh, StarFilled } from '@element-plus/icons-vue'
+import { VueDraggable } from 'vue-draggable-plus'
+import { Refresh, StarFilled, Setting, Rank } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import StatCard from '@/components/Common/StatCard.vue'
 import BaseChart from '@/components/Charts/BaseChart.vue'
@@ -142,6 +123,39 @@ const xData = ref([])
 const yData = ref([])
 const articleTypeData = ref([])
 const commentTimeData = ref([])
+
+// Dashboard customization
+const showSettings = ref(false)
+
+const defaultWidgetList = [
+  { key: 'stats',    label: '统计卡片',             visible: true, span: 24 },
+  { key: 'timeline', label: '文章发布时间分布',       visible: true, span: 24 },
+  { key: 'charts',   label: '图表区（评论/类型/时间）', visible: true, span: 24 },
+]
+
+const loadWidgetList = () => {
+  try {
+    const saved = localStorage.getItem('dashboard_widget_list')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed) && parsed.length === defaultWidgetList.length) {
+        return parsed
+      }
+    }
+  } catch { /* ignore */ }
+  return defaultWidgetList.map(w => ({ ...w }))
+}
+
+const widgetList = ref(loadWidgetList())
+const saveWidgetList = () => localStorage.setItem('dashboard_widget_list', JSON.stringify(widgetList.value))
+const resetWidgets = () => {
+  widgetList.value = defaultWidgetList.map(w => ({ ...w }))
+  saveWidgetList()
+}
+const toggleSpan = (widget) => {
+  widget.span = widget.span === 24 ? 12 : 24
+  saveWidgetList()
+}
 
 const lineChartOptions = computed(() => ({
   tooltip: {
@@ -325,6 +339,47 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .home-container {
+  .dashboard-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+  }
+
+  .widget-settings {
+    .settings-tip {
+      color: $text-secondary;
+      font-size: 13px;
+      margin: 0 0 16px;
+    }
+
+    .widget-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid $border-color-light;
+      cursor: default;
+
+      .drag-handle {
+        cursor: grab;
+        color: $text-secondary;
+        font-size: 16px;
+        flex-shrink: 0;
+        &:active { cursor: grabbing; }
+      }
+
+      .widget-label {
+        font-size: 13px;
+        color: $text-primary;
+        flex: 1;
+      }
+
+      .span-btn {
+        flex-shrink: 0;
+      }
+    }
+  }
+
   .stat-row {
     margin-bottom: 24px;
   }

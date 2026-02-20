@@ -30,6 +30,7 @@ from database import db_session
 from utils.api_response import error, ok
 from utils.authz import admin_required
 from utils.jwt_handler import verify_token
+from services.websocket_service import websocket_service
 
 # 确保日志目录存在
 os.makedirs(Config.LOG_DIR, exist_ok=True)
@@ -571,6 +572,9 @@ def initialize_app():
     # 创建必要目录
     create_app_directories()
 
+    # 初始化 WebSocket 服务
+    websocket_service.init_app(app)
+
     # 记录启动信息
     logger.info("=" * 50)
     logger.info("微博舆情分析系统启动")
@@ -586,15 +590,24 @@ initialize_app()
 # ===== 主程序入口 =====
 if __name__ == '__main__':
     try:
-        # 启动Flask开发服务器
+        # 启动Flask+SocketIO开发服务器
         # 生产环境请使用gunicorn或uwsgi等WSGI服务器
-        app.run(
-            host='127.0.0.1',        # 监听地址（生产环境可设为0.0.0.0）
-            port=5000,               # 监听端口
-            debug=Config.DEBUG,      # 从配置读取调试模式
-            threaded=True,           # 支持多线程
-            use_reloader=Config.IS_DEVELOPMENT  # 仅开发环境启用自动重载
-        )
+        if websocket_service.socketio:
+            websocket_service.socketio.run(
+                app,
+                host='127.0.0.1',        # 监听地址（生产环境可设为0.0.0.0）
+                port=5000,               # 监听端口
+                debug=Config.DEBUG,      # 从配置读取调试模式
+                use_reloader=Config.IS_DEVELOPMENT  # 仅开发环境启用自动重载
+            )
+        else:
+            app.run(
+                host='127.0.0.1',
+                port=5000,
+                debug=Config.DEBUG,
+                threaded=True,
+                use_reloader=Config.IS_DEVELOPMENT
+            )
 
     except Exception as e:
         logger.error(f"应用启动失败: {e}")

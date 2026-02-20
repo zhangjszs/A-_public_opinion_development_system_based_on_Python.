@@ -71,8 +71,11 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Bell, Warning, InfoFilled, CircleCheckFilled, CircleCloseFilled } from '@element-plus/icons-vue'
 import { getAlertHistory, getUnreadCount, markAlertRead, markAllAlertsRead } from '@/api/alert'
+import websocketClient from '@/utils/websocket'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 const popoverVisible = ref(false)
 const activeTab = ref('all')
@@ -80,8 +83,7 @@ const loading = ref(false)
 const alerts = ref([])
 const unreadCount = ref(0)
 
-let ws = null
-let reconnectTimer = null
+let messageHandler = null
 
 const getLevelIcon = (level) => {
   const icons = {
@@ -169,45 +171,33 @@ const goToAlertCenter = () => {
   router.push('/alert-center')
 }
 
-const connectWebSocket = () => {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const wsUrl = `${protocol}//${window.location.host}/socket.io/?EIO=4&transport=websocket`
+const handleWebSocketMessage = (data) => {
+  console.log('收到WebSocket消息:', data)
   
-  try {
-    if (window.io) {
-      ws = window.io()
-      
-      ws.on('connect', () => {
-        console.log('WebSocket已连接')
-      })
-      
-      ws.on('alert', (data) => {
-        alerts.value.unshift(data)
-        if (!data.is_read) {
-          unreadCount.value++
-        }
-        ElMessage.warning({
-          message: data.title,
-          duration: 5000
-        })
-      })
-      
-      ws.on('disconnect', () => {
-        console.log('WebSocket断开，尝试重连...')
-        scheduleReconnect()
-      })
+  if (data.type === 'alert') {
+    alerts.value.unshift(data.data)
+    if (!data.data.is_read) {
+      unreadCount.value++
     }
-  } catch (error) {
-    console.error('WebSocket连接失败:', error)
-    scheduleReconnect()
+    ElMessage({
+      message: data.title || '新预警通知',
+      type: data.level === 'danger' || data.level === 'critical' ? 'error' : 'warning',
+      duration: 5000
+    })
   }
 }
 
-const scheduleReconnect = () => {
-  if (reconnectTimer) clearTimeout(reconnectTimer)
-  reconnectTimer = setTimeout(() => {
-    connectWebSocket()
-  }, 5000)
+const connectWebSocket = () => {
+  const token = userStore.token
+  if (!token) {
+    console.warn('未登录，跳过WebSocket连接')
+    return
+  }
+
+  websocketClient.connect(token)
+
+  messageHandler = (data) => handleWebSocketMessage(data)
+  websocketClient.on('message', messageHandler)
 }
 
 onMounted(() => {
@@ -217,8 +207,10 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (ws) ws.disconnect()
-  if (reconnectTimer) clearTimeout(reconnectTimer)
+  if (messageHandler) {
+    websocketClient.off('message', messageHandler)
+  }
+  websocketClient.disconnect()
 })
 </script>
 

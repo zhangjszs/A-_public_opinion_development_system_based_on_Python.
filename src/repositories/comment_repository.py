@@ -24,7 +24,7 @@ class CommentRepository(BaseRepository):
         query = self.session.query(Comment)
 
         if article_id:
-            query = query.filter(Comment.rootId == article_id)
+            query = query.filter(Comment.articleId == article_id)
 
         if user:
             query = query.filter(Comment.user.like(f"%{user}%"))

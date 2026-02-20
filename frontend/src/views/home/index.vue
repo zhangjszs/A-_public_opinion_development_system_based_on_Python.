@@ -81,7 +81,7 @@
             <span class="widget-label">{{ opt.label }}</span>
             <el-tooltip :content="opt.span === 24 ? '切换为半宽' : '切换为全宽'" placement="top">
               <el-button
-                :icon="opt.span === 24 ? 'Grid' : 'FullScreen'"
+                :icon="opt.span === 24 ? Grid : FullScreen"
                 circle
                 size="small"
                 class="span-btn"
@@ -100,7 +100,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
-import { Refresh, StarFilled, Setting, Rank } from '@element-plus/icons-vue'
+import { Refresh, StarFilled, Setting, Rank, Grid, FullScreen } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import StatCard from '@/components/Common/StatCard.vue'
 import BaseChart from '@/components/Charts/BaseChart.vue'

@@ -36,13 +36,31 @@ except ImportError:
 
 try:
     from pptx import Presentation
-    from pptx.dml.color import RgbColor
+    from pptx.dml.color import RGBColor
     from pptx.enum.text import PP_ALIGN
     from pptx.util import Inches, Pt
     PPTX_AVAILABLE = True
 except ImportError:
     PPTX_AVAILABLE = False
     logger.warning("python-pptx未安装，PPT生成功能不可用")
+
+
+try:
+    from utils.chart_renderer import ChartRenderer as _ChartRenderer
+    _chart_renderer = _ChartRenderer()
+except Exception:
+    _chart_renderer = None
+
+
+def _chart_to_image_stream(chart_bytes: bytes):
+    import io
+    buf = io.BytesIO(chart_bytes)
+    return Image(buf, width=14*cm, height=9*cm)
+
+
+def _chart_to_pptx_stream(chart_bytes: bytes):
+    import io
+    return io.BytesIO(chart_bytes)
 
 
 @dataclass
@@ -167,12 +185,11 @@ class PDFReportGenerator:
                 f"生成日期: {datetime.now().strftime(config.date_format)}",
                 self.styles['ChineseBody']
             ))
-            story.append(Spacer(1, 30))
+            story.append(Spacer(1, 20))
 
             if 'summary' in data:
                 story.append(Paragraph("一、数据概览", self.styles['ChineseHeading']))
                 summary = data['summary']
-
                 summary_data = [
                     ['指标', '数值'],
                     ['总文章数', str(summary.get('total_articles', 0))],
@@ -181,7 +198,6 @@ class PDFReportGenerator:
                     ['中性评价', str(summary.get('neutral_count', 0))],
                     ['负面评价', str(summary.get('negative_count', 0))],
                 ]
-
                 table = Table(summary_data, colWidths=[8*cm, 6*cm])
                 table.setStyle(TableStyle([
                     ('FONTNAME', (0, 0), (-1, -1), self.chinese_font),
@@ -192,30 +208,19 @@ class PDFReportGenerator:
                     ('GRID', (0, 0), (-1, -1), 1, colors.black),
                 ]))
                 story.append(table)
-                story.append(Spacer(1, 20))
-
-            if 'sentiment_analysis' in data:
-                story.append(Paragraph("二、情感分析", self.styles['ChineseHeading']))
-                sentiment = data['sentiment_analysis']
-
-                for key, value in sentiment.items():
-                    story.append(Paragraph(
-                        f"• {key}: {value}",
-                        self.styles['ChineseBody']
-                    ))
-                story.append(Spacer(1, 20))
+                story.append(Spacer(1, 12))
+                if config.include_charts and _chart_renderer:
+                    _img = _chart_renderer.render_sentiment_pie(data)
+                    if _img:
+                        story.append(Paragraph("情感分布图", self.styles['ChineseBody']))
+                        story.append(_chart_to_image_stream(_img))
+                        story.append(Spacer(1, 12))
 
             if 'hot_topics' in data:
-                story.append(Paragraph("三、热门话题", self.styles['ChineseHeading']))
-
+                story.append(Paragraph("二、热门话题", self.styles['ChineseHeading']))
                 topics_data = [['排名', '话题', '热度']]
                 for i, topic in enumerate(data['hot_topics'][:10], 1):
-                    topics_data.append([
-                        str(i),
-                        topic.get('name', '')[:30],
-                        str(topic.get('heat', 0))
-                    ])
-
+                    topics_data.append([str(i), topic.get('name', '')[:30], str(topic.get('heat', 0))])
                 table = Table(topics_data, colWidths=[2*cm, 10*cm, 3*cm])
                 table.setStyle(TableStyle([
                     ('FONTNAME', (0, 0), (-1, -1), self.chinese_font),
@@ -226,18 +231,34 @@ class PDFReportGenerator:
                     ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
                 ]))
                 story.append(table)
-                story.append(Spacer(1, 20))
+                story.append(Spacer(1, 12))
+                if config.include_charts and _chart_renderer:
+                    _img = _chart_renderer.render_topics_bar(data)
+                    if _img:
+                        story.append(_chart_to_image_stream(_img))
+                        story.append(Spacer(1, 12))
+
+            if config.include_charts and _chart_renderer and 'trend' in data:
+                story.append(Paragraph("三、舆情趋势", self.styles['ChineseHeading']))
+                _img = _chart_renderer.render_trend_line(data)
+                if _img:
+                    story.append(_chart_to_image_stream(_img))
+                    story.append(Spacer(1, 12))
 
             if 'alerts' in data:
                 story.append(Paragraph("四、预警记录", self.styles['ChineseHeading']))
-
                 for alert in data['alerts'][:10]:
                     story.append(Paragraph(
-                        f"• [{alert.get('level', 'info')}] {alert.get('title', '')}: {alert.get('message', '')}",
+                        f"[{alert.get('level', 'info')}] {alert.get('title', '')}: {alert.get('message', '')}",
                         self.styles['ChineseBody']
                     ))
+                if config.include_charts and _chart_renderer:
+                    _img = _chart_renderer.render_alert_bar(data)
+                    if _img:
+                        story.append(Spacer(1, 8))
+                        story.append(_chart_to_image_stream(_img))
 
-            story.append(Spacer(1, 30))
+            story.append(Spacer(1, 20))
             story.append(Paragraph(
                 f"报告生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
                 self.styles['ChineseBody']
@@ -286,8 +307,8 @@ class PPTReportGenerator:
             if 'summary' in data:
                 self._add_summary_slide(data['summary'])
 
-            if 'sentiment_analysis' in data:
-                self._add_sentiment_slide(data['sentiment_analysis'])
+            if config.include_charts and _chart_renderer:
+                self._add_charts_slide(data)
 
             if 'hot_topics' in data:
                 self._add_topics_slide(data['hot_topics'])
@@ -423,7 +444,7 @@ class PPTReportGenerator:
             p2 = tf.add_paragraph()
             p2.text = f"热度: {topic.get('heat', 0)}"
             p2.font.size = Pt(14)
-            p2.font.color.rgb = RgbColor(100, 100, 100)
+            p2.font.color.rgb = RGBColor(100, 100, 100)
 
     def _add_alerts_slide(self, alerts: List[Dict]):
         """添加预警幻灯片"""
@@ -454,8 +475,28 @@ class PPTReportGenerator:
             p2 = tf.add_paragraph()
             p2.text = f"  {alert.get('message', '')}"
             p2.font.size = Pt(14)
-            p2.font.color.rgb = RgbColor(100, 100, 100)
+            p2.font.color.rgb = RGBColor(100, 100, 100)
             p2.space_after = Pt(16)
+
+    def _add_charts_slide(self, data: dict):
+        """嵌入图表幻灯片"""
+        charts = [
+            ("情感分布", _chart_renderer.render_sentiment_pie(data)),
+            ("舆情趋势", _chart_renderer.render_trend_line(data)),
+            ("热门话题", _chart_renderer.render_topics_bar(data)),
+            ("预警分布", _chart_renderer.render_alert_bar(data)),
+        ]
+        for title, img_bytes in charts:
+            if img_bytes is None:
+                continue
+            slide = self.prs.slides.add_slide(self.prs.slide_layouts[6])
+            tb = slide.shapes.add_textbox(Inches(0.5), Inches(0.2), Inches(12), Inches(0.7))
+            p = tb.text_frame.paragraphs[0]
+            p.text = title
+            p.font.size = Pt(28)
+            p.font.bold = True
+            stream = _chart_to_pptx_stream(img_bytes)
+            slide.shapes.add_picture(stream, Inches(1.5), Inches(1.0), Inches(10), Inches(6))
 
     def _add_end_slide(self):
         """添加结束幻灯片"""

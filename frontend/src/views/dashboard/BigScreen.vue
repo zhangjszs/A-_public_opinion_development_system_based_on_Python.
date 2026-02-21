@@ -9,7 +9,8 @@
         <h1 class="title">微博舆情分析实时监控大屏</h1>
       </div>
       <div class="header-right">
-        <el-button type="primary" @click="toggleFullscreen">
+        <el-button @click="showConfig = true">配置</el-button>
+                <el-button type="primary" @click="toggleFullscreen">
           {{ isFullscreen ? '退出全屏' : '全屏显示' }}
         </el-button>
       </div>
@@ -93,6 +94,42 @@
           <BaseChart ref="speedChartRef" :options="speedChartOptions" height="180px" />
         </div>
       </div>
+
+    <!-- 时间轴播放控制栏 -->
+    <div class="timeline-bar" v-if="showTimeline">
+      <el-button :icon="isPlaying ? 'VideoPause' : 'VideoPlay'" circle @click="togglePlay" />
+      <el-slider v-model="timelineIndex" :max="timelineData.length - 1" :step="1"
+        :format-tooltip="(v) => timelineData[v]?.label || v" class="timeline-slider" />
+      <span class="timeline-label">{{ timelineData[timelineIndex]?.label }}</span>
+      <el-button size="small" @click="showTimeline = false">关闭</el-button>
+    </div>
+
+    <!-- 大屏配置面板 -->
+    <el-drawer v-model="showConfig" title="大屏配置" direction="rtl" size="320px">
+      <div class="config-panel">
+        <div class="config-section">
+          <div class="config-title">刷新间隔</div>
+          <el-radio-group v-model="refreshInterval" @change="onRefreshIntervalChange">
+            <el-radio :value="3000">3秒</el-radio>
+            <el-radio :value="5000">5秒</el-radio>
+            <el-radio :value="10000">10秒</el-radio>
+            <el-radio :value="30000">30秒</el-radio>
+          </el-radio-group>
+        </div>
+        <div class="config-section">
+          <div class="config-title">显示模块</div>
+          <el-checkbox v-model="visiblePanels.sentiment">情感分布</el-checkbox>
+          <el-checkbox v-model="visiblePanels.topics">热门话题</el-checkbox>
+          <el-checkbox v-model="visiblePanels.alerts">实时预警</el-checkbox>
+          <el-checkbox v-model="visiblePanels.trend">舆情趋势</el-checkbox>
+          <el-checkbox v-model="visiblePanels.map">地域分布</el-checkbox>
+        </div>
+        <div class="config-section">
+          <div class="config-title">时间轴播放</div>
+          <el-button type="primary" @click="openTimeline">开启时间轴</el-button>
+        </div>
+      </div>
+    </el-drawer>
     </div>
   </div>
 </template>
@@ -325,6 +362,59 @@ onUnmounted(() => {
   if (timeTimer) clearInterval(timeTimer)
   if (dataTimer) clearInterval(dataTimer)
 })
+
+// 时间轴播放
+const showTimeline = ref(false)
+const isPlaying = ref(false)
+const timelineIndex = ref(0)
+let playTimer = null
+
+const timelineData = ref([
+  { label: '00:00', positive: 120, neutral: 80, negative: 30 },
+  { label: '04:00', positive: 132, neutral: 92, negative: 42 },
+  { label: '08:00', positive: 201, neutral: 141, negative: 61 },
+  { label: '12:00', positive: 234, neutral: 154, negative: 74 },
+  { label: '16:00', positive: 290, neutral: 190, negative: 90 },
+  { label: '20:00', positive: 330, neutral: 230, negative: 110 },
+  { label: '24:00', positive: 410, neutral: 280, negative: 130 },
+])
+
+const togglePlay = () => {
+  isPlaying.value = !isPlaying.value
+  if (isPlaying.value) {
+    playTimer = setInterval(() => {
+      if (timelineIndex.value < timelineData.value.length - 1) {
+        timelineIndex.value++
+      } else {
+        timelineIndex.value = 0
+      }
+    }, 1000)
+  } else {
+    clearInterval(playTimer)
+  }
+}
+
+const openTimeline = () => {
+  showConfig.value = false
+  showTimeline.value = true
+}
+
+// 大屏配置
+const showConfig = ref(false)
+const refreshInterval = ref(5000)
+const visiblePanels = ref({
+  sentiment: true,
+  topics: true,
+  alerts: true,
+  trend: true,
+  map: true,
+})
+
+const onRefreshIntervalChange = (val) => {
+  if (dataTimer) clearInterval(dataTimer)
+  dataTimer = setInterval(simulateDataUpdate, val)
+}
+
 </script>
 
 <style lang="scss" scoped>

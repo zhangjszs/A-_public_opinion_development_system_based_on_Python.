@@ -78,10 +78,15 @@ def generate_report():
         if format_type not in ['pdf', 'ppt']:
             return error('不支持的报告格式，请选择 pdf 或 ppt', code=400), 400
 
+        template = data.get('template', 'standard')
+        sections = data.get('sections', None)
+
         config = ReportConfig(
             title=title,
             subtitle=f"自动生成于 {datetime.now().strftime('%Y年%m月%d日 %H:%M')}",
-            author='微博舆情分析系统'
+            author='微博舆情分析系统',
+            template=template,
+            sections=sections,
         )
 
         temp_dir = tempfile.gettempdir()
@@ -197,23 +202,26 @@ def get_templates():
     """获取报告模板列表"""
     templates = [
         {
-            'id': 'standard',
-            'name': '标准报告',
-            'description': '包含数据概览、情感分析、热门话题、预警记录',
-            'sections': ['summary', 'sentiment', 'topics', 'alerts']
-        },
-        {
             'id': 'brief',
             'name': '简报',
             'description': '精简版报告，仅包含核心数据',
-            'sections': ['summary', 'sentiment']
+            'sections': ['summary', 'sentiment'],
+            'chart_slots': ['sentiment_pie'],
+        },
+        {
+            'id': 'standard',
+            'name': '标准报告',
+            'description': '包含数据概览、情感分析、热门话题、预警记录',
+            'sections': ['summary', 'sentiment', 'topics', 'alerts'],
+            'chart_slots': ['sentiment_pie', 'topics_bar', 'alert_bar'],
         },
         {
             'id': 'detailed',
             'name': '详细报告',
             'description': '完整版报告，包含所有分析内容',
-            'sections': ['summary', 'sentiment', 'topics', 'alerts', 'propagation', 'kol']
-        }
+            'sections': ['summary', 'sentiment', 'topics', 'alerts', 'trend'],
+            'chart_slots': ['sentiment_pie', 'topics_bar', 'alert_bar', 'trend_line'],
+        },
     ]
 
     return ok({'templates': templates}), 200

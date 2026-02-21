@@ -1,4 +1,3 @@
-# tests/test_chart_renderer.py
 import pytest
 from utils.chart_renderer import ChartRenderer
 

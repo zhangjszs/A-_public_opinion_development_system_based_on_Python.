@@ -63,6 +63,13 @@ def _chart_to_pptx_stream(chart_bytes: bytes):
     return io.BytesIO(chart_bytes)
 
 
+TEMPLATE_SECTIONS = {
+    "brief":    ["summary", "sentiment"],
+    "standard": ["summary", "sentiment", "topics", "alerts"],
+    "detailed": ["summary", "sentiment", "topics", "alerts", "trend"],
+}
+
+
 @dataclass
 class ReportConfig:
     """报告配置"""
@@ -73,6 +80,8 @@ class ReportConfig:
     include_charts: bool = True
     include_tables: bool = True
     page_size: str = "A4"
+    template: str = "standard"
+    sections: Optional[List[str]] = None
 
 
 @dataclass

@@ -244,6 +244,7 @@ class PDFReportGenerator:
             return None
 
         config = config or ReportConfig()
+        sections = config.sections or TEMPLATE_SECTIONS.get(config.template, TEMPLATE_SECTIONS["standard"])
 
         if output_path is None:
             output_path = f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
@@ -268,7 +269,7 @@ class PDFReportGenerator:
             ))
             story.append(Spacer(1, 20))
 
-            if 'summary' in data:
+            if 'summary' in sections and 'summary' in data:
                 story.append(Paragraph("一、数据概览", self.styles['ChineseHeading']))
                 summary = data['summary']
                 summary_data = [
@@ -297,7 +298,7 @@ class PDFReportGenerator:
                         story.append(_chart_to_image_stream(_img))
                         story.append(Spacer(1, 12))
 
-            if 'hot_topics' in data:
+            if 'topics' in sections and 'hot_topics' in data:
                 story.append(Paragraph("二、热门话题", self.styles['ChineseHeading']))
                 topics_data = [['排名', '话题', '热度']]
                 for i, topic in enumerate(data['hot_topics'][:10], 1):
@@ -319,14 +320,14 @@ class PDFReportGenerator:
                         story.append(_chart_to_image_stream(_img))
                         story.append(Spacer(1, 12))
 
-            if config.include_charts and _chart_renderer and 'trend' in data:
+            if 'trend' in sections and config.include_charts and _chart_renderer and 'trend' in data:
                 story.append(Paragraph("三、舆情趋势", self.styles['ChineseHeading']))
                 _img = _chart_renderer.render_trend_line(data)
                 if _img:
                     story.append(_chart_to_image_stream(_img))
                     story.append(Spacer(1, 12))
 
-            if 'alerts' in data:
+            if 'alerts' in sections and 'alerts' in data:
                 story.append(Paragraph("四、预警记录", self.styles['ChineseHeading']))
                 for alert in data['alerts'][:10]:
                     story.append(Paragraph(
@@ -374,6 +375,7 @@ class PPTReportGenerator:
             return None
 
         config = config or ReportConfig()
+        sections = config.sections or TEMPLATE_SECTIONS.get(config.template, TEMPLATE_SECTIONS["standard"])
 
         if output_path is None:
             output_path = f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pptx"
@@ -385,17 +387,24 @@ class PPTReportGenerator:
 
             self._add_title_slide(config)
 
-            if 'summary' in data:
-                self._add_summary_slide(data['summary'])
+            if 'summary' in sections and 'summary' in data:
+                chart = _chart_renderer.render_sentiment_pie(data) if (config.include_charts and _chart_renderer) else None
+                self._add_summary_slide(data['summary'], chart)
 
-            if config.include_charts and _chart_renderer:
-                self._add_charts_slide(data)
+            if 'sentiment' in sections and 'sentiment_analysis' in data:
+                self._add_sentiment_slide(data['sentiment_analysis'])
 
-            if 'hot_topics' in data:
-                self._add_topics_slide(data['hot_topics'])
+            if 'topics' in sections and 'hot_topics' in data:
+                chart = _chart_renderer.render_topics_bar(data) if (config.include_charts and _chart_renderer) else None
+                self._add_topics_slide(data['hot_topics'], chart)
 
-            if 'alerts' in data:
-                self._add_alerts_slide(data['alerts'])
+            if 'alerts' in sections and 'alerts' in data:
+                chart = _chart_renderer.render_alert_bar(data) if (config.include_charts and _chart_renderer) else None
+                self._add_alerts_slide(data['alerts'], chart)
+
+            if 'trend' in sections and 'trend' in data:
+                chart = _chart_renderer.render_trend_line(data) if (config.include_charts and _chart_renderer) else None
+                self._add_trend_slide(data['trend'], chart)
 
             self._add_end_slide()
 
@@ -431,7 +440,7 @@ class PPTReportGenerator:
         p.font.size = Pt(20)
         p.alignment = PP_ALIGN.CENTER
 
-    def _add_summary_slide(self, summary: Dict):
+    def _add_summary_slide(self, summary: Dict, chart_bytes: bytes = None):
         """添加概览幻灯片"""
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
@@ -453,11 +462,12 @@ class PPTReportGenerator:
             ('负面评价', summary.get('negative_count', 0)),
         ]
 
+        col_width = Inches(3.8) if not chart_bytes else Inches(3.0)
         for i, (label, value) in enumerate(metrics):
             left = Inches(0.5 + (i % 3) * 4.2)
             top = Inches(1.5 + (i // 3) * 2.5)
 
-            box = slide.shapes.add_textbox(left, top, Inches(3.8), Inches(2))
+            box = slide.shapes.add_textbox(left, top, col_width, Inches(2))
             tf = box.text_frame
             p = tf.paragraphs[0]
             p.text = str(value)
@@ -469,6 +479,10 @@ class PPTReportGenerator:
             p2.text = label
             p2.font.size = Pt(18)
             p2.alignment = PP_ALIGN.CENTER
+
+        if chart_bytes:
+            from io import BytesIO
+            slide.shapes.add_picture(BytesIO(chart_bytes), Inches(8.5), Inches(1.5), Inches(4.5), Inches(3.5))
 
     def _add_sentiment_slide(self, sentiment: Dict):
         """添加情感分析幻灯片"""
@@ -495,7 +509,7 @@ class PPTReportGenerator:
             p.font.size = Pt(20)
             p.space_after = Pt(12)
 
-    def _add_topics_slide(self, topics: List[Dict]):
+    def _add_topics_slide(self, topics: List[Dict], chart_bytes: bytes = None):
         """添加热门话题幻灯片"""
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
@@ -509,14 +523,12 @@ class PPTReportGenerator:
         p.font.size = Pt(32)
         p.font.bold = True
 
-        rows = min(len(topics), 10)
-        cols = 2
-
+        list_width = Inches(6.0) if chart_bytes else Inches(12.333)
         for i, topic in enumerate(topics[:10]):
-            left = Inches(0.5 + (i % 2) * 6.4)
+            left = Inches(0.5 + (i % 2) * 3.0) if chart_bytes else Inches(0.5 + (i % 2) * 6.4)
             top = Inches(1.3 + (i // 2) * 1.1)
 
-            box = slide.shapes.add_textbox(left, top, Inches(6), Inches(0.9))
+            box = slide.shapes.add_textbox(left, top, Inches(2.8) if chart_bytes else Inches(6), Inches(0.9))
             tf = box.text_frame
             p = tf.paragraphs[0]
             p.text = f"{i+1}. {topic.get('name', '')[:25]}"
@@ -527,7 +539,11 @@ class PPTReportGenerator:
             p2.font.size = Pt(14)
             p2.font.color.rgb = RGBColor(100, 100, 100)
 
-    def _add_alerts_slide(self, alerts: List[Dict]):
+        if chart_bytes:
+            from io import BytesIO
+            slide.shapes.add_picture(BytesIO(chart_bytes), Inches(6.8), Inches(1.0), Inches(6.0), Inches(6.0))
+
+    def _add_alerts_slide(self, alerts: List[Dict], chart_bytes: bytes = None):
         """添加预警幻灯片"""
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
@@ -541,8 +557,9 @@ class PPTReportGenerator:
         p.font.size = Pt(32)
         p.font.bold = True
 
+        text_width = Inches(6.5) if chart_bytes else Inches(12.333)
         content_box = slide.shapes.add_textbox(
-            Inches(0.5), Inches(1.3), Inches(12.333), Inches(5.5)
+            Inches(0.5), Inches(1.3), text_width, Inches(5.5)
         )
         tf = content_box.text_frame
 
@@ -558,6 +575,31 @@ class PPTReportGenerator:
             p2.font.size = Pt(14)
             p2.font.color.rgb = RGBColor(100, 100, 100)
             p2.space_after = Pt(16)
+
+        if chart_bytes:
+            from io import BytesIO
+            slide.shapes.add_picture(BytesIO(chart_bytes), Inches(7.3), Inches(1.5), Inches(5.5), Inches(4.5))
+
+    def _add_trend_slide(self, trend: List[Dict], chart_bytes: bytes = None):
+        """添加趋势幻灯片"""
+        slide_layout = self.prs.slide_layouts[6]
+        slide = self.prs.slides.add_slide(slide_layout)
+        title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.3), Inches(12.333), Inches(0.8))
+        tf = title_box.text_frame
+        p = tf.paragraphs[0]
+        p.text = "舆情趋势"
+        p.font.size = Pt(32)
+        p.font.bold = True
+        if chart_bytes:
+            from io import BytesIO
+            slide.shapes.add_picture(BytesIO(chart_bytes), Inches(1.0), Inches(1.5), Inches(11.0), Inches(5.5))
+        else:
+            content_box = slide.shapes.add_textbox(Inches(0.5), Inches(1.3), Inches(12.333), Inches(5.5))
+            tf = content_box.text_frame
+            for item in trend[:10]:
+                p = tf.add_paragraph()
+                p.text = f"{item.get('date', '')}: {item.get('count', 0)}"
+                p.font.size = Pt(16)
 
     def _add_charts_slide(self, data: dict):
         """嵌入图表幻灯片"""

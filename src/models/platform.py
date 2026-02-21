@@ -18,8 +18,6 @@ class Platform(Enum):
     KUAISHOU = "kuaishou"
     ZHIHU = "zhihu"
     BILIBILI = "bilibili"
-    DOUYIN = "douyin"
-    WEIBO = "weibo"
 
 
 class ContentType(Enum):

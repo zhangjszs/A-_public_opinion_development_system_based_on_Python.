@@ -84,78 +84,6 @@ class ReportConfig:
     sections: Optional[List[str]] = None
 
 
-@dataclass
-class ReportTemplate:
-    """报告模板"""
-    name: str
-    title: str
-    include_charts: bool = True
-    include_tables: bool = True
-    sections: list = None
-    subtitle: str = ""
-    author: str = "微博舆情分析系统"
-
-    def __post_init__(self):
-        if self.sections is None:
-            self.sections = ["summary", "hot_topics", "trend", "alerts"]
-
-    def to_config(self) -> "ReportConfig":
-        return ReportConfig(
-            title=self.title,
-            subtitle=self.subtitle,
-            author=self.author,
-            include_charts=self.include_charts,
-            include_tables=self.include_tables,
-        )
-
-    def filter_data(self, data: dict) -> dict:
-        """按模板 sections 过滤数据"""
-        return {k: v for k, v in data.items() if k in self.sections}
-
-
-class TemplateRegistry:
-    """报告模板注册表"""
-
-    def __init__(self):
-        self._templates: dict = {}
-        self._register_defaults()
-
-    def _register_defaults(self):
-        self.register(ReportTemplate(
-            name="default",
-            title="舆情分析报告",
-            include_charts=True,
-            include_tables=True,
-            sections=["summary", "hot_topics", "trend", "alerts"],
-        ))
-        self.register(ReportTemplate(
-            name="minimal",
-            title="舆情简报",
-            include_charts=False,
-            include_tables=True,
-            sections=["summary"],
-        ))
-        self.register(ReportTemplate(
-            name="detailed",
-            title="舆情详细分析报告",
-            include_charts=True,
-            include_tables=True,
-            sections=["summary", "hot_topics", "trend", "alerts"],
-            subtitle="包含完整图表与数据",
-        ))
-
-    def register(self, template: ReportTemplate):
-        self._templates[template.name] = template
-
-    def get(self, name: str) -> ReportTemplate:
-        if name not in self._templates:
-            raise KeyError(f"模板不存在: {name}")
-        return self._templates[name]
-
-    def list_templates(self) -> list:
-        return list(self._templates.keys())
-
-
 class PDFReportGenerator:
     """PDF报告生成器"""
 
@@ -481,8 +409,7 @@ class PPTReportGenerator:
             p2.alignment = PP_ALIGN.CENTER
 
         if chart_bytes:
-            from io import BytesIO
-            slide.shapes.add_picture(BytesIO(chart_bytes), Inches(8.5), Inches(1.5), Inches(4.5), Inches(3.5))
+            slide.shapes.add_picture(io.BytesIO(chart_bytes), Inches(8.5), Inches(1.5), Inches(4.5), Inches(3.5))
 
     def _add_sentiment_slide(self, sentiment: Dict):
         """添加情感分析幻灯片"""
@@ -540,8 +467,7 @@ class PPTReportGenerator:
             p2.font.color.rgb = RGBColor(100, 100, 100)
 
         if chart_bytes:
-            from io import BytesIO
-            slide.shapes.add_picture(BytesIO(chart_bytes), Inches(6.8), Inches(1.0), Inches(6.0), Inches(6.0))
+            slide.shapes.add_picture(io.BytesIO(chart_bytes), Inches(6.8), Inches(1.0), Inches(6.0), Inches(6.0))
 
     def _add_alerts_slide(self, alerts: List[Dict], chart_bytes: bytes = None):
         """添加预警幻灯片"""
@@ -577,8 +503,7 @@ class PPTReportGenerator:
             p2.space_after = Pt(16)
 
         if chart_bytes:
-            from io import BytesIO
-            slide.shapes.add_picture(BytesIO(chart_bytes), Inches(7.3), Inches(1.5), Inches(5.5), Inches(4.5))
+            slide.shapes.add_picture(io.BytesIO(chart_bytes), Inches(7.3), Inches(1.5), Inches(5.5), Inches(4.5))
 
     def _add_trend_slide(self, trend: List[Dict], chart_bytes: bytes = None):
         """添加趋势幻灯片"""
@@ -591,8 +516,7 @@ class PPTReportGenerator:
         p.font.size = Pt(32)
         p.font.bold = True
         if chart_bytes:
-            from io import BytesIO
-            slide.shapes.add_picture(BytesIO(chart_bytes), Inches(1.0), Inches(1.5), Inches(11.0), Inches(5.5))
+            slide.shapes.add_picture(io.BytesIO(chart_bytes), Inches(1.0), Inches(1.5), Inches(11.0), Inches(5.5))
         else:
             content_box = slide.shapes.add_textbox(Inches(0.5), Inches(1.3), Inches(12.333), Inches(5.5))
             tf = content_box.text_frame
@@ -600,26 +524,6 @@ class PPTReportGenerator:
                 p = tf.add_paragraph()
                 p.text = f"{item.get('date', '')}: {item.get('count', 0)}"
                 p.font.size = Pt(16)
-
-    def _add_charts_slide(self, data: dict):
-        """嵌入图表幻灯片"""
-        charts = [
-            ("情感分布", _chart_renderer.render_sentiment_pie(data)),
-            ("舆情趋势", _chart_renderer.render_trend_line(data)),
-            ("热门话题", _chart_renderer.render_topics_bar(data)),
-            ("预警分布", _chart_renderer.render_alert_bar(data)),
-        ]
-        for title, img_bytes in charts:
-            if img_bytes is None:
-                continue
-            slide = self.prs.slides.add_slide(self.prs.slide_layouts[6])
-            tb = slide.shapes.add_textbox(Inches(0.5), Inches(0.2), Inches(12), Inches(0.7))
-            p = tb.text_frame.paragraphs[0]
-            p.text = title
-            p.font.size = Pt(28)
-            p.font.bold = True
-            stream = _chart_to_pptx_stream(img_bytes)
-            slide.shapes.add_picture(stream, Inches(1.5), Inches(1.0), Inches(10), Inches(6))
 
     def _add_end_slide(self):
         """添加结束幻灯片"""

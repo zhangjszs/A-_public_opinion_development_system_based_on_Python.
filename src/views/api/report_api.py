@@ -53,6 +53,15 @@ def get_demo_report_data():
             {'level': 'danger', 'title': '负面舆情激增', 'message': '过去30分钟内检测到50条负面评论'},
             {'level': 'warning', 'title': '讨论量异常增长', 'message': '讨论量达到基线的3.5倍'},
             {'level': 'info', 'title': '热点话题出现', 'message': '话题「科技创新」被提及超过100次'},
+        ],
+        'trend': [
+            {'date': '2026-02-15', 'count': 850},
+            {'date': '2026-02-16', 'count': 920},
+            {'date': '2026-02-17', 'count': 1100},
+            {'date': '2026-02-18', 'count': 980},
+            {'date': '2026-02-19', 'count': 1250},
+            {'date': '2026-02-20', 'count': 1180},
+            {'date': '2026-02-21', 'count': 1350},
         ]
     }
 

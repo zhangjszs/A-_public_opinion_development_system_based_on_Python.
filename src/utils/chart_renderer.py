@@ -1,4 +1,5 @@
 import io
+import os
 import logging
 from typing import Optional
 
@@ -22,7 +23,6 @@ _CHINESE_FONTS = [
 
 
 def _get_chinese_font():
-    import os
     for p in _CHINESE_FONTS:
         if os.path.exists(p):
             return fm.FontProperties(fname=p)
@@ -99,7 +99,7 @@ class ChartRenderer:
             ax.set_title('Trend')
             ax.set_xlabel('Date')
             ax.set_ylabel('Count')
-        plt.xticks(rotation=30)
+        ax.tick_params(axis='x', rotation=30)
         return self._to_bytes(fig)
 
     def render_alert_bar(self, data: dict) -> Optional[bytes]:

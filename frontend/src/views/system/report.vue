@@ -128,7 +128,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Document } from '@element-plus/icons-vue'
 import { generateReport, generateAllReports, getReportTemplates, getDemoData, downloadReport, previewReport } from '@/api/report'
@@ -145,6 +145,14 @@ const reportForm = ref({
 })
 
 const templates = ref([])
+
+// 模板选择后自动同步 sections
+watch(() => reportForm.value.template, (templateId) => {
+  const tpl = templates.value.find(t => t.id === templateId)
+  if (tpl) {
+    reportForm.value.sections = [...tpl.sections]
+  }
+})
 const demoData = ref({})
 const historyList = ref([])
 
@@ -184,6 +192,8 @@ const handleGenerate = async () => {
     const res = await generateReport({
       title: reportForm.value.title,
       format: reportForm.value.format,
+      template: reportForm.value.template,
+      sections: reportForm.value.sections,
       data: demoData.value
     })
     

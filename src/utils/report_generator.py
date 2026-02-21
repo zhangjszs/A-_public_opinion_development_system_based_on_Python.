@@ -75,6 +75,78 @@ class ReportConfig:
     page_size: str = "A4"
 
 
+@dataclass
+class ReportTemplate:
+    """报告模板"""
+    name: str
+    title: str
+    include_charts: bool = True
+    include_tables: bool = True
+    sections: list = None
+    subtitle: str = ""
+    author: str = "微博舆情分析系统"
+
+    def __post_init__(self):
+        if self.sections is None:
+            self.sections = ["summary", "hot_topics", "trend", "alerts"]
+
+    def to_config(self) -> "ReportConfig":
+        return ReportConfig(
+            title=self.title,
+            subtitle=self.subtitle,
+            author=self.author,
+            include_charts=self.include_charts,
+            include_tables=self.include_tables,
+        )
+
+    def filter_data(self, data: dict) -> dict:
+        """按模板 sections 过滤数据"""
+        return {k: v for k, v in data.items() if k in self.sections}
+
+
+class TemplateRegistry:
+    """报告模板注册表"""
+
+    def __init__(self):
+        self._templates: dict = {}
+        self._register_defaults()
+
+    def _register_defaults(self):
+        self.register(ReportTemplate(
+            name="default",
+            title="舆情分析报告",
+            include_charts=True,
+            include_tables=True,
+            sections=["summary", "hot_topics", "trend", "alerts"],
+        ))
+        self.register(ReportTemplate(
+            name="minimal",
+            title="舆情简报",
+            include_charts=False,
+            include_tables=True,
+            sections=["summary"],
+        ))
+        self.register(ReportTemplate(
+            name="detailed",
+            title="舆情详细分析报告",
+            include_charts=True,
+            include_tables=True,
+            sections=["summary", "hot_topics", "trend", "alerts"],
+            subtitle="包含完整图表与数据",
+        ))
+
+    def register(self, template: ReportTemplate):
+        self._templates[template.name] = template
+
+    def get(self, name: str) -> ReportTemplate:
+        if name not in self._templates:
+            raise KeyError(f"模板不存在: {name}")
+        return self._templates[name]
+
+    def list_templates(self) -> list:
+        return list(self._templates.keys())
+
+
 class PDFReportGenerator:
     """PDF报告生成器"""
 

@@ -147,8 +147,118 @@ export function usePullRefresh(callback) {
   }
 }
 
+
+export function useGesture(elementRef) {
+  const scale = ref(1)
+  const isLongPress = ref(false)
+  let longPressTimer = null
+  let initialDistance = 0
+
+  const getDistance = (touches) => {
+    const dx = touches[0].clientX - touches[1].clientX
+    const dy = touches[0].clientY - touches[1].clientY
+    return Math.sqrt(dx * dx + dy * dy)
+  }
+
+  const onTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      initialDistance = getDistance(e.touches)
+    }
+    if (e.touches.length === 1) {
+      longPressTimer = setTimeout(() => {
+        isLongPress.value = true
+      }, 500)
+    }
+  }
+
+  const onTouchMove = (e) => {
+    if (e.touches.length === 2 && initialDistance > 0) {
+      const currentDistance = getDistance(e.touches)
+      scale.value = Math.min(3, Math.max(0.5, currentDistance / initialDistance))
+    }
+    if (longPressTimer) {
+      clearTimeout(longPressTimer)
+      longPressTimer = null
+    }
+  }
+
+  const onTouchEnd = () => {
+    initialDistance = 0
+    isLongPress.value = false
+    if (longPressTimer) {
+      clearTimeout(longPressTimer)
+      longPressTimer = null
+    }
+  }
+
+  const resetScale = () => {
+    scale.value = 1
+  }
+
+  return {
+    scale,
+    isLongPress,
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+    resetScale,
+  }
+}
+
+export function useMobileChart(containerRef) {
+  const { isMobile, isTablet } = useResponsive()
+  const chartWidth = ref(0)
+  const chartHeight = ref(0)
+
+  const updateChartSize = () => {
+    const el = containerRef?.value
+    if (el) {
+      chartWidth.value = el.clientWidth || el.offsetWidth
+    } else if (typeof window \!== 'undefined') {
+      chartWidth.value = window.innerWidth
+    }
+    if (isMobile.value) {
+      chartHeight.value = Math.round(chartWidth.value * 0.6)
+    } else if (isTablet.value) {
+      chartHeight.value = Math.round(chartWidth.value * 0.5)
+    } else {
+      chartHeight.value = Math.round(chartWidth.value * 0.4)
+    }
+  }
+
+  const chartOption = (baseOption) => {
+    if (\!isMobile.value) return baseOption
+    return {
+      ...baseOption,
+      legend: { ...(baseOption.legend || {}), show: false },
+      grid: { top: 30, right: 10, bottom: 40, left: 40, ...(baseOption.grid || {}) },
+      xAxis: Array.isArray(baseOption.xAxis)
+        ? baseOption.xAxis.map(a => ({ ...a, axisLabel: { ...(a.axisLabel || {}), fontSize: 10 } }))
+        : { ...baseOption.xAxis, axisLabel: { ...(baseOption.xAxis?.axisLabel || {}), fontSize: 10 } },
+    }
+  }
+
+  onMounted(() => {
+    updateChartSize()
+    window.addEventListener('resize', updateChartSize)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('resize', updateChartSize)
+  })
+
+  return {
+    chartWidth,
+    chartHeight,
+    chartOption,
+    updateChartSize,
+  }
+}
+
 export default {
   useResponsive,
   useTouch,
-  usePullRefresh
+  usePullRefresh,
+  useGesture,
+  useMobileChart,
 }

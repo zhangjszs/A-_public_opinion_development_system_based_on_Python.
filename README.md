@@ -8,27 +8,90 @@
 基于python微博舆情分析可视化系统/
 ├── src/                        # 后端源代码
 │   ├── app.py                  # Flask 应用入口
+│   ├── database.py             # 数据库连接
 │   ├── config/                 # 配置文件
 │   │   └── settings.py         # 应用配置
-│   ├── model/                  # 情感分析模型
+│   ├── model/                  # 情感分析模型（训练/推理）
 │   │   ├── trainModel.py       # 模型训练
-│   │   └── best_sentiment_model.pkl  # 预训练模型
+│   │   ├── model_pipeline.py   # 模型流水线
+│   │   ├── model_utils.py      # 模型工具函数
+│   │   ├── hyperparameter_optimizer.py  # 超参数优化
+│   │   ├── data_augmentation.py         # 数据增强
+│   │   └── yuqing.py           # 舆情分析入口
+│   ├── models/                 # ORM 数据模型
+│   │   ├── alert.py            # 预警模型
+│   │   ├── article.py          # 文章模型
+│   │   ├── comment.py          # 评论模型
+│   │   ├── platform.py         # 平台模型
+│   │   └── user.py             # 用户模型
+│   ├── repositories/           # 数据访问层
+│   │   ├── base_repository.py  # 基础仓库
+│   │   ├── article_repository.py  # 文章仓库
+│   │   ├── comment_repository.py  # 评论仓库
+│   │   └── user_repository.py     # 用户仓库
+│   ├── services/               # 业务逻辑层
+│   │   ├── alert_service.py        # 预警服务
+│   │   ├── alert_history_service.py # 预警历史服务
+│   │   ├── article_service.py      # 文章服务
+│   │   ├── audit_service.py        # 审计服务
+│   │   ├── auth_service.py         # 认证服务
+│   │   ├── collaboration_service.py # 协作服务
+│   │   ├── comment_service.py      # 评论服务
+│   │   ├── notification_service.py # 通知服务
+│   │   ├── platform_collector.py   # 平台数据采集
+│   │   ├── propagation_analyzer.py # 传播分析
+│   │   ├── propagation_service.py  # 传播服务
+│   │   ├── search_service.py       # 搜索服务
+│   │   ├── sentiment_monitor.py    # 情感监控
+│   │   ├── sentiment_service.py    # 情感分析服务
+│   │   └── websocket_service.py    # WebSocket 服务
+│   ├── tasks/                  # 异步任务（Celery）
+│   │   ├── celery_config.py    # Celery 配置
+│   │   ├── celery_sentiment.py # 情感分析任务
+│   │   └── celery_spider.py    # 爬虫任务
 │   ├── spider/                 # 微博爬虫模块
 │   │   ├── spiderContent.py    # 文章爬虫
 │   │   ├── spiderComments.py   # 评论爬虫
-│   │   └── spiderMaster.py     # 爬虫主控
+│   │   ├── spiderMaster.py     # 爬虫主控
+│   │   ├── spiderNav.py        # 导航爬虫
+│   │   ├── spiderUserInfo.py   # 用户信息爬虫
+│   │   ├── proxy_fetcher.py    # 代理获取
+│   │   └── config.py           # 爬虫配置
 │   ├── utils/                  # 工具函数
+│   │   ├── api_response.py     # 统一响应格式
+│   │   ├── authz.py            # 权限校验
+│   │   ├── cache.py            # 缓存管理
+│   │   ├── chart_renderer.py   # 图表渲染
+│   │   ├── constants.py        # 常量定义
+│   │   ├── deduplicator.py     # 数据去重
+│   │   ├── encryption.py       # 加密工具
+│   │   ├── getEchartsData.py   # 图表数据处理
 │   │   ├── getHomeData.py      # 首页数据处理
 │   │   ├── getTableData.py     # 表格数据处理
-│   │   ├── getEchartsData.py   # 图表数据处理
-│   │   ├── cache.py            # 缓存管理
-│   │   └── query.py            # 数据库查询
+│   │   ├── input_validator.py  # 输入校验
+│   │   ├── jwt_handler.py      # JWT 处理
+│   │   ├── log_sanitizer.py    # 日志脱敏
+│   │   ├── pagination.py       # 分页工具
+│   │   ├── password_hasher.py  # 密码哈希
+│   │   ├── query.py            # 数据库查询
+│   │   ├── rate_limiter.py     # 限流工具
+│   │   ├── report_generator.py # 报告生成
+│   │   ├── sentiment.py        # 情感工具
+│   │   └── websocket_server.py # WebSocket 服务端
 │   ├── views/                  # 视图/路由
+│   │   ├── api/                # REST API 路由
+│   │   │   ├── api.py          # 通用 API
+│   │   │   ├── alert_api.py    # 预警接口
+│   │   │   ├── audit_api.py    # 审计接口
+│   │   │   ├── favorites_api.py # 收藏接口
+│   │   │   ├── platform_api.py # 平台接口
+│   │   │   ├── propagation_api.py # 传播分析接口
+│   │   │   ├── report_api.py   # 报告接口
+│   │   │   └── spider_api.py   # 爬虫控制接口
 │   │   ├── data/               # 数据 API
 │   │   │   └── data_api.py     # 数据接口
 │   │   ├── page/               # 页面路由
 │   │   └── user/               # 用户认证
-│   ├── services/               # 业务逻辑层
 │   ├── static/                 # 静态资源
 │   ├── templates/              # HTML 模板
 │   └── cache/                  # 运行时缓存目录

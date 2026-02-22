@@ -8,7 +8,7 @@
 
 import logging
 
-from flask import Blueprint, jsonify, redirect, render_template, request, session
+from flask import Blueprint, redirect, render_template, request, session
 
 from services.auth_service import AuthService
 from utils.api_response import error, ok
@@ -150,7 +150,7 @@ def logOut():
     )
 
     if is_api_request:
-        return jsonify({"code": 200, "msg": "登出成功"})
+        return ok(msg="登出成功"), 200
     return redirect("/user/login")
 
 
@@ -174,19 +174,13 @@ def get_user_info():
         )
         if users:
             user_info = users[0]
-            return jsonify(
-                {
-                    "code": 200,
-                    "msg": "success",
-                    "data": {
+            return ok(data={
                         "id": user_info.get("id"),
                         "username": user_info.get("username"),
                         "create_time": str(user_info.get("create_time", "")),
-                    },
-                }
-            )
+                    }), 200
         else:
-            return jsonify({"code": 404, "msg": "用户不存在"}), 404
+            return error("用户不存在", code=404), 404
     except Exception as e:
         logger.error(f"获取用户信息异常: {e}")
-        return jsonify({"code": 500, "msg": "获取用户信息失败"}), 500
+        return error("获取用户信息失败", code=500), 500

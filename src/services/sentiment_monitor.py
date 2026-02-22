@@ -12,7 +12,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class ChangePointType(Enum):
     """变点类型"""
+
     MEAN_SHIFT = "mean_shift"
     VARIANCE_CHANGE = "variance_change"
     TREND_CHANGE = "trend_change"
@@ -30,6 +31,7 @@ class ChangePointType(Enum):
 
 class DetectionMethod(Enum):
     """检测方法"""
+
     CUSUM = "cusum"
     SLIDING_WINDOW = "sliding_window"
     Z_SCORE = "z_score"
@@ -39,6 +41,7 @@ class DetectionMethod(Enum):
 @dataclass
 class ChangePoint:
     """变点检测结果"""
+
     timestamp: datetime
     index: int
     change_type: ChangePointType
@@ -51,21 +54,22 @@ class ChangePoint:
 
     def to_dict(self) -> Dict:
         return {
-            'timestamp': self.timestamp.isoformat(),
-            'index': self.index,
-            'change_type': self.change_type.value,
-            'method': self.method.value,
-            'before_value': self.before_value,
-            'after_value': self.after_value,
-            'magnitude': self.magnitude,
-            'confidence': self.confidence,
-            'metadata': self.metadata
+            "timestamp": self.timestamp.isoformat(),
+            "index": self.index,
+            "change_type": self.change_type.value,
+            "method": self.method.value,
+            "before_value": self.before_value,
+            "after_value": self.after_value,
+            "magnitude": self.magnitude,
+            "confidence": self.confidence,
+            "metadata": self.metadata,
         }
 
 
 @dataclass
 class SentimentSnapshot:
     """情感快照"""
+
     timestamp: datetime
     sentiment_score: float
     positive_ratio: float
@@ -81,8 +85,9 @@ class CUSUMDetector:
     原理：通过计算累积偏差检测均值偏移
     """
 
-    def __init__(self, reference_value: float = 0.0, threshold: float = 5.0,
-                 delta: float = 1.0):
+    def __init__(
+        self, reference_value: float = 0.0, threshold: float = 5.0, delta: float = 1.0
+    ):
         self.reference_value = reference_value
         self.threshold = threshold
         self.delta = delta
@@ -116,7 +121,7 @@ class CUSUMDetector:
                 before_value=self.reference_value,
                 after_value=value,
                 magnitude=magnitude,
-                confidence=min(magnitude / self.threshold, 1.0)
+                confidence=min(magnitude / self.threshold, 1.0),
             )
 
         if abs(self.neg_cumsum) > self.threshold:
@@ -132,7 +137,7 @@ class CUSUMDetector:
                 before_value=self.reference_value,
                 after_value=value,
                 magnitude=magnitude,
-                confidence=min(magnitude / self.threshold, 1.0)
+                confidence=min(magnitude / self.threshold, 1.0),
             )
 
         return None
@@ -193,7 +198,7 @@ class SlidingWindowDetector:
                             after_value=mean2,
                             magnitude=abs(mean2 - mean1),
                             confidence=min(t_stat / self.threshold, 1.0),
-                            metadata={'t_statistic': t_stat}
+                            metadata={"t_statistic": t_stat},
                         )
 
                 self.window1.clear()
@@ -205,16 +210,16 @@ class SlidingWindowDetector:
         """获取窗口统计信息"""
         with self._lock:
             return {
-                'window1': {
-                    'size': len(self.window1),
-                    'mean': np.mean(self.window1) if self.window1 else 0,
-                    'std': np.std(self.window1) if self.window1 else 0
+                "window1": {
+                    "size": len(self.window1),
+                    "mean": np.mean(self.window1) if self.window1 else 0,
+                    "std": np.std(self.window1) if self.window1 else 0,
                 },
-                'window2': {
-                    'size': len(self.window2),
-                    'mean': np.mean(self.window2) if self.window2 else 0,
-                    'std': np.std(self.window2) if self.window2 else 0
-                }
+                "window2": {
+                    "size": len(self.window2),
+                    "mean": np.mean(self.window2) if self.window2 else 0,
+                    "std": np.std(self.window2) if self.window2 else 0,
+                },
             }
 
 
@@ -262,7 +267,7 @@ class ZScoreDetector:
                     after_value=value,
                     magnitude=abs(value - mean),
                     confidence=min(abs(z_score) / self.threshold, 1.0),
-                    metadata={'z_score': z_score}
+                    metadata={"z_score": z_score},
                 )
 
             return None
@@ -271,11 +276,11 @@ class ZScoreDetector:
         """获取统计信息"""
         with self._lock:
             if not self.history:
-                return {'mean': 0, 'std': 0, 'size': 0}
+                return {"mean": 0, "std": 0, "size": 0}
             return {
-                'mean': np.mean(self.history),
-                'std': np.std(self.history),
-                'size': len(self.history)
+                "mean": np.mean(self.history),
+                "std": np.std(self.history),
+                "size": len(self.history),
             }
 
 
@@ -301,8 +306,9 @@ class BOCPDDetector:
         """计算预测概率"""
         mean = self.mean_estimate
         var = max(self.variance_estimate, 0.01)
-        return (1.0 / math.sqrt(2 * math.pi * var)) * \
-               math.exp(-0.5 * (x - mean)**2 / var)
+        return (1.0 / math.sqrt(2 * math.pi * var)) * math.exp(
+            -0.5 * (x - mean) ** 2 / var
+        )
 
     def update(self, value: float) -> Optional[ChangePoint]:
         """更新检测器状态"""
@@ -330,7 +336,9 @@ class BOCPDDetector:
         max_run_length = self.run_lengths[growth_probs.index(max(growth_probs))]
 
         self.mean_estimate = 0.9 * self.mean_estimate + 0.1 * value
-        self.variance_estimate = 0.9 * self.variance_estimate + 0.1 * (value - self.mean_estimate)**2
+        self.variance_estimate = (
+            0.9 * self.variance_estimate + 0.1 * (value - self.mean_estimate) ** 2
+        )
 
         if max_run_length == 0 and cp_prob > self.threshold:
             return ChangePoint(
@@ -342,7 +350,7 @@ class BOCPDDetector:
                 after_value=value,
                 magnitude=abs(value - self.mean_estimate),
                 confidence=min(cp_prob, 1.0),
-                metadata={'run_length': max_run_length, 'cp_probability': cp_prob}
+                metadata={"run_length": max_run_length, "cp_probability": cp_prob},
             )
 
         return None
@@ -359,24 +367,24 @@ class SentimentMonitor:
         self._lock = threading.Lock()
 
         self.cusum = CUSUMDetector(
-            reference_value=self.config.get('cusum_reference', 0.5),
-            threshold=self.config.get('cusum_threshold', 5.0),
-            delta=self.config.get('cusum_delta', 1.0)
+            reference_value=self.config.get("cusum_reference", 0.5),
+            threshold=self.config.get("cusum_threshold", 5.0),
+            delta=self.config.get("cusum_delta", 1.0),
         )
 
         self.sliding_window = SlidingWindowDetector(
-            window_size=self.config.get('window_size', 30),
-            threshold=self.config.get('window_threshold', 2.0)
+            window_size=self.config.get("window_size", 30),
+            threshold=self.config.get("window_threshold", 2.0),
         )
 
         self.z_score = ZScoreDetector(
-            history_size=self.config.get('history_size', 100),
-            threshold=self.config.get('z_threshold', 3.0)
+            history_size=self.config.get("history_size", 100),
+            threshold=self.config.get("z_threshold", 3.0),
         )
 
         self.bocpd = BOCPDDetector(
-            hazard_rate=self.config.get('hazard_rate', 0.01),
-            threshold=self.config.get('bocpd_threshold', 0.5)
+            hazard_rate=self.config.get("hazard_rate", 0.01),
+            threshold=self.config.get("bocpd_threshold", 0.5),
         )
 
         self.snapshots: deque = deque(maxlen=1000)
@@ -384,9 +392,9 @@ class SentimentMonitor:
         self._callbacks: List[Callable[[ChangePoint], None]] = []
 
         self._stats = {
-            'total_updates': 0,
-            'change_points_detected': 0,
-            'by_method': {m.value: 0 for m in DetectionMethod}
+            "total_updates": 0,
+            "change_points_detected": 0,
+            "by_method": {m.value: 0 for m in DetectionMethod},
         }
 
     def register_callback(self, callback: Callable[[ChangePoint], None]):
@@ -405,7 +413,7 @@ class SentimentMonitor:
         """更新监控状态"""
         with self._lock:
             self.snapshots.append(snapshot)
-            self._stats['total_updates'] += 1
+            self._stats["total_updates"] += 1
 
             change_points = []
 
@@ -413,29 +421,29 @@ class SentimentMonitor:
             if cp:
                 cp.index = len(self.snapshots) - 1
                 change_points.append(cp)
-                self._stats['by_method']['cusum'] += 1
+                self._stats["by_method"]["cusum"] += 1
 
             cp = self.sliding_window.update(snapshot.sentiment_score)
             if cp:
                 cp.index = len(self.snapshots) - 1
                 change_points.append(cp)
-                self._stats['by_method']['sliding_window'] += 1
+                self._stats["by_method"]["sliding_window"] += 1
 
             cp = self.z_score.update(snapshot.sentiment_score)
             if cp:
                 cp.index = len(self.snapshots) - 1
                 change_points.append(cp)
-                self._stats['by_method']['z_score'] += 1
+                self._stats["by_method"]["z_score"] += 1
 
             cp = self.bocpd.update(snapshot.sentiment_score)
             if cp:
                 cp.index = len(self.snapshots) - 1
                 change_points.append(cp)
-                self._stats['by_method']['bocpd'] += 1
+                self._stats["by_method"]["bocpd"] += 1
 
             for cp in change_points:
                 self.change_points.append(cp)
-                self._stats['change_points_detected'] += 1
+                self._stats["change_points_detected"] += 1
                 self._trigger_callbacks(cp)
 
             return change_points
@@ -444,31 +452,31 @@ class SentimentMonitor:
         """获取情感趋势"""
         with self._lock:
             if not self.snapshots:
-                return {'trend': 'unknown', 'slope': 0}
+                return {"trend": "unknown", "slope": 0}
 
             cutoff = datetime.now() - timedelta(minutes=window_minutes)
             recent = [s for s in self.snapshots if s.timestamp > cutoff]
 
             if len(recent) < 2:
-                return {'trend': 'unknown', 'slope': 0}
+                return {"trend": "unknown", "slope": 0}
 
             scores = [s.sentiment_score for s in recent]
             x = np.arange(len(scores))
             slope = np.polyfit(x, scores, 1)[0]
 
             if slope > 0.01:
-                trend = 'rising'
+                trend = "rising"
             elif slope < -0.01:
-                trend = 'falling'
+                trend = "falling"
             else:
-                trend = 'stable'
+                trend = "stable"
 
             return {
-                'trend': trend,
-                'slope': slope,
-                'mean': np.mean(scores),
-                'std': np.std(scores),
-                'count': len(recent)
+                "trend": trend,
+                "slope": slope,
+                "mean": np.mean(scores),
+                "std": np.std(scores),
+                "count": len(recent),
             }
 
     def get_stats(self) -> Dict:
@@ -476,15 +484,15 @@ class SentimentMonitor:
         with self._lock:
             return {
                 **self._stats,
-                'snapshot_count': len(self.snapshots),
-                'change_point_count': len(self.change_points),
-                'cusum_stats': {
-                    'reference': self.cusum.reference_value,
-                    'pos_cumsum': self.cusum.pos_cumsum,
-                    'neg_cumsum': self.cusum.neg_cumsum
+                "snapshot_count": len(self.snapshots),
+                "change_point_count": len(self.change_points),
+                "cusum_stats": {
+                    "reference": self.cusum.reference_value,
+                    "pos_cumsum": self.cusum.pos_cumsum,
+                    "neg_cumsum": self.cusum.neg_cumsum,
                 },
-                'z_score_stats': self.z_score.get_stats(),
-                'window_stats': self.sliding_window.get_window_stats()
+                "z_score_stats": self.z_score.get_stats(),
+                "window_stats": self.sliding_window.get_window_stats(),
             }
 
     def get_recent_change_points(self, limit: int = 20) -> List[Dict]:
@@ -503,9 +511,9 @@ class SentimentMonitor:
             self.snapshots.clear()
             self.change_points.clear()
             self._stats = {
-                'total_updates': 0,
-                'change_points_detected': 0,
-                'by_method': {m.value: 0 for m in DetectionMethod}
+                "total_updates": 0,
+                "change_points_detected": 0,
+                "by_method": {m.value: 0 for m in DetectionMethod},
             }
 
 
@@ -513,14 +521,14 @@ sentiment_monitor = SentimentMonitor()
 
 
 __all__ = [
-    'ChangePointType',
-    'DetectionMethod',
-    'ChangePoint',
-    'SentimentSnapshot',
-    'CUSUMDetector',
-    'SlidingWindowDetector',
-    'ZScoreDetector',
-    'BOCPDDetector',
-    'SentimentMonitor',
-    'sentiment_monitor'
+    "ChangePointType",
+    "DetectionMethod",
+    "ChangePoint",
+    "SentimentSnapshot",
+    "CUSUMDetector",
+    "SlidingWindowDetector",
+    "ZScoreDetector",
+    "BOCPDDetector",
+    "SentimentMonitor",
+    "sentiment_monitor",
 ]

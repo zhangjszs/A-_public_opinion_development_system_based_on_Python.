@@ -3,11 +3,11 @@
 阈值触发机制单元测试
 """
 
-import pytest
 import sys
-from datetime import datetime, timedelta
 
-sys.path.insert(0, 'src')
+import pytest
+
+sys.path.insert(0, "src")
 
 
 class TestThresholdConfig:
@@ -18,9 +18,7 @@ class TestThresholdConfig:
         from models.alert import ThresholdConfig, ThresholdOperator
 
         config = ThresholdConfig(
-            field="negative_count",
-            operator=ThresholdOperator.GREATER_THAN,
-            value=50
+            field="negative_count", operator=ThresholdOperator.GREATER_THAN, value=50
         )
 
         assert config.evaluate(60) is True
@@ -34,7 +32,7 @@ class TestThresholdConfig:
         config = ThresholdConfig(
             field="negative_count",
             operator=ThresholdOperator.GREATER_THAN_OR_EQUAL,
-            value=50
+            value=50,
         )
 
         assert config.evaluate(60) is True
@@ -46,9 +44,7 @@ class TestThresholdConfig:
         from models.alert import ThresholdConfig, ThresholdOperator
 
         config = ThresholdConfig(
-            field="sentiment_score",
-            operator=ThresholdOperator.LESS_THAN,
-            value=0.3
+            field="sentiment_score", operator=ThresholdOperator.LESS_THAN, value=0.3
         )
 
         assert config.evaluate(0.2) is True
@@ -60,10 +56,7 @@ class TestThresholdConfig:
         from models.alert import ThresholdConfig, ThresholdOperator
 
         config = ThresholdConfig(
-            field="volume",
-            operator=ThresholdOperator.BETWEEN,
-            value=10,
-            value_max=100
+            field="volume", operator=ThresholdOperator.BETWEEN, value=10, value_max=100
         )
 
         assert config.evaluate(50) is True
@@ -80,15 +73,15 @@ class TestThresholdConfig:
             field="test_field",
             operator=ThresholdOperator.GREATER_THAN,
             value=100,
-            time_window_minutes=30
+            time_window_minutes=30,
         )
 
         result = config.to_dict()
 
-        assert result['field'] == "test_field"
-        assert result['operator'] == "greater_than"
-        assert result['value'] == 100
-        assert result['time_window_minutes'] == 30
+        assert result["field"] == "test_field"
+        assert result["operator"] == "greater_than"
+        assert result["value"] == 100
+        assert result["time_window_minutes"] == 30
 
 
 class TestThresholdValidator:
@@ -103,7 +96,7 @@ class TestThresholdValidator:
             field="negative_count",
             operator=ThresholdOperator.GREATER_THAN,
             value=50,
-            time_window_minutes=30
+            time_window_minutes=30,
         )
 
         valid, msg = ThresholdValidator.validate_threshold(config)
@@ -116,9 +109,7 @@ class TestThresholdValidator:
         from services.alert_service import ThresholdValidator
 
         config = ThresholdConfig(
-            field="",
-            operator=ThresholdOperator.GREATER_THAN,
-            value=50
+            field="", operator=ThresholdOperator.GREATER_THAN, value=50
         )
 
         valid, msg = ThresholdValidator.validate_threshold(config)
@@ -131,9 +122,7 @@ class TestThresholdValidator:
         from services.alert_service import ThresholdValidator
 
         config = ThresholdConfig(
-            field="test",
-            operator=ThresholdOperator.GREATER_THAN,
-            value=-10
+            field="test", operator=ThresholdOperator.GREATER_THAN, value=-10
         )
 
         valid, msg = ThresholdValidator.validate_threshold(config)
@@ -146,9 +135,7 @@ class TestThresholdValidator:
         from services.alert_service import ThresholdValidator
 
         config = ThresholdConfig(
-            field="test",
-            operator=ThresholdOperator.BETWEEN,
-            value=10
+            field="test", operator=ThresholdOperator.BETWEEN, value=10
         )
 
         valid, msg = ThresholdValidator.validate_threshold(config)
@@ -157,7 +144,13 @@ class TestThresholdValidator:
 
     def test_validate_rule(self):
         """测试规则验证"""
-        from models.alert import AlertRule, AlertType, AlertLevel, ThresholdConfig, ThresholdOperator
+        from models.alert import (
+            AlertLevel,
+            AlertRule,
+            AlertType,
+            ThresholdConfig,
+            ThresholdOperator,
+        )
         from services.alert_service import ThresholdValidator
 
         rule = AlertRule(
@@ -169,9 +162,9 @@ class TestThresholdValidator:
                 ThresholdConfig(
                     field="negative_count",
                     operator=ThresholdOperator.GREATER_THAN,
-                    value=50
+                    value=50,
                 )
-            ]
+            ],
         )
 
         valid, errors = ThresholdValidator.validate_rule(rule)
@@ -246,12 +239,12 @@ class TestThresholdChecker:
 
         stats = checker.get_metric_stats("test_metric", time_window_minutes=60)
 
-        assert stats['count'] == 3
-        assert stats['sum'] == 60
-        assert stats['avg'] == 20
-        assert stats['min'] == 10
-        assert stats['max'] == 30
-        assert stats['latest'] == 30
+        assert stats["count"] == 3
+        assert stats["sum"] == 60
+        assert stats["avg"] == 20
+        assert stats["min"] == 10
+        assert stats["max"] == 30
+        assert stats["latest"] == 30
 
     def test_check_threshold(self):
         """测试阈值检查"""
@@ -260,9 +253,7 @@ class TestThresholdChecker:
 
         checker = ThresholdChecker()
         config = ThresholdConfig(
-            field="test",
-            operator=ThresholdOperator.GREATER_THAN,
-            value=50
+            field="test", operator=ThresholdOperator.GREATER_THAN, value=50
         )
 
         assert checker.check_threshold(config, 60) is True
@@ -290,11 +281,7 @@ class TestAlertRuleEngine:
 
         engine = AlertRuleEngine()
 
-        metrics = {
-            'negative_count': 60,
-            'total_count': 100,
-            'time_window_minutes': 30
-        }
+        metrics = {"negative_count": 60, "total_count": 100, "time_window_minutes": 30}
 
         alerts = engine.check_alerts(metrics)
 
@@ -308,9 +295,9 @@ class TestAlertRuleEngine:
         engine = AlertRuleEngine()
 
         metrics = {
-            'current_count': 100,
-            'baseline_count': 20,
-            'time_window_minutes': 60
+            "current_count": 100,
+            "baseline_count": 20,
+            "time_window_minutes": 60,
         }
 
         alerts = engine.check_alerts(metrics)
@@ -325,9 +312,9 @@ class TestAlertRuleEngine:
         engine = AlertRuleEngine()
 
         metrics = {
-            'current_sentiment': 0.2,
-            'previous_sentiment': 0.7,
-            'time_window_minutes': 30
+            "current_sentiment": 0.2,
+            "previous_sentiment": 0.7,
+            "time_window_minutes": 30,
         }
 
         alerts = engine.check_alerts(metrics)
@@ -342,12 +329,18 @@ class TestAlertRuleEngine:
         engine = AlertRuleEngine()
         rules = engine.get_rules()
 
-        priorities = [r['priority'] for r in rules]
+        priorities = [r["priority"] for r in rules]
         assert priorities == sorted(priorities, reverse=True)
 
     def test_add_rule(self):
         """测试添加规则"""
-        from models.alert import AlertRule, AlertType, AlertLevel, ThresholdConfig, ThresholdOperator
+        from models.alert import (
+            AlertLevel,
+            AlertRule,
+            AlertType,
+            ThresholdConfig,
+            ThresholdOperator,
+        )
         from services.alert_service import AlertRuleEngine
 
         engine = AlertRuleEngine()
@@ -361,9 +354,9 @@ class TestAlertRuleEngine:
                 ThresholdConfig(
                     field="custom_field",
                     operator=ThresholdOperator.GREATER_THAN,
-                    value=100
+                    value=100,
                 )
-            ]
+            ],
         )
 
         success, msg = engine.add_rule(rule)
@@ -386,19 +379,11 @@ class TestAlertRuleEngine:
 
         engine = AlertRuleEngine()
 
-        metrics = {
-            'negative_count': 60,
-            'total_count': 100,
-            'time_window_minutes': 30
-        }
+        metrics = {"negative_count": 60, "total_count": 100, "time_window_minutes": 30}
 
         engine.check_alerts(metrics)
 
-        metrics2 = {
-            'negative_count': 70,
-            'total_count': 100,
-            'time_window_minutes': 30
-        }
+        metrics2 = {"negative_count": 70, "total_count": 100, "time_window_minutes": 30}
 
         alerts2 = engine.check_alerts(metrics2)
         negative_alerts = [a for a in alerts2 if a.rule_id == "negative_surge"]
@@ -412,12 +397,12 @@ class TestAlertRuleEngine:
 
         stats = engine.get_stats()
 
-        assert 'total_alerts' in stats
-        assert 'unread_count' in stats
-        assert 'level_distribution' in stats
-        assert 'type_distribution' in stats
-        assert 'active_rules' in stats
+        assert "total_alerts" in stats
+        assert "unread_count" in stats
+        assert "level_distribution" in stats
+        assert "type_distribution" in stats
+        assert "active_rules" in stats
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v', '--tb=short'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v", "--tb=short"])

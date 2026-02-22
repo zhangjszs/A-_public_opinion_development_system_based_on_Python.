@@ -3,12 +3,12 @@
 情感突变检测算法单元测试
 """
 
-import pytest
 import sys
 from datetime import datetime, timedelta
-import numpy as np
 
-sys.path.insert(0, 'src')
+import pytest
+
+sys.path.insert(0, "src")
 
 
 class TestCUSUMDetector:
@@ -36,7 +36,7 @@ class TestCUSUMDetector:
 
     def test_positive_change(self):
         """测试正向变化检测"""
-        from services.sentiment_monitor import CUSUMDetector, ChangePointType
+        from services.sentiment_monitor import ChangePointType, CUSUMDetector
 
         detector = CUSUMDetector(reference_value=0.5, threshold=1.0, delta=0.2)
 
@@ -54,7 +54,7 @@ class TestCUSUMDetector:
 
     def test_negative_change(self):
         """测试负向变化检测"""
-        from services.sentiment_monitor import CUSUMDetector, ChangePointType
+        from services.sentiment_monitor import ChangePointType, CUSUMDetector
 
         detector = CUSUMDetector(reference_value=0.5, threshold=1.0, delta=0.2)
 
@@ -132,8 +132,8 @@ class TestSlidingWindowDetector:
 
         stats = detector.get_window_stats()
 
-        assert 'window1' in stats
-        assert 'window2' in stats
+        assert "window1" in stats
+        assert "window2" in stats
 
 
 class TestZScoreDetector:
@@ -159,8 +159,9 @@ class TestZScoreDetector:
 
     def test_detect_spike(self):
         """测试尖峰检测"""
-        from services.sentiment_monitor import ZScoreDetector, ChangePointType
         import random
+
+        from services.sentiment_monitor import ChangePointType, ZScoreDetector
 
         detector = ZScoreDetector(history_size=50, threshold=2.0)
 
@@ -175,8 +176,9 @@ class TestZScoreDetector:
 
     def test_detect_drop(self):
         """测试下降检测"""
-        from services.sentiment_monitor import ZScoreDetector, ChangePointType
         import random
+
+        from services.sentiment_monitor import ChangePointType, ZScoreDetector
 
         detector = ZScoreDetector(history_size=50, threshold=2.0)
 
@@ -200,9 +202,9 @@ class TestZScoreDetector:
 
         stats = detector.get_stats()
 
-        assert 'mean' in stats
-        assert 'std' in stats
-        assert stats['size'] == 50
+        assert "mean" in stats
+        assert "std" in stats
+        assert stats["size"] == 50
 
 
 class TestBOCPDDetector:
@@ -270,7 +272,7 @@ class TestSentimentMonitor:
             sentiment_score=0.5,
             positive_ratio=0.4,
             negative_ratio=0.3,
-            neutral_ratio=0.3
+            neutral_ratio=0.3,
         )
 
         change_points = monitor.update(snapshot)
@@ -286,19 +288,19 @@ class TestSentimentMonitor:
         base_time = datetime.now() - timedelta(minutes=60)
         for i in range(30):
             snapshot = SentimentSnapshot(
-                timestamp=base_time + timedelta(minutes=i*2),
+                timestamp=base_time + timedelta(minutes=i * 2),
                 sentiment_score=0.5 + i * 0.01,
                 positive_ratio=0.4,
                 negative_ratio=0.3,
-                neutral_ratio=0.3
+                neutral_ratio=0.3,
             )
             monitor.update(snapshot)
 
         trend = monitor.get_trend(window_minutes=60)
 
-        assert 'trend' in trend
-        assert 'slope' in trend
-        assert trend['trend'] in ['rising', 'falling', 'stable']
+        assert "trend" in trend
+        assert "slope" in trend
+        assert trend["trend"] in ["rising", "falling", "stable"]
 
     def test_get_stats(self):
         """测试获取统计"""
@@ -312,18 +314,22 @@ class TestSentimentMonitor:
                 sentiment_score=0.5,
                 positive_ratio=0.4,
                 negative_ratio=0.3,
-                neutral_ratio=0.3
+                neutral_ratio=0.3,
             )
             monitor.update(snapshot)
 
         stats = monitor.get_stats()
 
-        assert 'total_updates' in stats
-        assert stats['total_updates'] == 10
+        assert "total_updates" in stats
+        assert stats["total_updates"] == 10
 
     def test_callback(self):
         """测试回调"""
-        from services.sentiment_monitor import SentimentMonitor, SentimentSnapshot, ChangePoint
+        from services.sentiment_monitor import (
+            ChangePoint,
+            SentimentMonitor,
+            SentimentSnapshot,
+        )
 
         monitor = SentimentMonitor()
         callback_called = []
@@ -339,7 +345,7 @@ class TestSentimentMonitor:
                 sentiment_score=0.5,
                 positive_ratio=0.4,
                 negative_ratio=0.3,
-                neutral_ratio=0.3
+                neutral_ratio=0.3,
             )
             monitor.update(snapshot)
 
@@ -348,7 +354,7 @@ class TestSentimentMonitor:
             sentiment_score=0.95,
             positive_ratio=0.8,
             negative_ratio=0.1,
-            neutral_ratio=0.1
+            neutral_ratio=0.1,
         )
         monitor.update(snapshot)
 
@@ -366,14 +372,14 @@ class TestSentimentMonitor:
                 sentiment_score=0.5 + i * 0.01,
                 positive_ratio=0.4,
                 negative_ratio=0.3,
-                neutral_ratio=0.3
+                neutral_ratio=0.3,
             )
             monitor.update(snapshot)
 
         monitor.reset()
 
         stats = monitor.get_stats()
-        assert stats['total_updates'] == 0
+        assert stats["total_updates"] == 0
 
 
 class TestChangePoint:
@@ -382,7 +388,9 @@ class TestChangePoint:
     def test_to_dict(self):
         """测试序列化"""
         from services.sentiment_monitor import (
-            ChangePoint, ChangePointType, DetectionMethod
+            ChangePoint,
+            ChangePointType,
+            DetectionMethod,
         )
 
         cp = ChangePoint(
@@ -394,19 +402,19 @@ class TestChangePoint:
             after_value=0.9,
             magnitude=0.4,
             confidence=0.85,
-            metadata={'z_score': 3.5}
+            metadata={"z_score": 3.5},
         )
 
         result = cp.to_dict()
 
-        assert result['index'] == 10
-        assert result['change_type'] == 'spike'
-        assert result['method'] == 'z_score'
-        assert result['before_value'] == 0.5
-        assert result['after_value'] == 0.9
-        assert result['magnitude'] == 0.4
-        assert result['confidence'] == 0.85
+        assert result["index"] == 10
+        assert result["change_type"] == "spike"
+        assert result["method"] == "z_score"
+        assert result["before_value"] == 0.5
+        assert result["after_value"] == 0.9
+        assert result["magnitude"] == 0.4
+        assert result["confidence"] == 0.85
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v', '--tb=short'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v", "--tb=short"])

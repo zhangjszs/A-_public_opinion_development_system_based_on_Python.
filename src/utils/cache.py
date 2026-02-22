@@ -41,7 +41,8 @@ class LRUCache:
     def _evict_expired(self):
         current_time = time.time()
         expired_keys = [
-            key for key, expire_time in self.expire_times.items()
+            key
+            for key, expire_time in self.expire_times.items()
             if current_time > expire_time
         ]
         for key in expired_keys:
@@ -107,22 +108,22 @@ class LRUCache:
             hit_rate = (self.hits / max(total_requests, 1)) * 100
             uptime = time.time() - self.start_time
             return {
-                'type': 'LRU Memory Cache',
-                'max_size': self.max_size,
-                'current_size': len(self.cache),
-                'hits': self.hits,
-                'misses': self.misses,
-                'hit_rate': f"{hit_rate:.2f}%",
-                'evictions': self.evictions,
-                'uptime_hours': uptime / 3600,
-                'requests_per_second': total_requests / max(uptime, 1)
+                "type": "LRU Memory Cache",
+                "max_size": self.max_size,
+                "current_size": len(self.cache),
+                "hits": self.hits,
+                "misses": self.misses,
+                "hit_rate": f"{hit_rate:.2f}%",
+                "evictions": self.evictions,
+                "uptime_hours": uptime / 3600,
+                "requests_per_second": total_requests / max(uptime, 1),
             }
 
 
 class FileCache:
     """文件缓存类"""
 
-    def __init__(self, cache_dir='./cache', default_timeout=3600):
+    def __init__(self, cache_dir="./cache", default_timeout=3600):
         self.cache_dir = cache_dir
         self.default_timeout = default_timeout
         if not os.path.exists(cache_dir):
@@ -136,10 +137,10 @@ class FileCache:
         if os.path.exists(cache_path):
             if time.time() - os.path.getmtime(cache_path) < self.default_timeout:
                 try:
-                    with open(cache_path, 'r', encoding='utf-8') as f:
+                    with open(cache_path, encoding="utf-8") as f:
                         payload = json.load(f)
-                    if isinstance(payload, dict) and 'data' in payload:
-                        return payload['data']
+                    if isinstance(payload, dict) and "data" in payload:
+                        return payload["data"]
                     return payload
                 except (json.JSONDecodeError, OSError, ValueError, TypeError):
                     os.remove(cache_path)
@@ -151,8 +152,8 @@ class FileCache:
         cache_path = self._get_cache_path(key)
         temp_path = f"{cache_path}.tmp"
         try:
-            with open(temp_path, 'w', encoding='utf-8') as f:
-                json.dump({'data': value}, f, ensure_ascii=False, default=str)
+            with open(temp_path, "w", encoding="utf-8") as f:
+                json.dump({"data": value}, f, ensure_ascii=False, default=str)
             os.replace(temp_path, cache_path)
         except Exception as e:
             logger.error(f"缓存写入失败: {e}")
@@ -161,7 +162,7 @@ class FileCache:
 
     def clear(self):
         for filename in os.listdir(self.cache_dir):
-            if filename.endswith('.cache'):
+            if filename.endswith(".cache"):
                 os.remove(os.path.join(self.cache_dir, filename))
 
 
@@ -185,6 +186,7 @@ def cache_result(ttl=300, timeout=None, use_file_cache=False, key_func=None):
     """
     if timeout is not None:
         ttl = timeout
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -213,7 +215,9 @@ def cache_result(ttl=300, timeout=None, use_file_cache=False, key_func=None):
                 file_cache.set(cache_key, result)
 
             return result
+
         return wrapper
+
     return decorator
 
 
@@ -227,11 +231,21 @@ def clear_all_cache():
 def get_cache_info():
     """获取缓存信息"""
     return {
-        'memory_cache_size': memory_cache.size(),
-        'memory_cache_stats': memory_cache.get_stats(),
-        'file_cache_dir': file_cache.cache_dir,
-        'file_cache_count': len([f for f in os.listdir(file_cache.cache_dir) if f.endswith('.cache')])
+        "memory_cache_size": memory_cache.size(),
+        "memory_cache_stats": memory_cache.get_stats(),
+        "file_cache_dir": file_cache.cache_dir,
+        "file_cache_count": len(
+            [f for f in os.listdir(file_cache.cache_dir) if f.endswith(".cache")]
+        ),
     }
 
 
-__all__ = ['LRUCache', 'FileCache', 'memory_cache', 'file_cache', 'cache_result', 'clear_all_cache', 'get_cache_info']
+__all__ = [
+    "LRUCache",
+    "FileCache",
+    "memory_cache",
+    "file_cache",
+    "cache_result",
+    "clear_all_cache",
+    "get_cache_info",
+]

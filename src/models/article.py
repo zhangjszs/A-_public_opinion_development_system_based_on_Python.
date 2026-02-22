@@ -6,7 +6,7 @@ from database import Base
 
 
 class Article(Base):
-    __tablename__ = 'article'
+    __tablename__ = "article"
 
     id = Column(String(50), primary_key=True)
     likeNum = Column(Integer, default=0)
@@ -24,4 +24,4 @@ class Article(Base):
     isVip = Column(Integer, default=0)
 
     def __repr__(self):
-        return f'<Article {self.id!r}>'
+        return f"<Article {self.id!r}>"

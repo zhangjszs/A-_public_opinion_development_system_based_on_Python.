@@ -10,7 +10,6 @@ import json
 import logging
 import os
 from abc import ABC, abstractmethod
-from functools import lru_cache
 from typing import List, Optional
 
 import requests
@@ -25,12 +24,15 @@ logger = logging.getLogger(__name__)
 # 尝试导入Redis（可选依赖）
 try:
     import redis
+
     redis_params = Config.get_redis_connection_params()
-    redis_params.update({
-        'socket_connect_timeout': 5,
-        'socket_timeout': 5,
-        'health_check_interval': 30,
-    })
+    redis_params.update(
+        {
+            "socket_connect_timeout": 5,
+            "socket_timeout": 5,
+            "health_check_interval": 30,
+        }
+    )
     redis_client = redis.Redis(**redis_params)
     # 测试连接
     redis_client.ping()
@@ -44,45 +46,59 @@ except Exception as e:
 
 class SentimentResult:
     """统一的情感分析结果对象"""
-    def __init__(self, score, label, reasoning=None, emotion=None, keywords=None, cached=False, source='unknown'):
-        self.score = score          # 0-1 float
-        self.label = label          # positive/negative/neutral
+
+    def __init__(
+        self,
+        score,
+        label,
+        reasoning=None,
+        emotion=None,
+        keywords=None,
+        cached=False,
+        source="unknown",
+    ):
+        self.score = score  # 0-1 float
+        self.label = label  # positive/negative/neutral
         self.reasoning = reasoning  # 分析理由 (LLM特有)
-        self.emotion = emotion      # 细粒度情感 (喜怒哀乐等)
-        self.keywords = keywords or []    # 关键词列表
-        self.cached = cached        # 是否来自缓存
-        self.source = source        # 来源：cache/llm/snownlp/fallback
+        self.emotion = emotion  # 细粒度情感 (喜怒哀乐等)
+        self.keywords = keywords or []  # 关键词列表
+        self.cached = cached  # 是否来自缓存
+        self.source = source  # 来源：cache/llm/snownlp/fallback
 
     def to_dict(self):
         return {
-            'score': self.score,
-            'label': self.label,
-            'reasoning': self.reasoning,
-            'emotion': self.emotion,
-            'keywords': self.keywords,
-            'cached': self.cached,
-            'source': self.source
+            "score": self.score,
+            "label": self.label,
+            "reasoning": self.reasoning,
+            "emotion": self.emotion,
+            "keywords": self.keywords,
+            "cached": self.cached,
+            "source": self.source,
         }
 
 
 class SentimentSchema(BaseModel):
     """LLM输出Schema校验"""
-    score: float = Field(ge=0.0, le=1.0, default=0.5, description="情感得分，0-1之间")
-    label: str = Field(default='neutral', description="情感标签")
-    emotion: Optional[str] = Field(default='无感', description="细粒度情绪")
-    reasoning: Optional[str] = Field(default='', max_length=100, description="分析理由")
-    keywords: Optional[List[str]] = Field(default_factory=list, description="关键词列表")
 
-    @validator('label')
+    score: float = Field(ge=0.0, le=1.0, default=0.5, description="情感得分，0-1之间")
+    label: str = Field(default="neutral", description="情感标签")
+    emotion: Optional[str] = Field(default="无感", description="细粒度情绪")
+    reasoning: Optional[str] = Field(default="", max_length=100, description="分析理由")
+    keywords: Optional[List[str]] = Field(
+        default_factory=list, description="关键词列表"
+    )
+
+    @validator("label")
     def validate_label(cls, v):
-        allowed = ['positive', 'neutral', 'negative']
+        allowed = ["positive", "neutral", "negative"]
         if v not in allowed:
-            return 'neutral'  # 非法值自动转为neutral
+            return "neutral"  # 非法值自动转为neutral
         return v
 
 
 class SentimentStrategy(ABC):
     """情感分析策略基类"""
+
     @abstractmethod
     def analyze(self, text: str) -> SentimentResult:
         pass
@@ -90,25 +106,26 @@ class SentimentStrategy(ABC):
 
 class SnowNLPStrategy(SentimentStrategy):
     """基础策略: 使用 SnowNLP (本地/快速)"""
+
     def analyze(self, text: str) -> SentimentResult:
         if not text:
-            return SentimentResult(0.5, 'neutral', source='snownlp')
+            return SentimentResult(0.5, "neutral", source="snownlp")
 
         s = SnowNLP(text)
         score = s.sentiments
 
-        label = 'neutral'
+        label = "neutral"
         if score > 0.6:
-            label = 'positive'
+            label = "positive"
         elif score < 0.4:
-            label = 'negative'
+            label = "negative"
 
         return SentimentResult(
             score=score,
             label=label,
             keywords=s.keywords(5),
             reasoning="基于文本极性概率计算",
-            source='snownlp'
+            source="snownlp",
         )
 
 
@@ -129,13 +146,13 @@ def get_from_cache(text: str, mode: str) -> Optional[SentimentResult]:
         if cached:
             data = json.loads(cached)
             return SentimentResult(
-                score=data.get('score', 0.5),
-                label=data.get('label', 'neutral'),
-                reasoning=data.get('reasoning'),
-                emotion=data.get('emotion'),
-                keywords=data.get('keywords', []),
+                score=data.get("score", 0.5),
+                label=data.get("label", "neutral"),
+                reasoning=data.get("reasoning"),
+                emotion=data.get("emotion"),
+                keywords=data.get("keywords", []),
                 cached=True,
-                source='cache'
+                source="cache",
             )
     except Exception as e:
         logger.warning(f"缓存读取失败: {e}")
@@ -151,11 +168,11 @@ def save_to_cache(text: str, mode: str, result: SentimentResult) -> None:
     try:
         cache_key = get_cache_key(text, mode)
         data = {
-            'score': result.score,
-            'label': result.label,
-            'reasoning': result.reasoning,
-            'emotion': result.emotion,
-            'keywords': result.keywords
+            "score": result.score,
+            "label": result.label,
+            "reasoning": result.reasoning,
+            "emotion": result.emotion,
+            "keywords": result.keywords,
         }
         redis_client.setex(cache_key, Config.LLM_CACHE_TTL, json.dumps(data))
     except Exception as e:
@@ -173,7 +190,7 @@ class LLMStrategy(SentimentStrategy):
 
     def analyze(self, text: str) -> SentimentResult:
         # 1. 检查缓存
-        cached_result = get_from_cache(text, 'smart')
+        cached_result = get_from_cache(text, "smart")
         if cached_result:
             logger.debug(f"缓存命中: {text[:30]}...")
             return cached_result
@@ -187,7 +204,7 @@ class LLMStrategy(SentimentStrategy):
         try:
             result = self._analyze_with_circuit(text)
             # 写入缓存
-            save_to_cache(text, 'smart', result)
+            save_to_cache(text, "smart", result)
             return result
         except Exception as e:
             logger.error(f"LLM熔断器触发，降级到SnowNLP: {e}")
@@ -213,13 +230,13 @@ class LLMStrategy(SentimentStrategy):
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
         payload = {
             "model": self.model,
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.3
+            "temperature": 0.3,
         }
 
         # 发送请求（带连接和读取超时）
@@ -227,12 +244,12 @@ class LLMStrategy(SentimentStrategy):
             self.api_url,
             headers=headers,
             json=payload,
-            timeout=(3, self.timeout)  # (connect timeout, read timeout)
+            timeout=(3, self.timeout),  # (connect timeout, read timeout)
         )
         response.raise_for_status()
 
         result_json = response.json()
-        content = result_json['choices'][0]['message']['content']
+        content = result_json["choices"][0]["message"]["content"]
 
         # 解析和校验
         return self._parse_and_validate(content)
@@ -240,7 +257,7 @@ class LLMStrategy(SentimentStrategy):
     def _parse_and_validate(self, content: str) -> SentimentResult:
         """解析LLM输出并进行Schema校验"""
         # 清理可能的 markdown 标记
-        content = content.replace('```json', '').replace('```', '').strip()
+        content = content.replace("```json", "").replace("```", "").strip()
 
         try:
             # 尝试解析JSON
@@ -255,7 +272,7 @@ class LLMStrategy(SentimentStrategy):
                 reasoning=validated.reasoning,
                 emotion=validated.emotion,
                 keywords=validated.keywords,
-                source='llm'
+                source="llm",
             )
 
         except json.JSONDecodeError as e:
@@ -271,16 +288,24 @@ class LLMStrategy(SentimentStrategy):
         import re
 
         # 尝试提取score
-        score_match = re.search(r'["\']?score["\']?\s*[:=]\s*(0?\.\d+|1\.0|[01])', content)
+        score_match = re.search(
+            r'["\']?score["\']?\s*[:=]\s*(0?\.\d+|1\.0|[01])', content
+        )
         score = float(score_match.group(1)) if score_match else 0.5
 
         # 尝试提取label
-        label_match = re.search(r'["\']?label["\']?\s*[:=]\s*["\']?(positive|neutral|negative)', content, re.IGNORECASE)
-        label = label_match.group(1).lower() if label_match else 'neutral'
+        label_match = re.search(
+            r'["\']?label["\']?\s*[:=]\s*["\']?(positive|neutral|negative)',
+            content,
+            re.IGNORECASE,
+        )
+        label = label_match.group(1).lower() if label_match else "neutral"
 
         # 尝试提取emotion
-        emotion_match = re.search(r'["\']?emotion["\']?\s*[:=]\s*["\']?([^"\']+)', content)
-        emotion = emotion_match.group(1) if emotion_match else '无感'
+        emotion_match = re.search(
+            r'["\']?emotion["\']?\s*[:=]\s*["\']?([^"\']+)', content
+        )
+        emotion = emotion_match.group(1) if emotion_match else "无感"
 
         logger.warning(f"容错解析结果: score={score}, label={label}, emotion={emotion}")
 
@@ -290,14 +315,17 @@ class LLMStrategy(SentimentStrategy):
             emotion=emotion,
             reasoning="容错解析（LLM输出非标准JSON）",
             keywords=[],
-            source='llm_fallback'
+            source="llm_fallback",
         )
 
 
 class CustomModelStrategy(SentimentStrategy):
     """自定义模型策略 (sklearn)"""
+
     def __init__(self):
-        self.model_path = os.path.join(Config.BASE_DIR, 'model', 'best_sentiment_model.pkl')
+        self.model_path = os.path.join(
+            Config.BASE_DIR, "model", "best_sentiment_model.pkl"
+        )
         self._model = None
 
     def _load_model(self):
@@ -305,8 +333,9 @@ class CustomModelStrategy(SentimentStrategy):
             import sys
 
             import joblib
+
             # 添加 model 目录 to sys.path 以便 pickle 可以找到 model_utils
-            model_dir = os.path.join(Config.BASE_DIR, 'model')
+            model_dir = os.path.join(Config.BASE_DIR, "model")
             if model_dir not in sys.path:
                 sys.path.append(model_dir)
 
@@ -314,7 +343,9 @@ class CustomModelStrategy(SentimentStrategy):
             try:
                 import model_utils
             except ImportError:
-                logger.warning("Failed to import model_utils, custom model loading might fail")
+                logger.warning(
+                    "Failed to import model_utils, custom model loading might fail"
+                )
 
             if os.path.exists(self.model_path):
                 self._model = joblib.load(self.model_path)
@@ -337,21 +368,24 @@ class CustomModelStrategy(SentimentStrategy):
                 score = float(max(probs))
 
             # 映射标签
-            label_map = {0: 'negative', 1: 'neutral', 2: 'positive'}
-            label = label_map.get(prediction, 'neutral')
+            label_map = {0: "negative", 1: "neutral", 2: "positive"}
+            label = label_map.get(prediction, "neutral")
 
             # 如果预测出来是 int, 尝试转换
             if isinstance(prediction, str):
-                if prediction in ['positive', 'pos']: label = 'positive'
-                elif prediction in ['negative', 'neg']: label = 'negative'
-                else: label = 'neutral'
+                if prediction in ["positive", "pos"]:
+                    label = "positive"
+                elif prediction in ["negative", "neg"]:
+                    label = "negative"
+                else:
+                    label = "neutral"
 
             return SentimentResult(
                 score=score,
                 label=label,
                 reasoning="基于自定义训练模型预测",
                 keywords=[],
-                source='custom_model'
+                source="custom_model",
             )
         except Exception as e:
             logger.error(f"自定义模型分析失败: {e}")
@@ -362,7 +396,7 @@ class SentimentService:
     """情感分析服务工厂"""
 
     @staticmethod
-    def analyze(text: str, mode: str = 'custom') -> dict:
+    def analyze(text: str, mode: str = "custom") -> dict:
         """
         执行情感分析
         Args:
@@ -371,9 +405,9 @@ class SentimentService:
         Returns:
             dict: 分析结果字典
         """
-        if mode == 'smart':
+        if mode == "smart":
             strategy = LLMStrategy()
-        elif mode == 'custom':
+        elif mode == "custom":
             strategy = CustomModelStrategy()
         else:
             strategy = SnowNLPStrategy()
@@ -382,7 +416,7 @@ class SentimentService:
         return result.to_dict()
 
     @staticmethod
-    def analyze_batch(texts: list, mode: str = 'smart') -> list:
+    def analyze_batch(texts: list, mode: str = "smart") -> list:
         """
         批量情感分析
         Args:
@@ -399,30 +433,38 @@ class SentimentService:
             except Exception as e:
                 logger.error(f"批量分析失败: {e}")
                 # 失败时返回中性结果
-                results.append({
-                    'score': 0.5,
-                    'label': 'neutral',
-                    'reasoning': '分析失败',
-                    'emotion': '未知',
-                    'keywords': [],
-                    'error': True
-                })
+                results.append(
+                    {
+                        "score": 0.5,
+                        "label": "neutral",
+                        "reasoning": "分析失败",
+                        "emotion": "未知",
+                        "keywords": [],
+                        "error": True,
+                    }
+                )
         return results
 
     @staticmethod
-    def analyze_distribution(texts: list, mode: str = 'simple', sample_size: int = 100) -> dict:
+    def analyze_distribution(
+        texts: list, mode: str = "simple", sample_size: int = 100
+    ) -> dict:
         """
         统计文本情感分布并使用 Redis 缓存结果，避免接口层重复计算。
         """
-        sentiment_counts = {'正面': 0, '中性': 0, '负面': 0}
-        sample_texts = [str(text).strip() for text in (texts or []) if str(text).strip()][:sample_size]
+        sentiment_counts = {"正面": 0, "中性": 0, "负面": 0}
+        sample_texts = [
+            str(text).strip() for text in (texts or []) if str(text).strip()
+        ][:sample_size]
 
         if not sample_texts:
             return sentiment_counts
 
         cache_key = None
         if REDIS_AVAILABLE:
-            key_data = f"sentiment:distribution:{mode}:{sample_size}:{'|'.join(sample_texts)}"
+            key_data = (
+                f"sentiment:distribution:{mode}:{sample_size}:{'|'.join(sample_texts)}"
+            )
             cache_key = hashlib.sha256(key_data.encode()).hexdigest()
             try:
                 cached = redis_client.get(cache_key)
@@ -430,26 +472,30 @@ class SentimentService:
                     loaded = json.loads(cached)
                     if isinstance(loaded, dict):
                         return {
-                            '正面': int(loaded.get('正面', 0)),
-                            '中性': int(loaded.get('中性', 0)),
-                            '负面': int(loaded.get('负面', 0)),
+                            "正面": int(loaded.get("正面", 0)),
+                            "中性": int(loaded.get("中性", 0)),
+                            "负面": int(loaded.get("负面", 0)),
                         }
             except Exception as e:
                 logger.warning(f"情感分布缓存读取失败: {e}")
 
         results = SentimentService.analyze_batch(sample_texts, mode)
         for item in results:
-            label = (item or {}).get('label', 'neutral')
-            if label == 'positive':
-                sentiment_counts['正面'] += 1
-            elif label == 'negative':
-                sentiment_counts['负面'] += 1
+            label = (item or {}).get("label", "neutral")
+            if label == "positive":
+                sentiment_counts["正面"] += 1
+            elif label == "negative":
+                sentiment_counts["负面"] += 1
             else:
-                sentiment_counts['中性'] += 1
+                sentiment_counts["中性"] += 1
 
         if REDIS_AVAILABLE and cache_key:
             try:
-                redis_client.setex(cache_key, Config.LLM_CACHE_TTL, json.dumps(sentiment_counts, ensure_ascii=False))
+                redis_client.setex(
+                    cache_key,
+                    Config.LLM_CACHE_TTL,
+                    json.dumps(sentiment_counts, ensure_ascii=False),
+                )
             except Exception as e:
                 logger.warning(f"情感分布缓存写入失败: {e}")
 
@@ -459,15 +505,15 @@ class SentimentService:
     def get_cache_stats() -> dict:
         """获取缓存统计信息"""
         if not REDIS_AVAILABLE:
-            return {'available': False, 'message': 'Redis未连接'}
+            return {"available": False, "message": "Redis未连接"}
 
         try:
-            info = redis_client.info('memory')
+            info = redis_client.info("memory")
             return {
-                'available': True,
-                'used_memory': info.get('used_memory_human', 'N/A'),
-                'keys': redis_client.dbsize(),
-                'hit_rate': 'N/A'  # 需要更复杂的统计
+                "available": True,
+                "used_memory": info.get("used_memory_human", "N/A"),
+                "keys": redis_client.dbsize(),
+                "hit_rate": "N/A",  # 需要更复杂的统计
             }
         except Exception as e:
-            return {'available': False, 'error': str(e)}
+            return {"available": False, "error": str(e)}

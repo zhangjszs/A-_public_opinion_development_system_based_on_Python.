@@ -7,9 +7,9 @@ from .celery_sentiment import analyze_sentiment_batch, analyze_single_with_fallb
 from .celery_spider import get_task_progress, spider_comments_task, spider_search_task
 
 __all__ = [
-    'spider_search_task',
-    'spider_comments_task',
-    'get_task_progress',
-    'analyze_sentiment_batch',
-    'analyze_single_with_fallback',
+    "spider_search_task",
+    "spider_comments_task",
+    "get_task_progress",
+    "analyze_sentiment_batch",
+    "analyze_single_with_fallback",
 ]

@@ -13,11 +13,11 @@ class ArticleRepository(BaseRepository):
 
     def find_with_filter(
         self,
-        keyword: str = '',
-        start_time: str = '',
-        end_time: str = '',
-        article_type: str = '',
-        region: str = '',
+        keyword: str = "",
+        start_time: str = "",
+        end_time: str = "",
+        article_type: str = "",
+        region: str = "",
         limit: int = 10,
         offset: int = 0,
     ) -> Tuple[List[Dict[str, Any]], int]:
@@ -37,34 +37,41 @@ class ArticleRepository(BaseRepository):
 
         total = query.count()
 
-        articles = query.order_by(desc(Article.created_at)).limit(limit).offset(offset).all()
+        articles = (
+            query.order_by(desc(Article.created_at)).limit(limit).offset(offset).all()
+        )
 
         result = []
         for a in articles:
-            result.append({
-                'id': a.id,
-                'likeNum': a.likeNum,
-                'commentsLen': a.commentsLen,
-                'reposts_count': a.reposts_count,
-                'region': a.region,
-                'content': a.content,
-                'contentLen': a.contentLen,
-                'created_at': a.created_at,
-                'type': a.type,
-                'detailUrl': a.detailUrl,
-                'authorAvatar': a.authorAvatar,
-                'authorName': a.authorName,
-                'authorDetail': a.authorDetail,
-                'isVip': a.isVip
-            })
+            result.append(
+                {
+                    "id": a.id,
+                    "likeNum": a.likeNum,
+                    "commentsLen": a.commentsLen,
+                    "reposts_count": a.reposts_count,
+                    "region": a.region,
+                    "content": a.content,
+                    "contentLen": a.contentLen,
+                    "created_at": a.created_at,
+                    "type": a.type,
+                    "detailUrl": a.detailUrl,
+                    "authorAvatar": a.authorAvatar,
+                    "authorName": a.authorName,
+                    "authorDetail": a.authorDetail,
+                    "isVip": a.isVip,
+                }
+            )
 
         return result, total
 
     def get_latest_update_time(self) -> Optional[str]:
         # Using session query directly for aggregate
         from sqlalchemy import func
+
         result = self.session.query(func.max(Article.created_at)).scalar()
         return result if result else None
 
     def count_by_date(self, date_str: str) -> int:
-        return self.session.query(Article).filter(Article.created_at == date_str).count()
+        return (
+            self.session.query(Article).filter(Article.created_at == date_str).count()
+        )

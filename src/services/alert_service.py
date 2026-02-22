@@ -4,19 +4,21 @@
 功能：舆情预警规则引擎、阈值检测、情感突变检测、告警抑制
 """
 
-import json
 import logging
 import threading
-import time
 import uuid
 from collections import defaultdict
-from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from models.alert import (
-    Alert, AlertHistory, AlertLevel, AlertRule,
-    AlertType, ThresholdConfig, ThresholdOperator
+    Alert,
+    AlertHistory,
+    AlertLevel,
+    AlertRule,
+    AlertType,
+    ThresholdConfig,
+    ThresholdOperator,
 )
 
 logger = logging.getLogger(__name__)
@@ -51,8 +53,8 @@ class AlertSuppression:
         """获取抑制统计"""
         with self._lock:
             return {
-                'suppressed_count': self._suppressed_count,
-                'active_rules': len(self._alert_counts)
+                "suppressed_count": self._suppressed_count,
+                "active_rules": len(self._alert_counts),
             }
 
     def reset(self, rule_id: Optional[str] = None):
@@ -105,7 +107,7 @@ class ThresholdValidator:
         for i, threshold in enumerate(rule.thresholds):
             valid, msg = ThresholdValidator.validate_threshold(threshold)
             if not valid:
-                errors.append(f"阈值{i+1}: {msg}")
+                errors.append(f"阈值{i + 1}: {msg}")
 
         return len(errors) == 0, errors
 
@@ -124,17 +126,20 @@ class ThresholdChecker:
             self._metrics_cache[metric_name].append((datetime.now(), value))
 
             if len(self._metrics_cache[metric_name]) > self._max_cache_size:
-                self._metrics_cache[metric_name] = self._metrics_cache[metric_name][-self._max_cache_size:]
+                self._metrics_cache[metric_name] = self._metrics_cache[metric_name][
+                    -self._max_cache_size :
+                ]
 
-    def get_metric_values(self, metric_name: str, time_window_minutes: int = 30) -> List[float]:
+    def get_metric_values(
+        self, metric_name: str, time_window_minutes: int = 30
+    ) -> List[float]:
         """获取时间窗口内的指标值"""
         with self._lock:
             now = datetime.now()
             cutoff = now - timedelta(minutes=time_window_minutes)
 
             values = [
-                v for t, v in self._metrics_cache.get(metric_name, [])
-                if t > cutoff
+                v for t, v in self._metrics_cache.get(metric_name, []) if t > cutoff
             ]
             return values
 
@@ -143,30 +148,24 @@ class ThresholdChecker:
         values = self.get_metric_values(metric_name, time_window_minutes)
 
         if not values:
-            return {
-                'count': 0,
-                'sum': 0,
-                'avg': 0,
-                'min': 0,
-                'max': 0,
-                'latest': 0
-            }
+            return {"count": 0, "sum": 0, "avg": 0, "min": 0, "max": 0, "latest": 0}
 
         return {
-            'count': len(values),
-            'sum': sum(values),
-            'avg': sum(values) / len(values),
-            'min': min(values),
-            'max': max(values),
-            'latest': values[-1]
+            "count": len(values),
+            "sum": sum(values),
+            "avg": sum(values) / len(values),
+            "min": min(values),
+            "max": max(values),
+            "latest": values[-1],
         }
 
     def check_threshold(self, config: ThresholdConfig, current_value: float) -> bool:
         """检查是否触发阈值"""
         return config.evaluate(current_value)
 
-    def check_multiple_thresholds(self, thresholds: List[ThresholdConfig],
-                                   metric_values: Dict[str, float]) -> Tuple[bool, List[str]]:
+    def check_multiple_thresholds(
+        self, thresholds: List[ThresholdConfig], metric_values: Dict[str, float]
+    ) -> Tuple[bool, List[str]]:
         """检查多个阈值（AND逻辑）"""
         triggered = True
         triggered_fields = []
@@ -213,14 +212,12 @@ class AlertRuleEngine:
                         field="negative_count",
                         operator=ThresholdOperator.GREATER_THAN_OR_EQUAL,
                         value=50,
-                        time_window_minutes=30
+                        time_window_minutes=30,
                     )
                 ],
-                conditions={
-                    "negative_ratio_threshold": 0.3
-                },
+                conditions={"negative_ratio_threshold": 0.3},
                 cooldown_minutes=30,
-                max_alerts_per_hour=5
+                max_alerts_per_hour=5,
             ),
             AlertRule(
                 id="volume_spike",
@@ -233,14 +230,12 @@ class AlertRuleEngine:
                         field="volume_multiplier",
                         operator=ThresholdOperator.GREATER_THAN_OR_EQUAL,
                         value=3.0,
-                        time_window_minutes=60
+                        time_window_minutes=60,
                     )
                 ],
-                conditions={
-                    "min_baseline": 10
-                },
+                conditions={"min_baseline": 10},
                 cooldown_minutes=60,
-                max_alerts_per_hour=3
+                max_alerts_per_hour=3,
             ),
             AlertRule(
                 id="sentiment_shift",
@@ -253,11 +248,11 @@ class AlertRuleEngine:
                         field="sentiment_change",
                         operator=ThresholdOperator.GREATER_THAN_OR_EQUAL,
                         value=0.3,
-                        time_window_minutes=30
+                        time_window_minutes=30,
                     )
                 ],
                 cooldown_minutes=30,
-                max_alerts_per_hour=5
+                max_alerts_per_hour=5,
             ),
             AlertRule(
                 id="hot_topic",
@@ -270,11 +265,11 @@ class AlertRuleEngine:
                         field="topic_mentions",
                         operator=ThresholdOperator.GREATER_THAN_OR_EQUAL,
                         value=100,
-                        time_window_minutes=60
+                        time_window_minutes=60,
                     )
                 ],
                 cooldown_minutes=60,
-                max_alerts_per_hour=10
+                max_alerts_per_hour=10,
             ),
             AlertRule(
                 id="keyword_match",
@@ -282,13 +277,10 @@ class AlertRuleEngine:
                 alert_type=AlertType.KEYWORD_MATCH,
                 level=AlertLevel.DANGER,
                 priority=90,
-                conditions={
-                    "keywords": [],
-                    "match_mode": "any"
-                },
+                conditions={"keywords": [], "match_mode": "any"},
                 cooldown_minutes=15,
-                max_alerts_per_hour=20
-            )
+                max_alerts_per_hour=20,
+            ),
         ]
 
         for rule in default_rules:
@@ -357,8 +349,9 @@ class AlertRuleEngine:
         elapsed = datetime.now() - rule.last_triggered
         return elapsed >= timedelta(minutes=rule.cooldown_minutes)
 
-    def _create_alert(self, rule: AlertRule, title: str, message: str,
-                      data: Dict = None) -> Alert:
+    def _create_alert(
+        self, rule: AlertRule, title: str, message: str, data: Dict = None
+    ) -> Alert:
         """创建预警消息"""
         alert = Alert(
             id=str(uuid.uuid4()),
@@ -368,12 +361,13 @@ class AlertRuleEngine:
             level=rule.level,
             title=title,
             message=message,
-            data=data or {}
+            data=data or {},
         )
         return alert
 
-    def _fire_alert(self, rule: AlertRule, title: str, message: str,
-                    data: Dict = None) -> Optional[Alert]:
+    def _fire_alert(
+        self, rule: AlertRule, title: str, message: str, data: Dict = None
+    ) -> Optional[Alert]:
         """触发预警（带抑制检查）"""
         if self.suppression.should_suppress(rule.id, rule.max_alerts_per_hour):
             logger.debug(f"预警被抑制: {rule.name}")
@@ -399,9 +393,7 @@ class AlertRuleEngine:
         triggered_alerts = []
 
         sorted_rules = sorted(
-            self.rules.values(),
-            key=lambda r: r.priority,
-            reverse=True
+            self.rules.values(), key=lambda r: r.priority, reverse=True
         )
 
         for rule in sorted_rules:
@@ -414,7 +406,9 @@ class AlertRuleEngine:
 
         return triggered_alerts
 
-    def _evaluate_rule(self, rule: AlertRule, metrics: Dict[str, float]) -> Optional[Alert]:
+    def _evaluate_rule(
+        self, rule: AlertRule, metrics: Dict[str, float]
+    ) -> Optional[Alert]:
         """评估单条规则"""
         if rule.alert_type == AlertType.NEGATIVE_SURGE:
             return self._evaluate_negative_surge(rule, metrics)
@@ -428,11 +422,13 @@ class AlertRuleEngine:
             return self._evaluate_threshold_breach(rule, metrics)
         return None
 
-    def _evaluate_negative_surge(self, rule: AlertRule, metrics: Dict[str, float]) -> Optional[Alert]:
+    def _evaluate_negative_surge(
+        self, rule: AlertRule, metrics: Dict[str, float]
+    ) -> Optional[Alert]:
         """评估负面舆情激增"""
-        negative_count = metrics.get('negative_count', 0)
-        total_count = metrics.get('total_count', 1)
-        time_window = metrics.get('time_window_minutes', 30)
+        negative_count = metrics.get("negative_count", 0)
+        total_count = metrics.get("total_count", 1)
+        time_window = metrics.get("time_window_minutes", 30)
 
         if rule.thresholds:
             threshold = rule.thresholds[0]
@@ -440,29 +436,31 @@ class AlertRuleEngine:
                 return None
 
         negative_ratio = negative_count / max(total_count, 1)
-        ratio_threshold = rule.conditions.get('negative_ratio_threshold', 0.3)
+        ratio_threshold = rule.conditions.get("negative_ratio_threshold", 0.3)
 
         if negative_ratio >= ratio_threshold:
             return self._fire_alert(
                 rule,
                 title="负面舆情激增",
-                message=f"过去{time_window}分钟内检测到{negative_count}条负面评论，占比{negative_ratio*100:.1f}%",
+                message=f"过去{time_window}分钟内检测到{negative_count}条负面评论，占比{negative_ratio * 100:.1f}%",
                 data={
                     "negative_count": negative_count,
                     "total_count": total_count,
                     "negative_ratio": negative_ratio,
-                    "time_window": time_window
-                }
+                    "time_window": time_window,
+                },
             )
         return None
 
-    def _evaluate_volume_spike(self, rule: AlertRule, metrics: Dict[str, float]) -> Optional[Alert]:
+    def _evaluate_volume_spike(
+        self, rule: AlertRule, metrics: Dict[str, float]
+    ) -> Optional[Alert]:
         """评估讨论量异常增长"""
-        current_count = metrics.get('current_count', 0)
-        baseline_count = metrics.get('baseline_count', 10)
-        time_window = metrics.get('time_window_minutes', 60)
+        current_count = metrics.get("current_count", 0)
+        baseline_count = metrics.get("baseline_count", 10)
+        time_window = metrics.get("time_window_minutes", 60)
 
-        min_baseline = rule.conditions.get('min_baseline', 10)
+        min_baseline = rule.conditions.get("min_baseline", 10)
         if baseline_count < min_baseline:
             baseline_count = min_baseline
 
@@ -484,15 +482,17 @@ class AlertRuleEngine:
                 "current_count": current_count,
                 "baseline_count": baseline_count,
                 "multiplier": multiplier,
-                "time_window": time_window
-            }
+                "time_window": time_window,
+            },
         )
 
-    def _evaluate_sentiment_shift(self, rule: AlertRule, metrics: Dict[str, float]) -> Optional[Alert]:
+    def _evaluate_sentiment_shift(
+        self, rule: AlertRule, metrics: Dict[str, float]
+    ) -> Optional[Alert]:
         """评估情感倾向突变"""
-        current_sentiment = metrics.get('current_sentiment', 0.5)
-        previous_sentiment = metrics.get('previous_sentiment', 0.5)
-        time_window = metrics.get('time_window_minutes', 30)
+        current_sentiment = metrics.get("current_sentiment", 0.5)
+        previous_sentiment = metrics.get("previous_sentiment", 0.5)
+        time_window = metrics.get("time_window_minutes", 30)
 
         sentiment_change = abs(current_sentiment - previous_sentiment)
 
@@ -515,15 +515,17 @@ class AlertRuleEngine:
                 "previous_sentiment": previous_sentiment,
                 "sentiment_change": sentiment_change,
                 "direction": direction,
-                "time_window": time_window
-            }
+                "time_window": time_window,
+            },
         )
 
-    def _evaluate_hot_topic(self, rule: AlertRule, metrics: Dict[str, float]) -> Optional[Alert]:
+    def _evaluate_hot_topic(
+        self, rule: AlertRule, metrics: Dict[str, float]
+    ) -> Optional[Alert]:
         """评估热点话题"""
-        topic_mentions = metrics.get('topic_mentions', 0)
-        topic_name = metrics.get('topic_name', '未知话题')
-        time_window = metrics.get('time_window_minutes', 60)
+        topic_mentions = metrics.get("topic_mentions", 0)
+        topic_name = metrics.get("topic_name", "未知话题")
+        time_window = metrics.get("time_window_minutes", 60)
 
         if rule.thresholds:
             threshold = rule.thresholds[0]
@@ -540,11 +542,13 @@ class AlertRuleEngine:
             data={
                 "topic_name": topic_name,
                 "topic_mentions": topic_mentions,
-                "time_window": time_window
-            }
+                "time_window": time_window,
+            },
         )
 
-    def _evaluate_threshold_breach(self, rule: AlertRule, metrics: Dict[str, float]) -> Optional[Alert]:
+    def _evaluate_threshold_breach(
+        self, rule: AlertRule, metrics: Dict[str, float]
+    ) -> Optional[Alert]:
         """评估通用阈值突破"""
         if not rule.thresholds:
             return None
@@ -560,8 +564,8 @@ class AlertRuleEngine:
                 message=f"以下字段触发阈值: {', '.join(fields)}",
                 data={
                     "triggered_fields": fields,
-                    "metrics": {k: v for k, v in metrics.items() if k in fields}
-                }
+                    "metrics": {k: v for k, v in metrics.items() if k in fields},
+                },
             )
         return None
 
@@ -581,10 +585,7 @@ class AlertRuleEngine:
                 rule,
                 title="敏感关键词匹配",
                 message=f"检测到敏感关键词: {', '.join(matched_keywords)}",
-                data={
-                    "matched_keywords": matched_keywords,
-                    "text_preview": text[:100]
-                }
+                data={"matched_keywords": matched_keywords, "text_preview": text[:100]},
             )
         return None
 
@@ -593,10 +594,11 @@ class AlertRuleEngine:
         with self._lock:
             self.alert_history.append(alert)
             if len(self.alert_history) > self.max_history:
-                self.alert_history = self.alert_history[-self.max_history:]
+                self.alert_history = self.alert_history[-self.max_history :]
 
-    def get_alert_history(self, limit: int = 50, level: str = None,
-                          unread_only: bool = False) -> List[Dict]:
+    def get_alert_history(
+        self, limit: int = 50, level: str = None, unread_only: bool = False
+    ) -> List[Dict]:
         """获取预警历史"""
         with self._lock:
             alerts = self.alert_history.copy()
@@ -638,11 +640,12 @@ class AlertRuleEngine:
     def get_rules(self) -> List[Dict]:
         """获取所有规则"""
         with self._lock:
-            return [rule.to_dict() for rule in sorted(
-                self.rules.values(),
-                key=lambda r: r.priority,
-                reverse=True
-            )]
+            return [
+                rule.to_dict()
+                for rule in sorted(
+                    self.rules.values(), key=lambda r: r.priority, reverse=True
+                )
+            ]
 
     def get_stats(self) -> Dict:
         """获取预警统计"""
@@ -662,7 +665,7 @@ class AlertRuleEngine:
             "level_distribution": dict(level_counts),
             "type_distribution": dict(type_counts),
             "active_rules": sum(1 for r in self.rules.values() if r.enabled),
-            "suppression_stats": self.suppression.get_stats()
+            "suppression_stats": self.suppression.get_stats(),
         }
 
 
@@ -670,16 +673,16 @@ alert_engine = AlertRuleEngine()
 
 
 __all__ = [
-    'AlertLevel',
-    'AlertType',
-    'ThresholdOperator',
-    'ThresholdConfig',
-    'AlertRule',
-    'Alert',
-    'AlertHistory',
-    'AlertSuppression',
-    'ThresholdValidator',
-    'ThresholdChecker',
-    'AlertRuleEngine',
-    'alert_engine'
+    "AlertLevel",
+    "AlertType",
+    "ThresholdOperator",
+    "ThresholdConfig",
+    "AlertRule",
+    "Alert",
+    "AlertHistory",
+    "AlertSuppression",
+    "ThresholdValidator",
+    "ThresholdChecker",
+    "AlertRuleEngine",
+    "alert_engine",
 ]

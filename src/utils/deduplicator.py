@@ -9,7 +9,6 @@ import hashlib
 import logging
 import os
 import sys
-from typing import List, Optional
 
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -25,6 +24,7 @@ logger = logging.getLogger(__name__)
 # 尝试导入Bloom Filter（可选依赖）
 try:
     from pybloom_live import ScalableBloomFilter
+
     BLOOM_AVAILABLE = True
 except ImportError:
     logger.warning("pybloom-live未安装，将使用内存Set去重")
@@ -58,7 +58,9 @@ class DuplicateFilter:
 class BloomFilter(DuplicateFilter):
     """布隆过滤器（适合大规模数据）"""
 
-    def __init__(self, name: str = 'default', capacity: int = 100000, error_rate: float = 0.001):
+    def __init__(
+        self, name: str = "default", capacity: int = 100000, error_rate: float = 0.001
+    ):
         self.name = name
         self.capacity = capacity
         self.error_rate = error_rate
@@ -66,9 +68,11 @@ class BloomFilter(DuplicateFilter):
         if Config:
             cache_dir = Config.CACHE_DIR
         else:
-            cache_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'cache')
+            cache_dir = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)), "cache"
+            )
         os.makedirs(cache_dir, exist_ok=True)
-        self.filter_path = os.path.join(cache_dir, f'bloom_filter_{name}.jsonl')
+        self.filter_path = os.path.join(cache_dir, f"bloom_filter_{name}.jsonl")
         self.filter = None
         self.all_keys = set()
         self._init_filter()
@@ -77,8 +81,7 @@ class BloomFilter(DuplicateFilter):
         """初始化或加载过滤器"""
         if BLOOM_AVAILABLE:
             self.filter = ScalableBloomFilter(
-                initial_capacity=self.capacity,
-                error_rate=self.error_rate
+                initial_capacity=self.capacity, error_rate=self.error_rate
             )
         else:
             # 回退到内存Set
@@ -93,7 +96,7 @@ class BloomFilter(DuplicateFilter):
 
         loaded = 0
         try:
-            with open(self.filter_path, 'r', encoding='utf-8') as f:
+            with open(self.filter_path, encoding="utf-8") as f:
                 for line in f:
                     key = line.strip()
                     if not key:
@@ -108,7 +111,7 @@ class BloomFilter(DuplicateFilter):
     def _save_to_disk(self):
         temp_path = f"{self.filter_path}.tmp"
         try:
-            with open(temp_path, 'w', encoding='utf-8') as f:
+            with open(temp_path, "w", encoding="utf-8") as f:
                 for key in self.all_keys:
                     f.write(f"{key}\n")
             os.replace(temp_path, self.filter_path)
@@ -139,39 +142,41 @@ class BloomFilter(DuplicateFilter):
     def get_stats(self) -> dict:
         """获取统计信息"""
         if self.filter is None:
-            return {'type': 'none', 'size': 0}
+            return {"type": "none", "size": 0}
 
         if BLOOM_AVAILABLE:
             return {
-                'type': 'bloom_filter',
-                'name': self.name,
-                'capacity': self.capacity,
-                'current_size': len(self.filter),
-                'error_rate': self.error_rate,
-                'persisted_keys': len(self.all_keys),
+                "type": "bloom_filter",
+                "name": self.name,
+                "capacity": self.capacity,
+                "current_size": len(self.filter),
+                "error_rate": self.error_rate,
+                "persisted_keys": len(self.all_keys),
             }
         else:
             return {
-                'type': 'memory_set',
-                'name': self.name,
-                'size': len(self.filter),
-                'persisted_keys': len(self.all_keys),
+                "type": "memory_set",
+                "name": self.name,
+                "size": len(self.filter),
+                "persisted_keys": len(self.all_keys),
             }
 
 
 class MemoryDuplicateFilter(DuplicateFilter):
     """内存去重过滤器（适合小规模数据）"""
 
-    def __init__(self, name: str = 'memory'):
+    def __init__(self, name: str = "memory"):
         self.name = name
         self.seen = set()
         # 使用Config.CACHE_DIR或默认路径
         if Config:
             cache_dir = Config.CACHE_DIR
         else:
-            cache_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'cache')
+            cache_dir = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)), "cache"
+            )
         os.makedirs(cache_dir, exist_ok=True)
-        self.filter_path = os.path.join(cache_dir, f'duplicate_filter_{name}.jsonl')
+        self.filter_path = os.path.join(cache_dir, f"duplicate_filter_{name}.jsonl")
         self.load()
 
     def is_duplicate(self, key: str) -> bool:
@@ -183,7 +188,7 @@ class MemoryDuplicateFilter(DuplicateFilter):
     def save(self) -> None:
         try:
             temp_path = f"{self.filter_path}.tmp"
-            with open(temp_path, 'w', encoding='utf-8') as f:
+            with open(temp_path, "w", encoding="utf-8") as f:
                 for key in self.seen:
                     f.write(f"{key}\n")
             os.replace(temp_path, self.filter_path)
@@ -193,18 +198,14 @@ class MemoryDuplicateFilter(DuplicateFilter):
     def load(self) -> None:
         if os.path.exists(self.filter_path):
             try:
-                with open(self.filter_path, 'r', encoding='utf-8') as f:
+                with open(self.filter_path, encoding="utf-8") as f:
                     self.seen = {line.strip() for line in f if line.strip()}
                 logger.info(f"内存去重器已加载: {len(self.seen)}条记录")
             except Exception as e:
                 logger.warning(f"加载去重状态失败: {e}")
 
     def get_stats(self) -> dict:
-        return {
-            'type': 'memory',
-            'size': len(self.seen),
-            'name': self.name
-        }
+        return {"type": "memory", "size": len(self.seen), "name": self.name}
 
 
 class ArticleDeduplicator:
@@ -224,9 +225,11 @@ class ArticleDeduplicator:
 
         # 使用布隆过滤器（大规模）或内存Set（小规模）
         if BLOOM_AVAILABLE:
-            self.filter = BloomFilter(name='articles', capacity=1000000, error_rate=0.0001)
+            self.filter = BloomFilter(
+                name="articles", capacity=1000000, error_rate=0.0001
+            )
         else:
-            self.filter = MemoryDuplicateFilter(name='articles')
+            self.filter = MemoryDuplicateFilter(name="articles")
 
         self._initialized = True
         logger.info("文章去重器初始化完成")
@@ -295,9 +298,11 @@ class CommentDeduplicator:
 
         # 评论数量通常比文章多，使用布隆过滤器
         if BLOOM_AVAILABLE:
-            self.filter = BloomFilter(name='comments', capacity=5000000, error_rate=0.0001)
+            self.filter = BloomFilter(
+                name="comments", capacity=5000000, error_rate=0.0001
+            )
         else:
-            self.filter = MemoryDuplicateFilter(name='comments')
+            self.filter = MemoryDuplicateFilter(name="comments")
 
         self._initialized = True
         logger.info("评论去重器初始化完成")
@@ -360,6 +365,6 @@ def save_deduplicators() -> None:
 def get_deduplicator_stats() -> dict:
     """获取所有去重器统计"""
     return {
-        'articles': article_deduplicator.get_stats(),
-        'comments': comment_deduplicator.get_stats()
+        "articles": article_deduplicator.get_stats(),
+        "comments": comment_deduplicator.get_stats(),
     }

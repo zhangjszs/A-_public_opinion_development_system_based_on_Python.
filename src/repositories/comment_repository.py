@@ -13,11 +13,11 @@ class CommentRepository(BaseRepository):
 
     def find_with_filter(
         self,
-        keyword: str = '',
-        article_id: str = '',
-        user: str = '',
-        start_time: str = '',
-        end_time: str = '',
+        keyword: str = "",
+        article_id: str = "",
+        user: str = "",
+        start_time: str = "",
+        end_time: str = "",
         limit: int = 10,
         offset: int = 0,
     ) -> Tuple[List[Dict[str, Any]], int]:
@@ -36,7 +36,9 @@ class CommentRepository(BaseRepository):
             query = query.filter(Comment.created_at.between(start_time, end_time))
 
         total = query.count()
-        rows = query.order_by(desc(Comment.created_at)).limit(limit).offset(offset).all()
+        rows = (
+            query.order_by(desc(Comment.created_at)).limit(limit).offset(offset).all()
+        )
 
         result: List[Dict[str, Any]] = []
         for c in rows:
@@ -52,4 +54,3 @@ class CommentRepository(BaseRepository):
             )
 
         return result, total
-

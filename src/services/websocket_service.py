@@ -5,7 +5,6 @@ WebSocket 服务模块
 特性：JWT认证、房间机制、消息广播、断线重连
 """
 
-import json
 import logging
 import threading
 import uuid
@@ -24,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class MessageType(Enum):
     """消息类型"""
+
     ALERT = "alert"
     NOTIFICATION = "notification"
     DATA_UPDATE = "data_update"
@@ -34,6 +34,7 @@ class MessageType(Enum):
 
 class RoomType(Enum):
     """房间类型"""
+
     USER = "user"
     KEYWORD = "keyword"
     GLOBAL = "global"
@@ -43,6 +44,7 @@ class RoomType(Enum):
 @dataclass
 class ConnectionInfo:
     """连接信息"""
+
     sid: str
     user_id: Optional[str] = None
     username: Optional[str] = None
@@ -54,6 +56,7 @@ class ConnectionInfo:
 @dataclass
 class WebSocketMessage:
     """WebSocket消息"""
+
     id: str
     type: MessageType
     level: str = "info"
@@ -64,13 +67,13 @@ class WebSocketMessage:
 
     def to_dict(self) -> Dict:
         return {
-            'id': self.id,
-            'type': self.type.value,
-            'level': self.level,
-            'title': self.title,
-            'content': self.content,
-            'data': self.data,
-            'timestamp': self.timestamp
+            "id": self.id,
+            "type": self.type.value,
+            "level": self.level,
+            "title": self.title,
+            "content": self.content,
+            "data": self.data,
+            "timestamp": self.timestamp,
         }
 
 
@@ -93,11 +96,11 @@ class WebSocketService:
         self.socketio = SocketIO(
             app,
             cors_allowed_origins="*",
-            async_mode='threading',
+            async_mode="threading",
             logger=False,
             engineio_logger=False,
             ping_timeout=30,
-            ping_interval=15
+            ping_interval=15,
         )
 
         self._register_handlers()
@@ -109,7 +112,7 @@ class WebSocketService:
         if not self.socketio:
             return
 
-        @self.socketio.on('connect')
+        @self.socketio.on("connect")
         def handle_connect():
             """处理连接事件"""
             sid = request.sid
@@ -118,12 +121,9 @@ class WebSocketService:
             with self._lock:
                 self.connections[sid] = ConnectionInfo(sid=sid)
 
-            emit('connected', {
-                'sid': sid,
-                'timestamp': datetime.now().isoformat()
-            })
+            emit("connected", {"sid": sid, "timestamp": datetime.now().isoformat()})
 
-        @self.socketio.on('disconnect')
+        @self.socketio.on("disconnect")
         def handle_disconnect():
             """处理断开连接事件"""
             sid = request.sid
@@ -137,26 +137,28 @@ class WebSocketService:
                     if not user_sids:
                         self.user_connections.pop(conn_info.user_id, None)
 
-        @self.socketio.on('authenticate')
+        @self.socketio.on("authenticate")
         def handle_authenticate(data):
             """处理认证事件"""
             sid = request.sid
-            token = data.get('token', '') if data else ''
+            token = data.get("token", "") if data else ""
 
             if not token:
-                emit('auth_error', {'message': '缺少认证令牌'})
+                emit("auth_error", {"message": "缺少认证令牌"})
                 return False
 
             user_info = verify_token(token)
             if not user_info:
-                emit('auth_error', {'message': '认证令牌无效或已过期'})
+                emit("auth_error", {"message": "认证令牌无效或已过期"})
                 return False
 
             with self._lock:
                 conn_info = self.connections.get(sid)
                 if conn_info:
-                    conn_info.user_id = user_info.get('user_id', str(user_info.get('id')))
-                    conn_info.username = user_info.get('username', '')
+                    conn_info.user_id = user_info.get(
+                        "user_id", str(user_info.get("id"))
+                    )
+                    conn_info.username = user_info.get("username", "")
                     conn_info.is_authenticated = True
 
                     user_id = conn_info.user_id
@@ -168,28 +170,31 @@ class WebSocketService:
                     join_room(user_room, sid=sid)
                     conn_info.rooms.add(user_room)
 
-            emit('auth_success', {
-                'user_id': user_info.get('user_id'),
-                'username': user_info.get('username')
-            })
+            emit(
+                "auth_success",
+                {
+                    "user_id": user_info.get("user_id"),
+                    "username": user_info.get("username"),
+                },
+            )
             logger.info(f"用户认证成功: {user_info.get('username')} (SID: {sid})")
             return True
 
-        @self.socketio.on('subscribe')
+        @self.socketio.on("subscribe")
         def handle_subscribe(data):
             """处理订阅事件"""
             sid = request.sid
-            room_type = data.get('type', 'keyword') if data else 'keyword'
-            target = data.get('target', '') if data else ''
+            room_type = data.get("type", "keyword") if data else "keyword"
+            target = data.get("target", "") if data else ""
 
             if not target:
-                emit('subscribe_error', {'message': '订阅目标不能为空'})
+                emit("subscribe_error", {"message": "订阅目标不能为空"})
                 return False
 
             try:
                 room_enum = RoomType(room_type)
             except ValueError:
-                emit('subscribe_error', {'message': f'无效的房间类型: {room_type}'})
+                emit("subscribe_error", {"message": f"无效的房间类型: {room_type}"})
                 return False
 
             room_name = self._get_room_name(room_enum, target)
@@ -200,20 +205,16 @@ class WebSocketService:
                 if conn_info:
                     conn_info.rooms.add(room_name)
 
-            emit('subscribed', {
-                'type': room_type,
-                'target': target,
-                'room': room_name
-            })
+            emit("subscribed", {"type": room_type, "target": target, "room": room_name})
             logger.debug(f"用户订阅: {room_type} - {target} (SID: {sid})")
             return True
 
-        @self.socketio.on('unsubscribe')
+        @self.socketio.on("unsubscribe")
         def handle_unsubscribe(data):
             """处理取消订阅事件"""
             sid = request.sid
-            room_type = data.get('type', 'keyword') if data else 'keyword'
-            target = data.get('target', '') if data else ''
+            room_type = data.get("type", "keyword") if data else "keyword"
+            target = data.get("target", "") if data else ""
 
             if not target:
                 return False
@@ -231,27 +232,24 @@ class WebSocketService:
                 if conn_info:
                     conn_info.rooms.discard(room_name)
 
-            emit('unsubscribed', {
-                'type': room_type,
-                'target': target
-            })
+            emit("unsubscribed", {"type": room_type, "target": target})
             logger.debug(f"用户取消订阅: {room_type} - {target} (SID: {sid})")
             return True
 
-        @self.socketio.on('ping')
+        @self.socketio.on("ping")
         def handle_ping():
             """处理心跳"""
-            emit('pong', {'timestamp': datetime.now().isoformat()})
+            emit("pong", {"timestamp": datetime.now().isoformat()})
 
-        @self.socketio.on('get_rooms')
+        @self.socketio.on("get_rooms")
         def handle_get_rooms():
             """获取当前订阅的房间列表"""
             sid = request.sid
             with self._lock:
                 conn_info = self.connections.get(sid)
                 if conn_info:
-                    return {'rooms': list(conn_info.rooms)}
-            return {'rooms': []}
+                    return {"rooms": list(conn_info.rooms)}
+            return {"rooms": []}
 
     def _get_room_name(self, room_type: RoomType, target: str) -> str:
         """生成房间名称"""
@@ -265,14 +263,16 @@ class WebSocketService:
 
         room_name = self._get_room_name(RoomType.USER, user_id)
         try:
-            self.socketio.emit('message', message.to_dict(), room=room_name)
+            self.socketio.emit("message", message.to_dict(), room=room_name)
             logger.debug(f"发送消息给用户 {user_id}: {message.type.value}")
             return True
         except Exception as e:
             logger.error(f"发送消息失败: {e}")
             return False
 
-    def send_to_room(self, room_type: RoomType, target: str, message: WebSocketMessage) -> bool:
+    def send_to_room(
+        self, room_type: RoomType, target: str, message: WebSocketMessage
+    ) -> bool:
         """发送消息给指定房间"""
         if not self.socketio:
             logger.warning("WebSocket服务未初始化")
@@ -280,14 +280,16 @@ class WebSocketService:
 
         room_name = self._get_room_name(room_type, target)
         try:
-            self.socketio.emit('message', message.to_dict(), room=room_name)
+            self.socketio.emit("message", message.to_dict(), room=room_name)
             logger.debug(f"发送消息给房间 {room_name}: {message.type.value}")
             return True
         except Exception as e:
             logger.error(f"发送消息失败: {e}")
             return False
 
-    def broadcast(self, message: WebSocketMessage, exclude_sids: Optional[List[str]] = None) -> bool:
+    def broadcast(
+        self, message: WebSocketMessage, exclude_sids: Optional[List[str]] = None
+    ) -> bool:
         """广播消息给所有连接"""
         if not self.socketio:
             logger.warning("WebSocket服务未初始化")
@@ -295,23 +297,27 @@ class WebSocketService:
 
         try:
             skip_sids = exclude_sids or []
-            self.socketio.emit('message', message.to_dict(), skip_sid=skip_sids)
+            self.socketio.emit("message", message.to_dict(), skip_sid=skip_sids)
             logger.info(f"广播消息: {message.type.value}")
             return True
         except Exception as e:
             logger.error(f"广播消息失败: {e}")
             return False
 
-    def send_alert(self, alert_data: Dict[str, Any], user_id: Optional[str] = None,
-                    keyword: Optional[str] = None) -> bool:
+    def send_alert(
+        self,
+        alert_data: Dict[str, Any],
+        user_id: Optional[str] = None,
+        keyword: Optional[str] = None,
+    ) -> bool:
         """发送预警消息"""
         message = WebSocketMessage(
             id=str(uuid.uuid4()),
             type=MessageType.ALERT,
-            level=alert_data.get('level', 'warning'),
-            title=alert_data.get('title', '新预警'),
-            content=alert_data.get('message', ''),
-            data=alert_data
+            level=alert_data.get("level", "warning"),
+            title=alert_data.get("title", "新预警"),
+            content=alert_data.get("message", ""),
+            data=alert_data,
         )
 
         if user_id:
@@ -321,15 +327,16 @@ class WebSocketService:
         else:
             return self.broadcast(message)
 
-    def send_notification(self, title: str, content: str,
-                          user_id: Optional[str] = None) -> bool:
+    def send_notification(
+        self, title: str, content: str, user_id: Optional[str] = None
+    ) -> bool:
         """发送通知消息"""
         message = WebSocketMessage(
             id=str(uuid.uuid4()),
             type=MessageType.NOTIFICATION,
-            level='info',
+            level="info",
             title=title,
-            content=content
+            content=content,
         )
 
         if user_id:
@@ -337,15 +344,16 @@ class WebSocketService:
         else:
             return self.broadcast(message)
 
-    def send_data_update(self, data_type: str, data: Dict[str, Any],
-                         user_id: Optional[str] = None) -> bool:
+    def send_data_update(
+        self, data_type: str, data: Dict[str, Any], user_id: Optional[str] = None
+    ) -> bool:
         """发送数据更新消息"""
         message = WebSocketMessage(
             id=str(uuid.uuid4()),
             type=MessageType.DATA_UPDATE,
-            level='info',
-            title=f'{data_type} 更新',
-            data={'type': data_type, 'payload': data}
+            level="info",
+            title=f"{data_type} 更新",
+            data={"type": data_type, "payload": data},
         )
 
         if user_id:
@@ -357,18 +365,18 @@ class WebSocketService:
         """获取连接统计信息"""
         with self._lock:
             return {
-                'total_connections': len(self.connections),
-                'authenticated_users': len(self.user_connections),
-                'connections': [
+                "total_connections": len(self.connections),
+                "authenticated_users": len(self.user_connections),
+                "connections": [
                     {
-                        'sid': c.sid,
-                        'user_id': c.user_id,
-                        'username': c.username,
-                        'connected_at': c.connected_at.isoformat(),
-                        'rooms': list(c.rooms)
+                        "sid": c.sid,
+                        "user_id": c.user_id,
+                        "username": c.username,
+                        "connected_at": c.connected_at.isoformat(),
+                        "rooms": list(c.rooms),
                     }
                     for c in self.connections.values()
-                ]
+                ],
             }
 
 
@@ -377,18 +385,14 @@ websocket_service = WebSocketService()
 
 def create_message(message_type: MessageType, **kwargs) -> WebSocketMessage:
     """创建WebSocket消息的便捷函数"""
-    return WebSocketMessage(
-        id=str(uuid.uuid4()),
-        type=message_type,
-        **kwargs
-    )
+    return WebSocketMessage(id=str(uuid.uuid4()), type=message_type, **kwargs)
 
 
 __all__ = [
-    'WebSocketService',
-    'websocket_service',
-    'WebSocketMessage',
-    'MessageType',
-    'RoomType',
-    'create_message'
+    "WebSocketService",
+    "websocket_service",
+    "WebSocketMessage",
+    "MessageType",
+    "RoomType",
+    "create_message",
 ]

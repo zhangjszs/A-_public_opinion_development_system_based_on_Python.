@@ -19,12 +19,13 @@ def _get_key():
     """
     try:
         from config.settings import Config
+
         secret = Config.SECRET_KEY
     except Exception:
-        secret = os.environ.get('SECRET_KEY', 'default-fallback-key')
+        secret = os.environ.get("SECRET_KEY", "default-fallback-key")
 
     # Derive a 32-byte key from SECRET_KEY using SHA-256
-    key_bytes = hashlib.sha256(secret.encode('utf-8')).digest()
+    key_bytes = hashlib.sha256(secret.encode("utf-8")).digest()
     return base64.urlsafe_b64encode(key_bytes)
 
 
@@ -44,11 +45,11 @@ def encrypt_value(plaintext):
     如果输入为空，返回空字符串。
     """
     if not plaintext:
-        return ''
+        return ""
     try:
         f = _get_fernet()
-        token = f.encrypt(plaintext.encode('utf-8'))
-        return token.decode('utf-8')
+        token = f.encrypt(plaintext.encode("utf-8"))
+        return token.decode("utf-8")
     except Exception:
         return plaintext  # 加密失败时返回原文，不影响业务
 
@@ -59,11 +60,11 @@ def decrypt_value(ciphertext):
     如果解密失败（如数据未加密），返回原文。
     """
     if not ciphertext:
-        return ''
+        return ""
     try:
         f = _get_fernet()
-        plaintext = f.decrypt(ciphertext.encode('utf-8'))
-        return plaintext.decode('utf-8')
+        plaintext = f.decrypt(ciphertext.encode("utf-8"))
+        return plaintext.decode("utf-8")
     except (InvalidToken, Exception):
         return ciphertext  # 解密失败返回原文（兼容未加密数据）
 
@@ -73,7 +74,7 @@ def is_encrypted(value):
     if not value or len(value) < 50:
         return False
     try:
-        _get_fernet().decrypt(value.encode('utf-8'))
+        _get_fernet().decrypt(value.encode("utf-8"))
         return True
     except Exception:
         return False

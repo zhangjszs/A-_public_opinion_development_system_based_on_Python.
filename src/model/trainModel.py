@@ -3,6 +3,7 @@ sentiment_model.py  —— 2025‑05‑04 完整修正版
 依赖: pandas numpy scikit-learn matplotlib seaborn joblib
 可选: imbalanced‑learn (若需 SMOTE 等过采样)
 """
+
 from __future__ import annotations
 
 import warnings
@@ -25,20 +26,16 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     ConfusionMatrixDisplay,
     RocCurveDisplay,
-    balanced_accuracy_score,
     classification_report,
     confusion_matrix,
-    f1_score,
 )
 from sklearn.model_selection import (
     StratifiedKFold,
     cross_validate,
     train_test_split,
 )
-from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
-from sklearn.utils.class_weight import compute_class_weight
 
 matplotlib.rcParams["font.family"] = ["SimHei", "Microsoft YaHei", "SimSun"]
 matplotlib.rcParams["axes.unicode_minus"] = False
@@ -55,6 +52,7 @@ def load_data(csv_path: str | Path) -> pd.DataFrame:
         .drop_duplicates()
         .reset_index(drop=True)
     )
+
 
 try:
     from model_utils import WeightedMultinomialNB
@@ -130,7 +128,7 @@ def evaluate_models(
             n_jobs=-1,
             return_train_score=False,
         )
-        key = f"test_{scoring}"      # 自动加前缀
+        key = f"test_{scoring}"  # 自动加前缀
         results[name] = cv_res[key]
         print(
             f"{name:<12} | {scoring}={cv_res[key].mean():.4f}±{cv_res[key].std():.4f} "
@@ -151,9 +149,7 @@ def evaluate_models(
 # -------------------------------------------------------------------
 # 训练最终模型 + 混淆矩阵 / ROC
 # -------------------------------------------------------------------
-def train_best_model(
-    df: pd.DataFrame, model_name: str = "NaiveBayes"
-):
+def train_best_model(df: pd.DataFrame, model_name: str = "NaiveBayes"):
     X_train, X_test, y_train, y_test = train_test_split(
         df["text"],
         df["label"],
@@ -223,7 +219,9 @@ if __name__ == "__main__":
     # 计算每个模型的平均得分
     mean_scores = {name: scores.mean() for name, scores in results.items()}
     best_model_name = max(mean_scores, key=mean_scores.get)
-    print(f"\n🏆 最佳模型是: {best_model_name} (得分: {mean_scores[best_model_name]:.4f})")
+    print(
+        f"\n🏆 最佳模型是: {best_model_name} (得分: {mean_scores[best_model_name]:.4f})"
+    )
 
     # ③ 训练保存最优模型
     trained_pipe = train_best_model(df, model_name=best_model_name)

@@ -4,11 +4,9 @@ WebSocket服务模块
 功能：实时数据推送、预警消息广播
 """
 
-import json
 import logging
 import queue
 import threading
-import time
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, Optional, Set
@@ -17,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 try:
     from flask_socketio import SocketIO, emit, join_room, leave_room, rooms
+
     SOCKETIO_AVAILABLE = True
 except ImportError:
     SOCKETIO_AVAILABLE = False
@@ -26,6 +25,7 @@ except ImportError:
 @dataclass
 class ConnectedClient:
     """连接的客户端"""
+
     sid: str
     user_id: Optional[str] = None
     rooms: Set[str] = None
@@ -60,9 +60,9 @@ class WebSocketManager:
             self.socketio = SocketIO(
                 app,
                 cors_allowed_origins=cors_allowed_origins,
-                async_mode='threading',
+                async_mode="threading",
                 logger=False,
-                engineio_logger=False
+                engineio_logger=False,
             )
 
             self._register_handlers()
@@ -76,20 +76,22 @@ class WebSocketManager:
     def _register_handlers(self):
         """注册SocketIO事件处理器"""
 
-        @self.socketio.on('connect')
+        @self.socketio.on("connect")
         def handle_connect():
             from flask import request
+
             sid = request.sid
 
             with self._lock:
                 self.clients[sid] = ConnectedClient(sid=sid)
 
             logger.info(f"客户端连接: {sid}")
-            emit('connected', {'message': '连接成功', 'sid': sid})
+            emit("connected", {"message": "连接成功", "sid": sid})
 
-        @self.socketio.on('disconnect')
+        @self.socketio.on("disconnect")
         def handle_disconnect():
             from flask import request
+
             sid = request.sid
 
             with self._lock:
@@ -98,25 +100,27 @@ class WebSocketManager:
 
             logger.info(f"客户端断开: {sid}")
 
-        @self.socketio.on('authenticate')
+        @self.socketio.on("authenticate")
         def handle_authenticate(data):
             from flask import request
+
             sid = request.sid
-            user_id = data.get('user_id')
+            user_id = data.get("user_id")
 
             with self._lock:
                 if sid in self.clients:
                     self.clients[sid].user_id = user_id
 
             join_room(f"user_{user_id}")
-            emit('authenticated', {'success': True, 'user_id': user_id})
+            emit("authenticated", {"success": True, "user_id": user_id})
             logger.info(f"客户端认证: {sid} -> {user_id}")
 
-        @self.socketio.on('subscribe')
+        @self.socketio.on("subscribe")
         def handle_subscribe(data):
             from flask import request
+
             sid = request.sid
-            channel = data.get('channel')
+            channel = data.get("channel")
 
             if channel:
                 join_room(channel)
@@ -124,14 +128,15 @@ class WebSocketManager:
                     if sid in self.clients:
                         self.clients[sid].rooms.add(channel)
 
-                emit('subscribed', {'channel': channel})
+                emit("subscribed", {"channel": channel})
                 logger.info(f"客户端 {sid} 订阅频道: {channel}")
 
-        @self.socketio.on('unsubscribe')
+        @self.socketio.on("unsubscribe")
         def handle_unsubscribe(data):
             from flask import request
+
             sid = request.sid
-            channel = data.get('channel')
+            channel = data.get("channel")
 
             if channel:
                 leave_room(channel)
@@ -139,11 +144,11 @@ class WebSocketManager:
                     if sid in self.clients:
                         self.clients[sid].rooms.discard(channel)
 
-                emit('unsubscribed', {'channel': channel})
+                emit("unsubscribed", {"channel": channel})
 
-        @self.socketio.on('ping')
+        @self.socketio.on("ping")
         def handle_ping():
-            emit('pong', {'timestamp': datetime.now().isoformat()})
+            emit("pong", {"timestamp": datetime.now().isoformat()})
 
     def broadcast(self, event: str, data: Dict[str, Any]):
         """广播消息到所有客户端"""
@@ -163,15 +168,15 @@ class WebSocketManager:
 
     def broadcast_alert(self, alert_data: Dict[str, Any]):
         """广播预警消息"""
-        self.broadcast('alert', alert_data)
+        self.broadcast("alert", alert_data)
 
     def broadcast_stats_update(self, stats_data: Dict[str, Any]):
         """广播统计数据更新"""
-        self.broadcast('stats_update', stats_data)
+        self.broadcast("stats_update", stats_data)
 
     def broadcast_sentiment_update(self, sentiment_data: Dict[str, Any]):
         """广播情感分析更新"""
-        self.broadcast('sentiment_update', sentiment_data)
+        self.broadcast("sentiment_update", sentiment_data)
 
     def get_connected_count(self) -> int:
         """获取连接客户端数量"""
@@ -184,10 +189,10 @@ class WebSocketManager:
             if sid in self.clients:
                 client = self.clients[sid]
                 return {
-                    'sid': client.sid,
-                    'user_id': client.user_id,
-                    'rooms': list(client.rooms),
-                    'connected_at': client.connected_at.isoformat()
+                    "sid": client.sid,
+                    "user_id": client.user_id,
+                    "rooms": list(client.rooms),
+                    "connected_at": client.connected_at.isoformat(),
                 }
         return None
 
@@ -243,7 +248,10 @@ def init_websocket(app):
     success = ws_manager.init_app(app)
     if success:
         from services.alert_service import alert_engine
-        alert_engine.register_callback(lambda alert: ws_manager.broadcast_alert(alert.to_dict()))
+
+        alert_engine.register_callback(
+            lambda alert: ws_manager.broadcast_alert(alert.to_dict())
+        )
         realtime_pusher.start()
     return success
 

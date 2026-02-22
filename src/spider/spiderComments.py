@@ -21,15 +21,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from config import (
     DEFAULT_DELAY,
-    DEFAULT_TIMEOUT,
-    HEADERS,
     get_random_headers,
     get_working_proxy,
 )
 from utils.deduplicator import comment_deduplicator
 
 # 配置日志
-logger = logging.getLogger('spider.comments')
+logger = logging.getLogger("spider.comments")
 
 # ========== 配置常量 ==========
 MAX_RETRIES = 3  # 最大重试次数
@@ -43,33 +41,35 @@ _csv_write_lock = threading.Lock()
 
 def init():
     """初始化CSV文件和目录"""
-    data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
     os.makedirs(data_dir, exist_ok=True)
-    comments_path = os.path.join(data_dir, 'commentsData.csv')
+    comments_path = os.path.join(data_dir, "commentsData.csv")
 
     if not os.path.exists(comments_path):
-        with open(comments_path, 'w', encoding='utf8', newline='') as csvfile:
+        with open(comments_path, "w", encoding="utf8", newline="") as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow([
-                'comment_id',        # 评论ID
-                'articleId',         # 文章ID
-                'created_at',        # 创建时间
-                'like_counts',       # 点赞数
-                'region',            # IP属地
-                'content',           # 评论内容
-                'authorName',        # 作者名称
-                'authorGender',      # 作者性别
-                'authorAddress',     # 作者地址
-                'authorAvatar',      # 作者头像
-                'user_id',           # 用户ID
-                'reply_count',       # 回复数
-                'comment_source',    # 评论来源
-                'is_hot',            # 是否热评
-                'parent_id',         # 父评论ID（子回复专用）
-                'reply_to_user',     # 回复的目标用户
-                'verified_type',     # 用户认证类型
-                'followers_count'    # 粉丝数
-            ])
+            writer.writerow(
+                [
+                    "comment_id",  # 评论ID
+                    "articleId",  # 文章ID
+                    "created_at",  # 创建时间
+                    "like_counts",  # 点赞数
+                    "region",  # IP属地
+                    "content",  # 评论内容
+                    "authorName",  # 作者名称
+                    "authorGender",  # 作者性别
+                    "authorAddress",  # 作者地址
+                    "authorAvatar",  # 作者头像
+                    "user_id",  # 用户ID
+                    "reply_count",  # 回复数
+                    "comment_source",  # 评论来源
+                    "is_hot",  # 是否热评
+                    "parent_id",  # 父评论ID（子回复专用）
+                    "reply_to_user",  # 回复的目标用户
+                    "verified_type",  # 用户认证类型
+                    "followers_count",  # 粉丝数
+                ]
+            )
 
 
 def writerRow(row: List[Any]) -> bool:
@@ -82,12 +82,12 @@ def writerRow(row: List[Any]) -> bool:
     Returns:
         bool: 写入是否成功
     """
-    data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
-    comments_path = os.path.join(data_dir, 'commentsData.csv')
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+    comments_path = os.path.join(data_dir, "commentsData.csv")
 
     try:
         with _csv_write_lock:
-            with open(comments_path, 'a', encoding='utf8', newline='') as csvfile:
+            with open(comments_path, "a", encoding="utf8", newline="") as csvfile:
                 writer = csv.writer(csvfile)
                 writer.writerow(row)
         return True
@@ -96,8 +96,13 @@ def writerRow(row: List[Any]) -> bool:
         return False
 
 
-def get_json(url: str, article_id: str, uid: Optional[str] = None,
-             max_id: int = 0, retries: int = MAX_RETRIES) -> Optional[Dict]:
+def get_json(
+    url: str,
+    article_id: str,
+    uid: Optional[str] = None,
+    max_id: int = 0,
+    retries: int = MAX_RETRIES,
+) -> Optional[Dict]:
     """
     获取评论JSON数据（带重试机制）
 
@@ -111,7 +116,6 @@ def get_json(url: str, article_id: str, uid: Optional[str] = None,
     Returns:
         JSON数据或None
     """
-    import random
     import time
 
     headers = get_random_headers()
@@ -119,21 +123,21 @@ def get_json(url: str, article_id: str, uid: Optional[str] = None,
 
     # 设置正确的Referer
     if uid:
-        headers['Referer'] = f'https://weibo.com/{uid}/'
+        headers["Referer"] = f"https://weibo.com/{uid}/"
 
     params = {
-        'is_reload': '1',
-        'id': article_id,
-        'is_show_bulletin': '2',
-        'is_mix': '0',
-        'count': '20',
-        'uid': uid or 'nouid',
-        'fetch_level': '0',
-        'locale': 'zh-CN'
+        "is_reload": "1",
+        "id": article_id,
+        "is_show_bulletin": "2",
+        "is_mix": "0",
+        "count": "20",
+        "uid": uid or "nouid",
+        "fetch_level": "0",
+        "locale": "zh-CN",
     }
 
     if max_id > 0:
-        params['max_id'] = str(max_id)
+        params["max_id"] = str(max_id)
 
     for attempt in range(retries):
         try:
@@ -142,7 +146,7 @@ def get_json(url: str, article_id: str, uid: Optional[str] = None,
                 headers=headers,
                 params=params,
                 proxies=proxy,
-                timeout=REQUEST_TIMEOUT
+                timeout=REQUEST_TIMEOUT,
             )
 
             if response.status_code == 200:
@@ -197,7 +201,7 @@ def parse_created_time(created_at_raw: str) -> str:
         格式化后的时间字符串
     """
     if not created_at_raw:
-        return 'Unknown'
+        return "Unknown"
 
     time_formats = [
         "%a %b %d %H:%M:%S %z %Y",
@@ -215,8 +219,9 @@ def parse_created_time(created_at_raw: str) -> str:
     return created_at_raw
 
 
-def process_comment(comment: Dict, article_id: str, is_hot: bool = False,
-                    parent_id: str = '') -> bool:
+def process_comment(
+    comment: Dict, article_id: str, is_hot: bool = False, parent_id: str = ""
+) -> bool:
     """
     处理每条评论的逻辑
 
@@ -230,7 +235,7 @@ def process_comment(comment: Dict, article_id: str, is_hot: bool = False,
         bool: 处理是否成功
     """
     try:
-        comment_id = str(comment.get('id', ''))
+        comment_id = str(comment.get("id", ""))
 
         # 检查是否重复
         if comment_deduplicator.is_duplicate(comment_id, article_id):
@@ -238,69 +243,79 @@ def process_comment(comment: Dict, article_id: str, is_hot: bool = False,
             return False
 
         # 解析时间
-        created_at = parse_created_time(comment.get('created_at', ''))
+        created_at = parse_created_time(comment.get("created_at", ""))
 
         # 基础字段
-        like_counts = comment.get('attitudes_count', 0)
-        reply_count = comment.get('total_number', 0)
+        like_counts = comment.get("attitudes_count", 0)
+        reply_count = comment.get("total_number", 0)
 
         # 用户信息
-        user = comment.get('user', {})
-        user_id = str(user.get('id', ''))
-        author_name = user.get('screen_name', 'Unknown')
-        author_gender = user.get('gender', 'Unknown')
-        author_address = user.get('location', 'Unknown').split(' ')[0] if user.get('location') else 'Unknown'
-        author_avatar = user.get('avatar_large', '')
+        user = comment.get("user", {})
+        user_id = str(user.get("id", ""))
+        author_name = user.get("screen_name", "Unknown")
+        author_gender = user.get("gender", "Unknown")
+        author_address = (
+            user.get("location", "Unknown").split(" ")[0]
+            if user.get("location")
+            else "Unknown"
+        )
+        author_avatar = user.get("avatar_large", "")
 
         # 用户认证和粉丝数
-        verified_type = user.get('verified_type', -1)
-        followers_count = user.get('followers_count', 0)
+        verified_type = user.get("verified_type", -1)
+        followers_count = user.get("followers_count", 0)
 
         # IP属地和来源
-        region = comment.get('source', '').replace('来自', '').strip() or '无'
-        comment_source = comment.get('source', '')
+        region = comment.get("source", "").replace("来自", "").strip() or "无"
+        comment_source = comment.get("source", "")
 
         # 评论内容
-        content = comment.get('text_raw', '') or comment.get('text', '')
+        content = comment.get("text_raw", "") or comment.get("text", "")
         content = remove_html_tags(content) or "表情"
 
         # 回复目标用户
-        reply_to_user = ''
-        if 'reply_comment' in comment and comment['reply_comment']:
-            reply_user_info = comment['reply_comment'].get('user', {})
-            reply_to_user = reply_user_info.get('screen_name', '') if reply_user_info else ''
+        reply_to_user = ""
+        if "reply_comment" in comment and comment["reply_comment"]:
+            reply_user_info = comment["reply_comment"].get("user", {})
+            reply_to_user = (
+                reply_user_info.get("screen_name", "") if reply_user_info else ""
+            )
 
         # 写入CSV
-        success = writerRow([
-            comment_id,
-            article_id,
-            created_at,
-            like_counts,
-            region,
-            content,
-            author_name,
-            author_gender,
-            author_address,
-            author_avatar,
-            user_id,
-            reply_count,
-            comment_source,
-            is_hot,
-            parent_id,
-            reply_to_user,
-            verified_type,
-            followers_count
-        ])
+        success = writerRow(
+            [
+                comment_id,
+                article_id,
+                created_at,
+                like_counts,
+                region,
+                content,
+                author_name,
+                author_gender,
+                author_address,
+                author_avatar,
+                user_id,
+                reply_count,
+                comment_source,
+                is_hot,
+                parent_id,
+                reply_to_user,
+                verified_type,
+                followers_count,
+            ]
+        )
 
         if success:
             # 添加到去重过滤器
             comment_deduplicator.add(comment_id, article_id)
 
             # 处理子回复（楼中楼）
-            if reply_count > 0 and 'comments' in comment:
-                sub_comments = comment.get('comments', [])
+            if reply_count > 0 and "comments" in comment:
+                sub_comments = comment.get("comments", [])
                 for sub_comment in sub_comments:
-                    process_comment(sub_comment, article_id, is_hot=False, parent_id=comment_id)
+                    process_comment(
+                        sub_comment, article_id, is_hot=False, parent_id=comment_id
+                    )
 
             return True
 
@@ -332,10 +347,10 @@ def parse_json(response: Optional[Dict], article_id: str) -> str:
         logger.error(f"Expected response to be a dict, but got {type(response)}")
         return "ERROR_INVALID_TYPE"
 
-    if response.get('ok') == 0:
-        error_msg = response.get('msg', 'Unknown API error')
+    if response.get("ok") == 0:
+        error_msg = response.get("msg", "Unknown API error")
         logger.error(f"API returned failure: {error_msg}")
-        if '访问频次过高' in error_msg:
+        if "访问频次过高" in error_msg:
             return "RATE_LIMITED"
         return "API_ERROR"
 
@@ -343,7 +358,7 @@ def parse_json(response: Optional[Dict], article_id: str) -> str:
         comments_processed = 0
 
         # 处理热评
-        hot_comments = response.get('hot_comments', [])
+        hot_comments = response.get("hot_comments", [])
         if hot_comments:
             logger.debug(f"Found {len(hot_comments)} hot comments")
             for comment in hot_comments:
@@ -351,15 +366,17 @@ def parse_json(response: Optional[Dict], article_id: str) -> str:
                     comments_processed += 1
 
         # 处理普通评论
-        comment_list = response.get('data', [])
+        comment_list = response.get("data", [])
         if comment_list and isinstance(comment_list, list):
             logger.debug(f"Found {len(comment_list)} regular comments")
 
             # 获取热评ID集合，避免重复处理
-            hot_comment_ids = {hc.get('id') for hc in hot_comments} if hot_comments else set()
+            hot_comment_ids = (
+                {hc.get("id") for hc in hot_comments} if hot_comments else set()
+            )
 
             for comment in comment_list:
-                comment_id = comment.get('id', '')
+                comment_id = comment.get("id", "")
                 if comment_id not in hot_comment_ids:
                     if process_comment(comment, article_id, is_hot=False):
                         comments_processed += 1
@@ -390,8 +407,10 @@ def start(max_comment_pages: int = 5) -> int:
     import time
 
     init()
-    url = 'https://weibo.com/ajax/statuses/buildComments'
-    article_csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'articleData.csv')
+    url = "https://weibo.com/ajax/statuses/buildComments"
+    article_csv_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "data", "articleData.csv"
+    )
 
     if not os.path.exists(article_csv_path):
         logger.error(f"Input file not found: {article_csv_path}")
@@ -400,7 +419,7 @@ def start(max_comment_pages: int = 5) -> int:
     processed_articles = 0
 
     try:
-        with open(article_csv_path, 'r', encoding='utf8') as readerFile:
+        with open(article_csv_path, encoding="utf8") as readerFile:
             reader = csv.reader(readerFile)
             try:
                 header = next(reader)
@@ -415,38 +434,52 @@ def start(max_comment_pages: int = 5) -> int:
 
                 try:
                     article_id = article[0]
-                    comments_count = int(article[2]) if len(article) > 2 and article[2].isdigit() else 0
+                    comments_count = (
+                        int(article[2])
+                        if len(article) > 2 and article[2].isdigit()
+                        else 0
+                    )
                 except (IndexError, ValueError) as e:
-                    logger.warning(f"Skipping row {i+2}: {e}")
+                    logger.warning(f"Skipping row {i + 2}: {e}")
                     continue
 
                 # 提取uid
                 uid = None
                 if len(article) > 9:
                     detail_url = article[9]
-                    if detail_url and 'weibo.com' in detail_url:
+                    if detail_url and "weibo.com" in detail_url:
                         try:
-                            parts = detail_url.replace('https://weibo.com/', '').split('/')
+                            parts = detail_url.replace("https://weibo.com/", "").split(
+                                "/"
+                            )
                             if len(parts) >= 1:
                                 uid = parts[0]
                         except Exception as e:
                             logger.debug(f"Failed to extract uid from URL: {e}")
 
-                logger.info(f"\n=== Article {i+2}: ID {article_id}, Comments: {comments_count} ===")
+                logger.info(
+                    f"\n=== Article {i + 2}: ID {article_id}, Comments: {comments_count} ==="
+                )
 
                 # 根据评论数量决定爬取页数
-                pages_to_fetch = min(max_comment_pages, max(1, (comments_count // 20) + 1))
+                pages_to_fetch = min(
+                    max_comment_pages, max(1, (comments_count // 20) + 1)
+                )
                 max_id = 0
                 article_success = False
 
                 for page in range(1, pages_to_fetch + 1):
                     # 延时防爬
                     if isinstance(DEFAULT_DELAY, tuple):
-                        wait_seconds = random.uniform(DEFAULT_DELAY[0], DEFAULT_DELAY[1])
+                        wait_seconds = random.uniform(
+                            DEFAULT_DELAY[0], DEFAULT_DELAY[1]
+                        )
                     else:
                         wait_seconds = DEFAULT_DELAY
 
-                    logger.info(f"Fetching page {page}/{pages_to_fetch} for article {article_id}")
+                    logger.info(
+                        f"Fetching page {page}/{pages_to_fetch} for article {article_id}"
+                    )
                     time.sleep(wait_seconds)
 
                     # 请求评论数据
@@ -460,20 +493,24 @@ def start(max_comment_pages: int = 5) -> int:
                     parse_result = parse_json(response, article_id)
 
                     if parse_result == "RATE_LIMITED":
-                        logger.warning(f"Rate limit hit. Waiting for {RATE_LIMIT_WAIT} seconds...")
+                        logger.warning(
+                            f"Rate limit hit. Waiting for {RATE_LIMIT_WAIT} seconds..."
+                        )
                         time.sleep(RATE_LIMIT_WAIT)
                         continue
                     elif parse_result == "NO_COMMENTS":
                         logger.info(f"No more comments for article {article_id}")
                         break
                     elif parse_result == "API_ERROR":
-                        logger.error(f"API error, stopping pagination for article {article_id}")
+                        logger.error(
+                            f"API error, stopping pagination for article {article_id}"
+                        )
                         break
                     elif parse_result == "SUCCESS":
                         article_success = True
 
                     # 获取用于下一页的max_id
-                    new_max_id = response.get('max_id', 0)
+                    new_max_id = response.get("max_id", 0)
                     if new_max_id == 0 or new_max_id == max_id:
                         logger.info(f"No more pages available for article {article_id}")
                         break
@@ -492,7 +529,7 @@ def start(max_comment_pages: int = 5) -> int:
     return processed_articles
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # 测试代码
     logging.basicConfig(level=logging.INFO)
     start(max_comment_pages=2)

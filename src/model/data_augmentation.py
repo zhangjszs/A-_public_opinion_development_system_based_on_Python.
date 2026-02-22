@@ -6,14 +6,13 @@
 
 import logging
 import random
-import re
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 
 try:
     import jieba
+
     JIEBA_AVAILABLE = True
 except ImportError:
     JIEBA_AVAILABLE = False
@@ -83,7 +82,7 @@ class SynonymReplacer:
             else:
                 new_words.append(word)
 
-        return ''.join(new_words)
+        return "".join(new_words)
 
 
 class RandomDeleter:
@@ -122,7 +121,7 @@ class RandomDeleter:
         if not new_words:
             return random.choice(words)
 
-        return ''.join(new_words)
+        return "".join(new_words)
 
 
 class RandomSwapper:
@@ -157,7 +156,7 @@ class RandomSwapper:
             idx1, idx2 = random.sample(range(len(words)), 2)
             words[idx1], words[idx2] = words[idx2], words[idx1]
 
-        return ''.join(words)
+        return "".join(words)
 
 
 class BackTranslator:
@@ -170,6 +169,7 @@ class BackTranslator:
         """获取翻译器"""
         try:
             import googletrans
+
             if f"{src}-{dest}" not in self.translators:
                 self.translators[f"{src}-{dest}"] = googletrans.Translator()
             return self.translators[f"{src}-{dest}"]
@@ -177,7 +177,7 @@ class BackTranslator:
             logger.warning("googletrans未安装，回译功能不可用")
             return None
 
-    def back_translate(self, text: str, intermediate_lang: str = 'en') -> str:
+    def back_translate(self, text: str, intermediate_lang: str = "en") -> str:
         """
         回译增强：中文 -> 英文 -> 中文
 
@@ -188,14 +188,16 @@ class BackTranslator:
         Returns:
             str: 回译后的文本
         """
-        translator = self._get_translator('zh-cn', intermediate_lang)
+        translator = self._get_translator("zh-cn", intermediate_lang)
 
         if translator is None:
             return text
 
         try:
-            translated = translator.translate(text, src='zh-cn', dest=intermediate_lang)
-            back_translated = translator.translate(translated.text, src=intermediate_lang, dest='zh-cn')
+            translated = translator.translate(text, src="zh-cn", dest=intermediate_lang)
+            back_translated = translator.translate(
+                translated.text, src=intermediate_lang, dest="zh-cn"
+            )
             return back_translated.text
         except Exception as e:
             logger.warning(f"回译失败: {e}")
@@ -211,14 +213,14 @@ class TextAugmenter:
             config: 配置字典
         """
         self.config = config or {
-            'synonym_replace_prob': 0.3,
-            'random_delete_prob': 0.1,
-            'random_swap_prob': 0.3,
-            'num_augmentations': 4,
+            "synonym_replace_prob": 0.3,
+            "random_delete_prob": 0.1,
+            "random_swap_prob": 0.3,
+            "num_augmentations": 4,
         }
 
         self.synonym_replacer = SynonymReplacer()
-        self.random_deleter = RandomDeleter(p=self.config['random_delete_prob'])
+        self.random_deleter = RandomDeleter(p=self.config["random_delete_prob"])
         self.random_swapper = RandomSwapper(n=1)
         self.back_translator = BackTranslator()
 
@@ -234,17 +236,17 @@ class TextAugmenter:
             List[str]: 增强后的文本列表
         """
         if methods is None:
-            methods = ['synonym', 'delete', 'swap']
+            methods = ["synonym", "delete", "swap"]
 
         augmented = [text]
 
-        if 'synonym' in methods:
+        if "synonym" in methods:
             augmented.append(self.synonym_replacer.replace(text, n=1))
 
-        if 'delete' in methods:
+        if "delete" in methods:
             augmented.append(self.random_deleter.delete(text))
 
-        if 'swap' in methods:
+        if "swap" in methods:
             augmented.append(self.random_swapper.swap(text))
 
         return list(set(augmented))
@@ -254,7 +256,7 @@ class TextAugmenter:
         texts: List[str],
         labels: List[int],
         augment_factor: int = 2,
-        balance: bool = True
+        balance: bool = True,
     ) -> Tuple[List[str], List[int]]:
         """
         对数据集进行增强
@@ -302,7 +304,7 @@ class NoiseInjector:
 
     def __init__(self, noise_prob: float = 0.05):
         self.noise_prob = noise_prob
-        self.noise_chars = list('，。！？、；：""''（）【】')
+        self.noise_chars = list('，。！？、；：""（）【】')
 
     def inject(self, text: str) -> str:
         """
@@ -318,23 +320,20 @@ class NoiseInjector:
 
         for i in range(len(chars)):
             if random.random() < self.noise_prob:
-                noise_type = random.choice(['insert', 'replace', 'delete'])
+                noise_type = random.choice(["insert", "replace", "delete"])
 
-                if noise_type == 'insert':
+                if noise_type == "insert":
                     chars.insert(i, random.choice(self.noise_chars))
-                elif noise_type == 'replace' and chars[i] not in self.noise_chars:
+                elif noise_type == "replace" and chars[i] not in self.noise_chars:
                     chars[i] = random.choice(self.noise_chars)
-                elif noise_type == 'delete':
-                    chars[i] = ''
+                elif noise_type == "delete":
+                    chars[i] = ""
 
-        return ''.join(chars)
+        return "".join(chars)
 
 
 def augment_training_data(
-    input_path: str,
-    output_path: str,
-    augment_factor: int = 2,
-    balance: bool = True
+    input_path: str, output_path: str, augment_factor: int = 2, balance: bool = True
 ) -> Dict[str, Any]:
     """
     增强训练数据
@@ -350,34 +349,31 @@ def augment_training_data(
     """
     import pandas as pd
 
-    df = pd.read_csv(input_path, header=None, names=['text', 'label'])
+    df = pd.read_csv(input_path, header=None, names=["text", "label"])
 
     original_count = len(df)
-    label_dist = df['label'].value_counts().to_dict()
+    label_dist = df["label"].value_counts().to_dict()
 
     augmenter = TextAugmenter()
     augmented_texts, augmented_labels = augmenter.augment_dataset(
-        df['text'].tolist(),
-        df['label'].tolist(),
+        df["text"].tolist(),
+        df["label"].tolist(),
         augment_factor=augment_factor,
-        balance=balance
+        balance=balance,
     )
 
-    augmented_df = pd.DataFrame({
-        'text': augmented_texts,
-        'label': augmented_labels
-    })
+    augmented_df = pd.DataFrame({"text": augmented_texts, "label": augmented_labels})
 
     augmented_df.to_csv(output_path, index=False, header=False)
 
-    new_label_dist = augmented_df['label'].value_counts().to_dict()
+    new_label_dist = augmented_df["label"].value_counts().to_dict()
 
     return {
-        'original_count': original_count,
-        'augmented_count': len(augmented_df),
-        'augment_factor': len(augmented_df) / original_count,
-        'original_label_dist': label_dist,
-        'new_label_dist': new_label_dist,
+        "original_count": original_count,
+        "augmented_count": len(augmented_df),
+        "augment_factor": len(augmented_df) / original_count,
+        "original_label_dist": label_dist,
+        "new_label_dist": new_label_dist,
     }
 
 
@@ -385,12 +381,12 @@ def main():
     """主函数"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='文本数据增强')
-    parser.add_argument('--input', type=str, help='输入文件路径')
-    parser.add_argument('--output', type=str, help='输出文件路径')
-    parser.add_argument('--factor', type=int, default=2, help='增强倍数')
-    parser.add_argument('--balance', action='store_true', help='平衡类别')
-    parser.add_argument('--demo', action='store_true', help='演示模式')
+    parser = argparse.ArgumentParser(description="文本数据增强")
+    parser.add_argument("--input", type=str, help="输入文件路径")
+    parser.add_argument("--output", type=str, help="输出文件路径")
+    parser.add_argument("--factor", type=int, default=2, help="增强倍数")
+    parser.add_argument("--balance", action="store_true", help="平衡类别")
+    parser.add_argument("--demo", action="store_true", help="演示模式")
 
     args = parser.parse_args()
 
@@ -399,7 +395,7 @@ def main():
         demo_texts = [
             "这个产品质量很好，非常满意",
             "物流太慢了，等了好久才收到",
-            "一般般吧，没什么特别的"
+            "一般般吧，没什么特别的",
         ]
 
         print("数据增强演示:")
@@ -416,10 +412,7 @@ def main():
 
     if args.input and args.output:
         stats = augment_training_data(
-            args.input,
-            args.output,
-            augment_factor=args.factor,
-            balance=args.balance
+            args.input, args.output, augment_factor=args.factor, balance=args.balance
         )
 
         print("数据增强完成:")
@@ -430,5 +423,5 @@ def main():
         print(f"新类别分布: {stats['new_label_dist']}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

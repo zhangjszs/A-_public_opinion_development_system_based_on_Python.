@@ -10,15 +10,14 @@ from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
-
-import math
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 
 class NodeType(Enum):
     """节点类型"""
+
     ORIGIN = "origin"
     FORWARDER = "forwarder"
     KEY_NODE = "key_node"
@@ -28,6 +27,7 @@ class NodeType(Enum):
 @dataclass
 class PropagationNode:
     """传播节点"""
+
     id: str
     user_id: str
     username: str
@@ -42,23 +42,24 @@ class PropagationNode:
 
     def to_dict(self) -> Dict:
         return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'username': self.username,
-            'parent_id': self.parent_id,
-            'node_type': self.node_type.value,
-            'forward_count': self.forward_count,
-            'follower_count': self.follower_count,
-            'created_at': self.created_at.isoformat(),
-            'depth': self.depth,
-            'children': self.children,
-            'metadata': self.metadata
+            "id": self.id,
+            "user_id": self.user_id,
+            "username": self.username,
+            "parent_id": self.parent_id,
+            "node_type": self.node_type.value,
+            "forward_count": self.forward_count,
+            "follower_count": self.follower_count,
+            "created_at": self.created_at.isoformat(),
+            "depth": self.depth,
+            "children": self.children,
+            "metadata": self.metadata,
         }
 
 
 @dataclass
 class PropagationEdge:
     """传播边"""
+
     source_id: str
     target_id: str
     timestamp: datetime
@@ -66,16 +67,17 @@ class PropagationEdge:
 
     def to_dict(self) -> Dict:
         return {
-            'source_id': self.source_id,
-            'target_id': self.target_id,
-            'timestamp': self.timestamp.isoformat(),
-            'weight': self.weight
+            "source_id": self.source_id,
+            "target_id": self.target_id,
+            "timestamp": self.timestamp.isoformat(),
+            "weight": self.weight,
         }
 
 
 @dataclass
 class PropagationPath:
     """传播路径"""
+
     path_id: str
     nodes: List[str]
     edges: List[Tuple[str, str]]
@@ -85,18 +87,19 @@ class PropagationPath:
 
     def to_dict(self) -> Dict:
         return {
-            'path_id': self.path_id,
-            'nodes': self.nodes,
-            'edges': [{'source': e[0], 'target': e[1]} for e in self.edges],
-            'total_depth': self.total_depth,
-            'total_nodes': self.total_nodes,
-            'propagation_time': self.propagation_time
+            "path_id": self.path_id,
+            "nodes": self.nodes,
+            "edges": [{"source": e[0], "target": e[1]} for e in self.edges],
+            "total_depth": self.total_depth,
+            "total_nodes": self.total_nodes,
+            "propagation_time": self.propagation_time,
         }
 
 
 @dataclass
 class KeyNodeInfo:
     """关键节点信息"""
+
     node_id: str
     user_id: str
     username: str
@@ -108,20 +111,21 @@ class KeyNodeInfo:
 
     def to_dict(self) -> Dict:
         return {
-            'node_id': self.node_id,
-            'user_id': self.user_id,
-            'username': self.username,
-            'degree_centrality': self.degree_centrality,
-            'betweenness_centrality': self.betweenness_centrality,
-            'influence_score': self.influence_score,
-            'reach_count': self.reach_count,
-            'is_key_propagator': self.is_key_propagator
+            "node_id": self.node_id,
+            "user_id": self.user_id,
+            "username": self.username,
+            "degree_centrality": self.degree_centrality,
+            "betweenness_centrality": self.betweenness_centrality,
+            "influence_score": self.influence_score,
+            "reach_count": self.reach_count,
+            "is_key_propagator": self.is_key_propagator,
         }
 
 
 @dataclass
 class PropagationStats:
     """传播统计"""
+
     total_nodes: int
     total_edges: int
     max_depth: int
@@ -134,15 +138,15 @@ class PropagationStats:
 
     def to_dict(self) -> Dict:
         return {
-            'total_nodes': self.total_nodes,
-            'total_edges': self.total_edges,
-            'max_depth': self.max_depth,
-            'avg_depth': self.avg_depth,
-            'total_paths': self.total_paths,
-            'origin_node': self.origin_node,
-            'key_nodes': self.key_nodes,
-            'propagation_speed': self.propagation_speed,
-            'peak_time': self.peak_time.isoformat() if self.peak_time else None
+            "total_nodes": self.total_nodes,
+            "total_edges": self.total_edges,
+            "max_depth": self.max_depth,
+            "avg_depth": self.avg_depth,
+            "total_paths": self.total_paths,
+            "origin_node": self.origin_node,
+            "key_nodes": self.key_nodes,
+            "propagation_speed": self.propagation_speed,
+            "peak_time": self.peak_time.isoformat() if self.peak_time else None,
         }
 
 
@@ -201,10 +205,15 @@ class PropagationTracer:
     def __init__(self, graph: PropagationGraph = None):
         self.graph = graph or PropagationGraph()
 
-    def add_propagation(self, post_id: str, user_id: str, username: str,
-                        parent_id: Optional[str] = None,
-                        follower_count: int = 0,
-                        created_at: datetime = None) -> PropagationNode:
+    def add_propagation(
+        self,
+        post_id: str,
+        user_id: str,
+        username: str,
+        parent_id: Optional[str] = None,
+        follower_count: int = 0,
+        created_at: datetime = None,
+    ) -> PropagationNode:
         """添加传播节点"""
         if created_at is None:
             created_at = datetime.now()
@@ -226,26 +235,31 @@ class PropagationTracer:
             node_type=node_type,
             follower_count=follower_count,
             created_at=created_at,
-            depth=depth
+            depth=depth,
         )
 
         self.graph.add_node(node)
 
         if parent_id:
             edge = PropagationEdge(
-                source_id=parent_id,
-                target_id=post_id,
-                timestamp=created_at
+                source_id=parent_id, target_id=post_id, timestamp=created_at
             )
             self.graph.add_edge(edge)
 
         return node
 
-    def trace_path(self, start_node_id: str, max_depth: int = 10) -> List[PropagationPath]:
+    def trace_path(
+        self, start_node_id: str, max_depth: int = 10
+    ) -> List[PropagationPath]:
         """追踪从指定节点出发的所有路径"""
         paths = []
 
-        def dfs(node_id: str, current_path: List[str], current_edges: List[Tuple[str, str]], depth: int):
+        def dfs(
+            node_id: str,
+            current_path: List[str],
+            current_edges: List[Tuple[str, str]],
+            depth: int,
+        ):
             if depth > max_depth:
                 return
 
@@ -258,14 +272,16 @@ class PropagationTracer:
                     end_time = self.graph.get_node(current_path[-1]).created_at
                     prop_time = (end_time - origin_time).total_seconds()
 
-                    paths.append(PropagationPath(
-                        path_id=f"path_{len(paths)}",
-                        nodes=list(current_path),
-                        edges=list(current_edges),
-                        total_depth=len(current_path) - 1,
-                        total_nodes=len(current_path),
-                        propagation_time=prop_time
-                    ))
+                    paths.append(
+                        PropagationPath(
+                            path_id=f"path_{len(paths)}",
+                            nodes=list(current_path),
+                            edges=list(current_edges),
+                            total_depth=len(current_path) - 1,
+                            total_nodes=len(current_path),
+                            propagation_time=prop_time,
+                        )
+                    )
             else:
                 for child_id in children:
                     current_edges.append((node_id, child_id))
@@ -298,6 +314,7 @@ class PropagationTracer:
 
     def get_propagation_tree(self, root_id: str) -> Dict:
         """获取传播树结构"""
+
         def build_tree(node_id: str) -> Dict:
             node = self.graph.get_node(node_id)
             if not node:
@@ -305,11 +322,11 @@ class PropagationTracer:
 
             children = self.graph.get_children(node_id)
             return {
-                'id': node_id,
-                'user_id': node.user_id,
-                'username': node.username,
-                'depth': node.depth,
-                'children': [build_tree(child_id) for child_id in children]
+                "id": node_id,
+                "user_id": node.user_id,
+                "username": node.username,
+                "depth": node.depth,
+                "children": [build_tree(child_id) for child_id in children],
             }
 
         return build_tree(root_id)
@@ -388,7 +405,7 @@ class KeyNodeIdentifier:
         """查找最短路径（BFS）"""
         paths = []
         queue = deque([(source, [source])])
-        min_length = float('inf')
+        min_length = float("inf")
 
         while queue:
             current, path = queue.popleft()
@@ -457,21 +474,25 @@ class KeyNodeIdentifier:
             influence = self.calculate_influence_score(node_id)
             reach = self._calculate_reach(node_id)
 
-            is_key = (degree_cent > threshold or
-                     between_cent > threshold or
-                     influence > threshold)
+            is_key = (
+                degree_cent > threshold
+                or between_cent > threshold
+                or influence > threshold
+            )
 
             if is_key or node.node_type == NodeType.ORIGIN:
-                key_nodes.append(KeyNodeInfo(
-                    node_id=node_id,
-                    user_id=node.user_id,
-                    username=node.username,
-                    degree_centrality=round(degree_cent, 4),
-                    betweenness_centrality=round(between_cent, 4),
-                    influence_score=round(influence, 4),
-                    reach_count=reach,
-                    is_key_propagator=is_key
-                ))
+                key_nodes.append(
+                    KeyNodeInfo(
+                        node_id=node_id,
+                        user_id=node.user_id,
+                        username=node.username,
+                        degree_centrality=round(degree_cent, 4),
+                        betweenness_centrality=round(between_cent, 4),
+                        influence_score=round(influence, 4),
+                        reach_count=reach,
+                        is_key_propagator=is_key,
+                    )
+                )
 
         return sorted(key_nodes, key=lambda x: x.influence_score, reverse=True)
 
@@ -516,14 +537,15 @@ class PropagationSpeedAnalyzer:
         while current_time <= max_time:
             next_time = current_time + timedelta(minutes=interval_minutes)
 
-            count = sum(1 for t in timestamps
-                       if current_time <= t < next_time)
+            count = sum(1 for t in timestamps if current_time <= t < next_time)
 
-            timeline.append({
-                'time': current_time.isoformat(),
-                'count': count,
-                'cumulative': sum(t['count'] for t in timeline) + count
-            })
+            timeline.append(
+                {
+                    "time": current_time.isoformat(),
+                    "count": count,
+                    "cumulative": sum(t["count"] for t in timeline) + count,
+                }
+            )
 
             current_time = next_time
 
@@ -535,8 +557,8 @@ class PropagationSpeedAnalyzer:
         if not timeline:
             return None
 
-        peak = max(timeline, key=lambda x: x['count'])
-        return datetime.fromisoformat(peak['time'])
+        peak = max(timeline, key=lambda x: x["count"])
+        return datetime.fromisoformat(peak["time"])
 
     def calculate_propagation_metrics(self) -> Dict:
         """计算传播指标"""
@@ -544,14 +566,14 @@ class PropagationSpeedAnalyzer:
 
         if not timeline:
             return {
-                'initial_speed': 0,
-                'peak_speed': 0,
-                'avg_speed': 0,
-                'decay_rate': 0,
-                'total_duration_minutes': 0
+                "initial_speed": 0,
+                "peak_speed": 0,
+                "avg_speed": 0,
+                "decay_rate": 0,
+                "total_duration_minutes": 0,
             }
 
-        speeds = [t['count'] for t in timeline]
+        speeds = [t["count"] for t in timeline]
         total_duration = len(timeline) * 5
 
         initial_speed = sum(speeds[:3]) / 15 if len(speeds) >= 3 else speeds[0] / 5
@@ -567,11 +589,11 @@ class PropagationSpeedAnalyzer:
                     decay_rate = (post_peak[0] - post_peak[-1]) / post_peak[0]
 
         return {
-            'initial_speed': round(initial_speed, 2),
-            'peak_speed': round(peak_speed, 2),
-            'avg_speed': round(avg_speed, 2),
-            'decay_rate': round(decay_rate, 4),
-            'total_duration_minutes': total_duration
+            "initial_speed": round(initial_speed, 2),
+            "peak_speed": round(peak_speed, 2),
+            "avg_speed": round(avg_speed, 2),
+            "decay_rate": round(decay_rate, 4),
+            "total_duration_minutes": total_duration,
         }
 
     def predict_reach(self, hours_ahead: int = 24) -> Dict:
@@ -579,8 +601,8 @@ class PropagationSpeedAnalyzer:
         metrics = self.calculate_propagation_metrics()
         current_nodes = self.graph.get_node_count()
 
-        avg_speed = metrics['avg_speed']
-        decay_rate = metrics['decay_rate']
+        avg_speed = metrics["avg_speed"]
+        decay_rate = metrics["decay_rate"]
 
         predicted_nodes = current_nodes
         for hour in range(hours_ahead):
@@ -588,10 +610,10 @@ class PropagationSpeedAnalyzer:
             predicted_nodes += new_nodes
 
         return {
-            'current_nodes': current_nodes,
-            'predicted_nodes': int(predicted_nodes),
-            'prediction_horizon_hours': hours_ahead,
-            'confidence': max(0.5, 1 - decay_rate)
+            "current_nodes": current_nodes,
+            "predicted_nodes": int(predicted_nodes),
+            "prediction_horizon_hours": hours_ahead,
+            "confidence": max(0.5, 1 - decay_rate),
         }
 
 
@@ -605,15 +627,19 @@ class PropagationAnalysisService:
         self.speed_analyzer = PropagationSpeedAnalyzer(self.graph)
         self._lock = threading.Lock()
 
-    def add_propagation(self, post_id: str, user_id: str, username: str,
-                        parent_id: Optional[str] = None,
-                        follower_count: int = 0,
-                        created_at: datetime = None) -> PropagationNode:
+    def add_propagation(
+        self,
+        post_id: str,
+        user_id: str,
+        username: str,
+        parent_id: Optional[str] = None,
+        follower_count: int = 0,
+        created_at: datetime = None,
+    ) -> PropagationNode:
         """添加传播记录"""
         with self._lock:
             return self.tracer.add_propagation(
-                post_id, user_id, username, parent_id,
-                follower_count, created_at
+                post_id, user_id, username, parent_id, follower_count, created_at
             )
 
     def trace_propagation(self, post_id: str) -> Dict:
@@ -623,10 +649,10 @@ class PropagationAnalysisService:
             tree = self.tracer.get_propagation_tree(post_id)
 
             return {
-                'post_id': post_id,
-                'paths': [p.to_dict() for p in paths],
-                'tree': tree,
-                'total_paths': len(paths)
+                "post_id": post_id,
+                "paths": [p.to_dict() for p in paths],
+                "tree": tree,
+                "total_paths": len(paths),
             }
 
     def identify_key_nodes(self, threshold: float = 0.3) -> List[Dict]:
@@ -644,10 +670,10 @@ class PropagationAnalysisService:
             prediction = self.speed_analyzer.predict_reach()
 
             return {
-                'metrics': metrics,
-                'timeline': timeline,
-                'peak_time': peak_time.isoformat() if peak_time else None,
-                'prediction': prediction
+                "metrics": metrics,
+                "timeline": timeline,
+                "peak_time": peak_time.isoformat() if peak_time else None,
+                "prediction": prediction,
             }
 
     def get_full_analysis(self, origin_id: str = None) -> Dict:
@@ -657,21 +683,22 @@ class PropagationAnalysisService:
                 total_nodes=self.graph.get_node_count(),
                 total_edges=self.graph.get_edge_count(),
                 max_depth=max((n.depth for n in self.graph.nodes.values()), default=0),
-                avg_depth=sum(n.depth for n in self.graph.nodes.values()) / max(len(self.graph.nodes), 1),
+                avg_depth=sum(n.depth for n in self.graph.nodes.values())
+                / max(len(self.graph.nodes), 1),
                 total_paths=0,
-                origin_node=origin_id or '',
+                origin_node=origin_id or "",
                 key_nodes=[],
                 propagation_speed=self.speed_analyzer.calculate_propagation_speed(),
-                peak_time=self.speed_analyzer.detect_peak_time()
+                peak_time=self.speed_analyzer.detect_peak_time(),
             )
 
             key_nodes = self.key_identifier.identify_key_nodes()
             stats.key_nodes = [kn.node_id for kn in key_nodes[:5]]
 
             return {
-                'stats': stats.to_dict(),
-                'key_nodes': [kn.to_dict() for kn in key_nodes],
-                'speed_analysis': self.analyze_speed()
+                "stats": stats.to_dict(),
+                "key_nodes": [kn.to_dict() for kn in key_nodes],
+                "speed_analysis": self.analyze_speed(),
             }
 
     def get_visualization_data(self, root_id: str = None) -> Dict:
@@ -681,26 +708,30 @@ class PropagationAnalysisService:
             edges = []
 
             for node_id, node in self.graph.nodes.items():
-                nodes.append({
-                    'id': node_id,
-                    'label': node.username,
-                    'depth': node.depth,
-                    'type': node.node_type.value,
-                    'follower_count': node.follower_count
-                })
+                nodes.append(
+                    {
+                        "id": node_id,
+                        "label": node.username,
+                        "depth": node.depth,
+                        "type": node.node_type.value,
+                        "follower_count": node.follower_count,
+                    }
+                )
 
             for edge in self.graph.edges:
-                edges.append({
-                    'source': edge.source_id,
-                    'target': edge.target_id,
-                    'timestamp': edge.timestamp.isoformat()
-                })
+                edges.append(
+                    {
+                        "source": edge.source_id,
+                        "target": edge.target_id,
+                        "timestamp": edge.timestamp.isoformat(),
+                    }
+                )
 
             return {
-                'nodes': nodes,
-                'edges': edges,
-                'total_nodes': len(nodes),
-                'total_edges': len(edges)
+                "nodes": nodes,
+                "edges": edges,
+                "total_nodes": len(nodes),
+                "total_edges": len(edges),
             }
 
     def clear(self):
@@ -716,16 +747,16 @@ propagation_service = PropagationAnalysisService()
 
 
 __all__ = [
-    'NodeType',
-    'PropagationNode',
-    'PropagationEdge',
-    'PropagationPath',
-    'KeyNodeInfo',
-    'PropagationStats',
-    'PropagationGraph',
-    'PropagationTracer',
-    'KeyNodeIdentifier',
-    'PropagationSpeedAnalyzer',
-    'PropagationAnalysisService',
-    'propagation_service'
+    "NodeType",
+    "PropagationNode",
+    "PropagationEdge",
+    "PropagationPath",
+    "KeyNodeInfo",
+    "PropagationStats",
+    "PropagationGraph",
+    "PropagationTracer",
+    "KeyNodeIdentifier",
+    "PropagationSpeedAnalyzer",
+    "PropagationAnalysisService",
+    "propagation_service",
 ]

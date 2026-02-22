@@ -2,6 +2,7 @@
 数据库访问模块
 唯一数据访问层：SQLAlchemy engine + scoped_session
 """
+
 from __future__ import annotations
 
 import logging
@@ -32,6 +33,7 @@ db_session = scoped_session(sessionmaker(bind=engine))
 
 # ── 兼容旧调用的查询函数 ───────────────────────────────────────────────────
 
+
 def querys(sql: str, params: list | None = None, type: str = "no_select") -> Any:
     """
     执行 SQL 语句，兼容旧调用签名。
@@ -60,11 +62,17 @@ def querys(sql: str, params: list | None = None, type: str = "no_select") -> Any
         result = conn.execute(text(named_sql), named_params)
         if type != "no_select":
             rows = [dict(row._mapping) for row in result]
-            logger.debug("查询完成: %d 条记录, 耗时 %.3fs", len(rows), time.time() - start)
+            logger.debug(
+                "查询完成: %d 条记录, 耗时 %.3fs", len(rows), time.time() - start
+            )
             return rows
         else:
             conn.commit()
-            logger.debug("写操作完成: 影响 %d 行, 耗时 %.3fs", result.rowcount, time.time() - start)
+            logger.debug(
+                "写操作完成: 影响 %d 行, 耗时 %.3fs",
+                result.rowcount,
+                time.time() - start,
+            )
             return "数据库语句执行成功"
 
 
@@ -89,7 +97,9 @@ def query_dataframe(sql: str, params: list | None = None) -> pd.DataFrame:
             df = pd.read_sql(text(named_sql), engine, params=named_params)
         else:
             df = pd.read_sql(sql, engine)
-        logger.debug("DataFrame 查询完成: %d 行, 耗时 %.3fs", len(df), time.time() - start)
+        logger.debug(
+            "DataFrame 查询完成: %d 行, 耗时 %.3fs", len(df), time.time() - start
+        )
         return df
     except Exception as e:
         logger.error("DataFrame 查询错误: %s", e, exc_info=True)

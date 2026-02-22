@@ -8,7 +8,7 @@
 
 import logging
 import re
-from typing import Any, Optional
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -19,16 +19,16 @@ class LogSanitizer:
     # 敏感信息模式
     PASSWORD_PATTERNS = [
         r'password["\']?\s*[:=]\s*["\']?[^"\']{8,}["\']?',  # password="xxx"
-        r'pwd["\']?\s*[:=]\s*["\']?[^"\']{8,}["\']?',      # pwd="xxx"
-        r'passwd["\']?\s*[:=]\s*["\']?[^"\']{8,}["\']?',   # passwd="xxx"
+        r'pwd["\']?\s*[:=]\s*["\']?[^"\']{8,}["\']?',  # pwd="xxx"
+        r'passwd["\']?\s*[:=]\s*["\']?[^"\']{8,}["\']?',  # passwd="xxx"
     ]
 
-    EMAIL_PATTERN = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-    PHONE_PATTERN = r'\b1[3-9]\d{9}\b'
-    ID_CARD_PATTERN = r'\b\d{15,19}\b'
+    EMAIL_PATTERN = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
+    PHONE_PATTERN = r"\b1[3-9]\d{9}\b"
+    ID_CARD_PATTERN = r"\b\d{15,19}\b"
 
     # IP地址脱敏（保留前两段）
-    IP_PATTERN = r'\b(\d{1,3}\.\d{1,3})\.\d+\.\d+\b'
+    IP_PATTERN = r"\b(\d{1,3}\.\d{1,3})\.\d+\.\d+\b"
 
     @staticmethod
     def sanitize_password(text: str) -> str:
@@ -46,7 +46,7 @@ class LogSanitizer:
 
         sanitized = text
         for pattern in LogSanitizer.PASSWORD_PATTERNS:
-            sanitized = re.sub(pattern, '******', sanitized, flags=re.IGNORECASE)
+            sanitized = re.sub(pattern, "******", sanitized, flags=re.IGNORECASE)
 
         return sanitized
 
@@ -66,12 +66,12 @@ class LogSanitizer:
 
         def replace_email(match):
             email = match.group(0)
-            if '@' in email:
-                local, domain = email.split('@', 1)
+            if "@" in email:
+                local, domain = email.split("@", 1)
                 # 保留邮箱前缀的前3个字符和后缀
-                local_hidden = local[:3] + '***' if len(local) > 3 else local
-                domain_hidden = domain[:3] + '***' if len(domain) > 3 else domain
-                return f'{local_hidden}@{domain_hidden}'
+                local_hidden = local[:3] + "***" if len(local) > 3 else local
+                domain_hidden = domain[:3] + "***" if len(domain) > 3 else domain
+                return f"{local_hidden}@{domain_hidden}"
             return email
 
         return re.sub(LogSanitizer.EMAIL_PATTERN, replace_email, text)
@@ -94,7 +94,7 @@ class LogSanitizer:
             phone = match.group(0)
             if len(phone) >= 7:
                 # 保留前3位和后2位，中间用***代替
-                return phone[:3] + '***' + phone[-2:]
+                return phone[:3] + "***" + phone[-2:]
             return phone
 
         return re.sub(LogSanitizer.PHONE_PATTERN, replace_phone, text)
@@ -117,7 +117,7 @@ class LogSanitizer:
             id_card = match.group(0)
             if len(id_card) >= 10:
                 # 保留前6位和后4位，中间用***代替
-                return id_card[:6] + '***' + id_card[-4:]
+                return id_card[:6] + "***" + id_card[-4:]
             return id_card
 
         return re.sub(LogSanitizer.ID_CARD_PATTERN, replace_id_card, text)
@@ -138,10 +138,10 @@ class LogSanitizer:
 
         def replace_ip(match):
             ip = match.group(0)
-            parts = ip.split('.')
+            parts = ip.split(".")
             if len(parts) == 4:
                 # 保留前两段，后两段用***代替
-                return f'{parts[0]}.{parts[1]}.***.***'
+                return f"{parts[0]}.{parts[1]}.***.***"
             return ip
 
         return re.sub(LogSanitizer.IP_PATTERN, replace_ip, text)
@@ -185,19 +185,31 @@ class LogSanitizer:
             return data
 
         if sensitive_keys is None:
-            sensitive_keys = ['password', 'pwd', 'passwd', 'email', 'phone', 'id_card', 'idcard']
+            sensitive_keys = [
+                "password",
+                "pwd",
+                "passwd",
+                "email",
+                "phone",
+                "id_card",
+                "idcard",
+            ]
 
         sanitized = data.copy()
         for key in sanitized:
             if key.lower() in [k.lower() for k in sensitive_keys]:
                 if isinstance(sanitized[key], str):
-                    if 'password' in key.lower() or 'pwd' in key.lower() or 'passwd' in key.lower():
-                        sanitized[key] = '******'
-                    elif 'email' in key.lower():
+                    if (
+                        "password" in key.lower()
+                        or "pwd" in key.lower()
+                        or "passwd" in key.lower()
+                    ):
+                        sanitized[key] = "******"
+                    elif "email" in key.lower():
                         sanitized[key] = LogSanitizer.sanitize_email(sanitized[key])
-                    elif 'phone' in key.lower():
+                    elif "phone" in key.lower():
                         sanitized[key] = LogSanitizer.sanitize_phone(sanitized[key])
-                    elif 'id_card' in key.lower() or 'idcard' in key.lower():
+                    elif "id_card" in key.lower() or "idcard" in key.lower():
                         sanitized[key] = LogSanitizer.sanitize_id_card(sanitized[key])
 
         return sanitized
@@ -221,7 +233,7 @@ class SafeLogger:
         if not self.logger.handlers:
             handler = logging.StreamHandler()
             formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
             )
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)

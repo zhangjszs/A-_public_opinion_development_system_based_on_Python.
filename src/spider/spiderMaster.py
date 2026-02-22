@@ -22,29 +22,27 @@ from spiderComments import start as start_comments
 from spiderContent import start as start_content
 from spiderUserInfo import start_user_spider
 
-from config.settings import Config
-
 # ========== 配置常量 ==========
 MAX_REQUESTS = 3  # 每个模块最多请求次数
 REQUEST_INTERVAL_MIN = 1.5  # 最小请求间隔（秒）
 REQUEST_INTERVAL_MAX = 3.0  # 最大请求间隔（秒）
 THREAD_START_DELAY = 2.0  # 线程启动间隔（秒）
 
+
 # ========== 日志配置 ==========
 def setup_logging() -> logging.Logger:
     """配置日志记录器"""
-    log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
+    log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs")
     os.makedirs(log_dir, exist_ok=True)
 
-    logger = logging.getLogger('weibo_spider')
+    logger = logging.getLogger("weibo_spider")
     logger.setLevel(logging.INFO)
 
     # 避免重复添加处理器
     if not logger.handlers:
         # 文件处理器
         file_handler = logging.FileHandler(
-            os.path.join(log_dir, 'weibo_spider.log'),
-            encoding='utf-8'
+            os.path.join(log_dir, "weibo_spider.log"), encoding="utf-8"
         )
         file_handler.setLevel(logging.INFO)
 
@@ -54,7 +52,7 @@ def setup_logging() -> logging.Logger:
 
         # 格式化器
         formatter = logging.Formatter(
-            '%(asctime)s - %(threadName)s - %(levelname)s - %(message)s'
+            "%(asctime)s - %(threadName)s - %(levelname)s - %(message)s"
         )
         file_handler.setFormatter(formatter)
         console_handler.setFormatter(formatter)
@@ -63,6 +61,7 @@ def setup_logging() -> logging.Logger:
         logger.addHandler(console_handler)
 
     return logger
+
 
 logger = setup_logging()
 
@@ -119,10 +118,12 @@ class WeiboSpiderController:
         try:
             if self.search_mode and self.search_keyword:
                 logger.info(f"[{thread_name}] 执行关键词搜索: {self.search_keyword}")
-                start_content(typeNum=1, pageNum=10, mode='search', keyword=self.search_keyword)
+                start_content(
+                    typeNum=1, pageNum=10, mode="search", keyword=self.search_keyword
+                )
             else:
                 logger.info(f"[{thread_name}] 执行分类爬取")
-                start_content(typeNum=10, pageNum=5, mode='category')
+                start_content(typeNum=10, pageNum=5, mode="category")
 
             self.content_completed.set()
             logger.info(f"[{thread_name}] 文章爬取任务完成")
@@ -218,7 +219,7 @@ class WeiboSpiderController:
         threads = [
             threading.Thread(target=self.content_spider_thread, name="ContentSpider"),
             threading.Thread(target=self.comments_spider_thread, name="CommentsSpider"),
-            threading.Thread(target=self.user_spider_thread, name="UserSpider")
+            threading.Thread(target=self.user_spider_thread, name="UserSpider"),
         ]
 
         # 启动所有线程（它们会自动按依赖关系等待）
@@ -260,7 +261,7 @@ class WeiboSpiderController:
             # 阶段1: 文章爬取
             logger.info("【阶段1/3】开始爬取文章数据")
             if keyword:
-                start_content(typeNum=1, pageNum=10, mode='search', keyword=keyword)
+                start_content(typeNum=1, pageNum=10, mode="search", keyword=keyword)
             else:
                 start_content(typeNum=10, pageNum=5)
             logger.info("【阶段1/3】文章爬取完成")
@@ -315,12 +316,10 @@ class WeiboSpiderController:
             self.user_completed.clear()
 
             comments_thread = threading.Thread(
-                target=self._run_comments_with_event,
-                name="CommentsSpiderSmart"
+                target=self._run_comments_with_event, name="CommentsSpiderSmart"
             )
             user_thread = threading.Thread(
-                target=self._run_user_with_event,
-                name="UserSpiderSmart"
+                target=self._run_user_with_event, name="UserSpiderSmart"
             )
 
             comments_thread.start()
@@ -394,45 +393,45 @@ def main() -> None:
         display_menu()
         choice = input("请输入选项 (0-7): ").strip()
 
-        if choice == '0':
+        if choice == "0":
             print("感谢使用，再见！")
             break
 
-        elif choice == '1':
+        elif choice == "1":
             controller.sequential_spider_mode()
 
-        elif choice == '2':
+        elif choice == "2":
             confirm = input("并发模式可能导致IP被封，是否继续? (y/n): ").strip().lower()
-            if confirm == 'y':
+            if confirm == "y":
                 controller.concurrent_spider_mode()
             else:
                 print("已取消")
 
-        elif choice == '3':
+        elif choice == "3":
             controller.smart_spider_mode()
 
-        elif choice == '4':
+        elif choice == "4":
             logger.info("仅执行文章爬取")
             try:
                 start_content(typeNum=10, pageNum=5)
             except Exception as e:
                 logger.error(f"文章爬取失败: {e}")
 
-        elif choice == '5':
+        elif choice == "5":
             logger.info("仅执行评论爬取")
             try:
                 start_comments()
             except Exception as e:
                 logger.error(f"评论爬取失败: {e}")
 
-        elif choice == '6':
+        elif choice == "6":
             logger.info("仅执行用户信息爬取")
             try:
                 start_user_spider(max_users=50)
             except Exception as e:
                 logger.error(f"用户爬取失败: {e}")
 
-        elif choice == '7':
+        elif choice == "7":
             keyword = input("请输入搜索关键词: ").strip()
             if keyword:
                 logger.info(f"开始搜索爬取: {keyword}")
@@ -446,7 +445,7 @@ def main() -> None:
         print()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:

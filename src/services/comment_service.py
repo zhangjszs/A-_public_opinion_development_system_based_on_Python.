@@ -29,8 +29,7 @@ class CommentService:
         )
 
         for item in comments:
-            if 'created_at' in item and item['created_at']:
-                item['created_at'] = str(item['created_at'])
+            if "created_at" in item and item["created_at"]:
+                item["created_at"] = str(item["created_at"])
 
-        return {'total': total, 'page': page, 'limit': limit, 'list': comments}
-
+        return {"total": total, "page": page, "limit": limit, "list": comments}

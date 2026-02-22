@@ -3,11 +3,12 @@
 预警历史记录管理单元测试
 """
 
-import pytest
 import sys
 from datetime import datetime, timedelta
 
-sys.path.insert(0, 'src')
+import pytest
+
+sys.path.insert(0, "src")
 
 
 class TestAlertHistoryFilter:
@@ -24,8 +25,8 @@ class TestAlertHistoryFilter:
 
     def test_matches_time_range(self):
         """测试时间范围筛选"""
+        from models.alert import AlertHistory, AlertLevel, AlertType
         from services.alert_history_service import AlertHistoryFilter
-        from models.alert import AlertHistory, AlertType, AlertLevel
 
         alert = AlertHistory(
             id="test-001",
@@ -34,12 +35,12 @@ class TestAlertHistoryFilter:
             level=AlertLevel.WARNING,
             title="测试预警",
             message="测试消息",
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
 
         filter_params = AlertHistoryFilter(
             start_time=datetime.now() - timedelta(hours=1),
-            end_time=datetime.now() + timedelta(hours=1)
+            end_time=datetime.now() + timedelta(hours=1),
         )
         assert filter_params.matches(alert)
 
@@ -50,8 +51,8 @@ class TestAlertHistoryFilter:
 
     def test_matches_level(self):
         """测试级别筛选"""
+        from models.alert import AlertHistory, AlertLevel, AlertType
         from services.alert_history_service import AlertHistoryFilter
-        from models.alert import AlertHistory, AlertType, AlertLevel
 
         alert = AlertHistory(
             id="test-001",
@@ -59,7 +60,7 @@ class TestAlertHistoryFilter:
             alert_type=AlertType.NEGATIVE_SURGE,
             level=AlertLevel.DANGER,
             title="测试预警",
-            message="测试消息"
+            message="测试消息",
         )
 
         filter_params = AlertHistoryFilter(level=AlertLevel.DANGER)
@@ -70,8 +71,8 @@ class TestAlertHistoryFilter:
 
     def test_matches_keyword(self):
         """测试关键词筛选"""
+        from models.alert import AlertHistory, AlertLevel, AlertType
         from services.alert_history_service import AlertHistoryFilter
-        from models.alert import AlertHistory, AlertType, AlertLevel
 
         alert = AlertHistory(
             id="test-001",
@@ -79,7 +80,7 @@ class TestAlertHistoryFilter:
             alert_type=AlertType.NEGATIVE_SURGE,
             level=AlertLevel.WARNING,
             title="负面舆情激增预警",
-            message="检测到大量负面评论"
+            message="检测到大量负面评论",
         )
 
         filter_params = AlertHistoryFilter(keyword="负面")
@@ -110,12 +111,14 @@ class TestAlertHistoryManager:
     def manager(self):
         """创建管理器实例"""
         from services.alert_history_service import AlertHistoryManager
+
         return AlertHistoryManager()
 
     @pytest.fixture
     def sample_alert(self):
         """创建示例预警"""
-        from models.alert import Alert, AlertType, AlertLevel
+        from models.alert import Alert, AlertLevel, AlertType
+
         return Alert(
             id="alert-001",
             rule_id="rule-001",
@@ -123,7 +126,7 @@ class TestAlertHistoryManager:
             alert_type=AlertType.NEGATIVE_SURGE,
             level=AlertLevel.DANGER,
             title="负面舆情激增预警",
-            message="检测到大量负面评论"
+            message="检测到大量负面评论",
         )
 
     def test_init(self, manager):
@@ -160,7 +163,7 @@ class TestAlertHistoryManager:
 
     def test_query_with_pagination(self, manager):
         """测试分页查询"""
-        from models.alert import Alert, AlertType, AlertLevel
+        from models.alert import Alert, AlertLevel, AlertType
 
         for i in range(25):
             alert = Alert(
@@ -170,11 +173,12 @@ class TestAlertHistoryManager:
                 alert_type=AlertType.NEGATIVE_SURGE,
                 level=AlertLevel.WARNING,
                 title=f"测试预警 {i}",
-                message="测试消息"
+                message="测试消息",
             )
             manager.add_alert(alert)
 
         from services.alert_history_service import PaginationParams
+
         pagination = PaginationParams(page=1, page_size=10)
         result = manager.query(pagination=pagination)
 
@@ -194,8 +198,8 @@ class TestAlertHistoryManager:
 
     def test_query_with_filter(self, manager, sample_alert):
         """测试筛选查询"""
+        from models.alert import Alert, AlertLevel, AlertType
         from services.alert_history_service import AlertHistoryFilter
-        from models.alert import Alert, AlertType, AlertLevel
 
         manager.add_alert(sample_alert)
 
@@ -206,7 +210,7 @@ class TestAlertHistoryManager:
             alert_type=AlertType.SENTIMENT_SHIFT,
             level=AlertLevel.WARNING,
             title="情感突变预警",
-            message="情感倾向发生变化"
+            message="情感倾向发生变化",
         )
         manager.add_alert(alert2)
 
@@ -214,7 +218,7 @@ class TestAlertHistoryManager:
         result = manager.query(filter_params=filter_params)
 
         assert result.total == 1
-        assert result.items[0]['id'] == "alert-001"
+        assert result.items[0]["id"] == "alert-001"
 
     def test_mark_read(self, manager, sample_alert):
         """测试标记已读"""
@@ -246,7 +250,7 @@ class TestAlertHistoryManager:
 
     def test_batch_mark_read(self, manager):
         """测试批量标记已读"""
-        from models.alert import Alert, AlertType, AlertLevel
+        from models.alert import Alert, AlertLevel, AlertType
 
         alert_ids = []
         for i in range(5):
@@ -257,7 +261,7 @@ class TestAlertHistoryManager:
                 alert_type=AlertType.NEGATIVE_SURGE,
                 level=AlertLevel.WARNING,
                 title=f"测试预警 {i}",
-                message="测试消息"
+                message="测试消息",
             )
             manager.add_alert(alert)
             alert_ids.append(f"alert-{i:03d}")
@@ -281,7 +285,7 @@ class TestAlertHistoryManager:
 
     def test_clear_all(self, manager):
         """测试清空"""
-        from models.alert import Alert, AlertType, AlertLevel
+        from models.alert import Alert, AlertLevel, AlertType
 
         for i in range(5):
             alert = Alert(
@@ -291,7 +295,7 @@ class TestAlertHistoryManager:
                 alert_type=AlertType.NEGATIVE_SURGE,
                 level=AlertLevel.WARNING,
                 title=f"测试预警 {i}",
-                message="测试消息"
+                message="测试消息",
             )
             manager.add_alert(alert)
 
@@ -301,7 +305,7 @@ class TestAlertHistoryManager:
 
     def test_get_statistics(self, manager):
         """测试获取统计"""
-        from models.alert import Alert, AlertType, AlertLevel
+        from models.alert import Alert, AlertLevel, AlertType
 
         for i in range(10):
             level = AlertLevel.WARNING if i < 5 else AlertLevel.DANGER
@@ -312,17 +316,17 @@ class TestAlertHistoryManager:
                 alert_type=AlertType.NEGATIVE_SURGE,
                 level=level,
                 title=f"测试预警 {i}",
-                message="测试消息"
+                message="测试消息",
             )
             manager.add_alert(alert)
 
         stats = manager.get_statistics(time_range=7)
 
-        assert stats['total_alerts'] == 10
-        assert 'level_distribution' in stats
-        assert 'type_distribution' in stats
-        assert 'daily_trend' in stats
-        assert 'hourly_trend' in stats
+        assert stats["total_alerts"] == 10
+        assert "level_distribution" in stats
+        assert "type_distribution" in stats
+        assert "daily_trend" in stats
+        assert "hourly_trend" in stats
 
     def test_export_to_csv(self, manager, sample_alert):
         """测试导出CSV"""
@@ -345,8 +349,8 @@ class TestAlertHistoryManager:
 
     def test_max_records_limit(self):
         """测试最大记录限制"""
+        from models.alert import Alert, AlertLevel, AlertType
         from services.alert_history_service import AlertHistoryManager
-        from models.alert import Alert, AlertType, AlertLevel
 
         manager = AlertHistoryManager(max_records=5)
 
@@ -358,7 +362,7 @@ class TestAlertHistoryManager:
                 alert_type=AlertType.NEGATIVE_SURGE,
                 level=AlertLevel.WARNING,
                 title=f"测试预警 {i}",
-                message="测试消息"
+                message="测试消息",
             )
             manager.add_alert(alert)
 
@@ -370,16 +374,27 @@ class TestIntegration:
 
     def test_full_workflow(self):
         """测试完整工作流"""
+        from models.alert import Alert, AlertLevel, AlertType
         from services.alert_history_service import (
-            AlertHistoryManager, AlertHistoryFilter, PaginationParams
+            AlertHistoryFilter,
+            AlertHistoryManager,
+            PaginationParams,
         )
-        from models.alert import Alert, AlertType, AlertLevel
 
         manager = AlertHistoryManager()
 
         for i in range(20):
-            level = [AlertLevel.INFO, AlertLevel.WARNING, AlertLevel.DANGER, AlertLevel.CRITICAL][i % 4]
-            alert_type = [AlertType.NEGATIVE_SURGE, AlertType.SENTIMENT_SHIFT, AlertType.HOT_TOPIC][i % 3]
+            level = [
+                AlertLevel.INFO,
+                AlertLevel.WARNING,
+                AlertLevel.DANGER,
+                AlertLevel.CRITICAL,
+            ][i % 4]
+            alert_type = [
+                AlertType.NEGATIVE_SURGE,
+                AlertType.SENTIMENT_SHIFT,
+                AlertType.HOT_TOPIC,
+            ][i % 3]
 
             alert = Alert(
                 id=f"alert-{i:03d}",
@@ -388,7 +403,7 @@ class TestIntegration:
                 alert_type=alert_type,
                 level=level,
                 title=f"测试预警 {i}",
-                message=f"测试消息 {i}"
+                message=f"测试消息 {i}",
             )
             manager.add_alert(alert)
 
@@ -410,7 +425,7 @@ class TestIntegration:
         assert manager.count_unhandled() == 19
 
         stats = manager.get_statistics()
-        assert stats['total_alerts'] == 20
+        assert stats["total_alerts"] == 20
 
         csv_data = manager.export_to_csv()
         assert "alert-000" in csv_data
@@ -419,5 +434,5 @@ class TestIntegration:
         assert "alert-000" in json_data
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v', '--tb=short'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v", "--tb=short"])

@@ -6,7 +6,6 @@
 
 import csv
 import logging
-import os
 import re
 import sys
 from collections import Counter
@@ -18,15 +17,16 @@ import pandas as pd
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class WordFrequencyAnalyzer:
     """词频分析器 - 修复版本"""
 
     def __init__(self, model_dir: str = None):
         self.model_dir = Path(model_dir) if model_dir else Path(__file__).parent
 
-        self.input_file = self.model_dir / 'comment_1_fenci.txt'
-        self.output_file = self.model_dir / 'comment_1_fenci_qutingyongci_cipin.csv'
-        self.stop_words_file = self.model_dir / 'stopWords.txt'
+        self.input_file = self.model_dir / "comment_1_fenci.txt"
+        self.output_file = self.model_dir / "comment_1_fenci_qutingyongci_cipin.csv"
+        self.stop_words_file = self.model_dir / "stopWords.txt"
 
         self.stop_words = self._load_stop_words()
 
@@ -38,15 +38,42 @@ class WordFrequencyAnalyzer:
 
         try:
             if self.stop_words_file.exists():
-                with open(self.stop_words_file, 'r', encoding='utf-8') as f:
+                with open(self.stop_words_file, encoding="utf-8") as f:
                     stop_words = {line.strip() for line in f if line.strip()}
                 logger.info(f"加载停用词 {len(stop_words)} 个")
             else:
                 logger.warning(f"停用词文件不存在: {self.stop_words_file}")
                 stop_words = {
-                    '的', '了', '在', '是', '我', '有', '和', '就', '不', '人',
-                    '都', '一', '一个', '上', '也', '很', '到', '说', '要', '去',
-                    '你', '会', '着', '没有', '看', '好', '自己', '这', '能', '而'
+                    "的",
+                    "了",
+                    "在",
+                    "是",
+                    "我",
+                    "有",
+                    "和",
+                    "就",
+                    "不",
+                    "人",
+                    "都",
+                    "一",
+                    "一个",
+                    "上",
+                    "也",
+                    "很",
+                    "到",
+                    "说",
+                    "要",
+                    "去",
+                    "你",
+                    "会",
+                    "着",
+                    "没有",
+                    "看",
+                    "好",
+                    "自己",
+                    "这",
+                    "能",
+                    "而",
                 }
         except Exception as e:
             logger.error(f"加载停用词失败: {e}")
@@ -61,7 +88,7 @@ class WordFrequencyAnalyzer:
                 logger.error(f"输入文件不存在: {self.input_file}")
                 return None
 
-            with open(self.input_file, 'r', encoding='utf-8') as f:
+            with open(self.input_file, encoding="utf-8") as f:
                 content = f.read().strip()
 
             if not content:
@@ -82,17 +109,21 @@ class WordFrequencyAnalyzer:
         for word in words:
             word = word.strip()
 
-            if (word and
-                len(word) > 1 and
-                word not in self.stop_words and
-                not re.match(r'^\d+$', word) and
-                not re.match(r'^[^\u4e00-\u9fa5a-zA-Z]+$', word) and
-                len(word) <= 10):
+            if (
+                word
+                and len(word) > 1
+                and word not in self.stop_words
+                and not re.match(r"^\d+$", word)
+                and not re.match(r"^[^\u4e00-\u9fa5a-zA-Z]+$", word)
+                and len(word) <= 10
+            ):
                 filtered_words.append(word)
 
         return filtered_words
 
-    def calculate_frequency(self, content: str, max_results: int = 300) -> List[Tuple[str, int]]:
+    def calculate_frequency(
+        self, content: str, max_results: int = 300
+    ) -> List[Tuple[str, int]]:
         """计算词频 - 改进版"""
         try:
             words = content.split()
@@ -126,13 +157,13 @@ class WordFrequencyAnalyzer:
 
         try:
             if self.output_file.exists():
-                backup_file = self.output_file.with_suffix('.csv.bak')
+                backup_file = self.output_file.with_suffix(".csv.bak")
                 self.output_file.rename(backup_file)
                 logger.info(f"原文件已备份为: {backup_file}")
 
-            with open(self.output_file, 'w', encoding='utf-8', newline='') as f:
+            with open(self.output_file, "w", encoding="utf-8", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow(['词语', '频次'])
+                writer.writerow(["词语", "频次"])
 
                 for word, freq in word_freq:
                     writer.writerow([word, freq])
@@ -159,19 +190,19 @@ class WordFrequencyAnalyzer:
             avg_freq = total_words / unique_words if unique_words > 0 else 0
 
             freq_distribution = {
-                '高频词(>10次)': len([f for f in frequencies if f > 10]),
-                '中频词(3-10次)': len([f for f in frequencies if 3 <= f <= 10]),
-                '低频词(1-2次)': len([f for f in frequencies if f <= 2])
+                "高频词(>10次)": len([f for f in frequencies if f > 10]),
+                "中频词(3-10次)": len([f for f in frequencies if 3 <= f <= 10]),
+                "低频词(1-2次)": len([f for f in frequencies if f <= 2]),
             }
 
             report = {
-                'total_word_count': total_words,
-                'unique_word_count': unique_words,
-                'max_frequency': max_freq,
-                'min_frequency': min_freq,
-                'average_frequency': round(avg_freq, 2),
-                'frequency_distribution': freq_distribution,
-                'top_10_words': word_freq[:10]
+                "total_word_count": total_words,
+                "unique_word_count": unique_words,
+                "max_frequency": max_freq,
+                "min_frequency": min_freq,
+                "average_frequency": round(avg_freq, 2),
+                "frequency_distribution": freq_distribution,
+                "top_10_words": word_freq[:10],
             }
 
             logger.info(f"词频报告生成完成: {report}")
@@ -202,9 +233,10 @@ class WordFrequencyAnalyzer:
 
             report = self.generate_frequency_report(word_freq)
             if report:
-                report_file = self.model_dir / 'frequency_report.json'
+                report_file = self.model_dir / "frequency_report.json"
                 import json
-                with open(report_file, 'w', encoding='utf-8') as f:
+
+                with open(report_file, "w", encoding="utf-8") as f:
                     json.dump(report, f, ensure_ascii=False, indent=2)
                 logger.info(f"分析报告已保存: {report_file}")
 
@@ -226,7 +258,7 @@ class WordFrequencyAnalyzer:
 
             top_words = []
             for _, row in df.head(n).iterrows():
-                top_words.append((row['词语'], int(row['频次'])))
+                top_words.append((row["词语"], int(row["频次"])))
 
             logger.info(f"获取TOP {n} 高频词完成")
             return top_words
@@ -234,6 +266,7 @@ class WordFrequencyAnalyzer:
         except Exception as e:
             logger.error(f"获取高频词失败: {e}")
             return []
+
 
 def main():
     """主函数"""
@@ -261,5 +294,6 @@ def main():
         logger.error(f"程序异常: {e}")
         sys.exit(1)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

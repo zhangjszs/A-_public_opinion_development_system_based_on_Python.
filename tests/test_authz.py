@@ -1,5 +1,5 @@
-from flask import Flask, request
 import pytest
+from flask import Flask, request
 
 from config.settings import Config
 from utils.authz import admin_required
@@ -90,24 +90,26 @@ def test_task_status_blocks_non_admin(api_client_with_mock_user):
     assert response.status_code == 403
 
 
-def test_spider_refresh_submits_async_task_for_admin(api_client_with_mock_user, monkeypatch):
+def test_spider_refresh_submits_async_task_for_admin(
+    api_client_with_mock_user, monkeypatch
+):
     import views.api.spider_api as spider_api
 
     def _fake_dispatch(*args, **kwargs):
         return {
-            'task_id': 'task-hot-001',
-            'task_label': '刷新热门微博',
-            'crawl_type': 'hot',
-            'keyword': '',
-            'page_num': 2,
-            'article_limit': 50,
+            "task_id": "task-hot-001",
+            "task_label": "刷新热门微博",
+            "crawl_type": "hot",
+            "keyword": "",
+            "page_num": 2,
+            "article_limit": 50,
         }
 
     def _fake_register(result):
-        assert result['task_id'] == 'task-hot-001'
+        assert result["task_id"] == "task-hot-001"
 
-    monkeypatch.setattr(spider_api, 'dispatch_spider_task', _fake_dispatch)
-    monkeypatch.setattr(spider_api, 'register_submitted_task', _fake_register)
+    monkeypatch.setattr(spider_api, "dispatch_spider_task", _fake_dispatch)
+    monkeypatch.setattr(spider_api, "register_submitted_task", _fake_register)
 
     response = api_client_with_mock_user.post(
         "/api/spider/refresh",
@@ -117,8 +119,8 @@ def test_spider_refresh_submits_async_task_for_admin(api_client_with_mock_user, 
 
     assert response.status_code == 200
     payload = response.get_json()
-    assert payload['code'] == 200
-    assert payload['data']['task_id'] == 'task-hot-001'
+    assert payload["code"] == 200
+    assert payload["data"]["task_id"] == "task-hot-001"
 
 
 @pytest.fixture
@@ -143,21 +145,21 @@ def test_spider_crawl_submits_celery_task(spider_client_with_mock_user, monkeypa
 
     def _fake_dispatch(*args, **kwargs):
         return {
-            'task_id': 'task-search-001',
-            'task_label': '关键词搜索: 测试',
-            'crawl_type': 'search',
-            'keyword': '测试',
-            'page_num': 1,
-            'article_limit': 50,
+            "task_id": "task-search-001",
+            "task_label": "关键词搜索: 测试",
+            "crawl_type": "search",
+            "keyword": "测试",
+            "page_num": 1,
+            "article_limit": 50,
         }
 
     called = {}
 
     def _fake_register(result):
-        called['task_id'] = result['task_id']
+        called["task_id"] = result["task_id"]
 
-    monkeypatch.setattr(spider_api, 'dispatch_spider_task', _fake_dispatch)
-    monkeypatch.setattr(spider_api, 'register_submitted_task', _fake_register)
+    monkeypatch.setattr(spider_api, "dispatch_spider_task", _fake_dispatch)
+    monkeypatch.setattr(spider_api, "register_submitted_task", _fake_register)
 
     response = spider_client_with_mock_user.post(
         "/api/spider/crawl",
@@ -167,7 +169,6 @@ def test_spider_crawl_submits_celery_task(spider_client_with_mock_user, monkeypa
 
     assert response.status_code == 200
     payload = response.get_json()
-    assert payload['code'] == 200
-    assert payload['data']['task_id'] == 'task-search-001'
-    assert called['task_id'] == 'task-search-001'
-
+    assert payload["code"] == 200
+    assert payload["data"]["task_id"] == "task-search-001"
+    assert called["task_id"] == "task-search-001"

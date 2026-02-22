@@ -3,11 +3,12 @@
 传播路径分析服务单元测试
 """
 
-import pytest
 import sys
 from datetime import datetime, timedelta
 
-sys.path.insert(0, 'src')
+import pytest
+
+sys.path.insert(0, "src")
 
 
 class TestPropagationNode:
@@ -15,13 +16,9 @@ class TestPropagationNode:
 
     def test_init(self):
         """测试初始化"""
-        from services.propagation_service import PropagationNode, NodeType
+        from services.propagation_service import NodeType, PropagationNode
 
-        node = PropagationNode(
-            id="post-001",
-            user_id="user-001",
-            username="测试用户"
-        )
+        node = PropagationNode(id="post-001", user_id="user-001", username="测试用户")
 
         assert node.id == "post-001"
         assert node.user_id == "user-001"
@@ -33,16 +30,13 @@ class TestPropagationNode:
         from services.propagation_service import PropagationNode
 
         node = PropagationNode(
-            id="post-001",
-            user_id="user-001",
-            username="测试用户",
-            depth=2
+            id="post-001", user_id="user-001", username="测试用户", depth=2
         )
 
         result = node.to_dict()
 
-        assert result['id'] == "post-001"
-        assert result['depth'] == 2
+        assert result["id"] == "post-001"
+        assert result["depth"] == 2
 
 
 class TestPropagationGraph:
@@ -71,13 +65,11 @@ class TestPropagationGraph:
 
     def test_add_edge(self):
         """测试添加边"""
-        from services.propagation_service import PropagationGraph, PropagationEdge
+        from services.propagation_service import PropagationEdge, PropagationGraph
 
         graph = PropagationGraph()
         edge = PropagationEdge(
-            source_id="post-001",
-            target_id="post-002",
-            timestamp=datetime.now()
+            source_id="post-001", target_id="post-002", timestamp=datetime.now()
         )
 
         graph.add_edge(edge)
@@ -93,17 +85,17 @@ class TestPropagationTracer:
     def tracer(self):
         """创建追踪器"""
         from services.propagation_service import PropagationTracer
+
         return PropagationTracer()
 
     def test_add_origin_propagation(self, tracer):
         """测试添加原始传播"""
         node = tracer.add_propagation(
-            post_id="post-001",
-            user_id="user-001",
-            username="原始发布者"
+            post_id="post-001", user_id="user-001", username="原始发布者"
         )
 
         from services.propagation_service import NodeType
+
         assert node.node_type == NodeType.ORIGIN
         assert node.depth == 0
         assert node.parent_id is None
@@ -111,19 +103,18 @@ class TestPropagationTracer:
     def test_add_forward_propagation(self, tracer):
         """测试添加转发传播"""
         tracer.add_propagation(
-            post_id="post-001",
-            user_id="user-001",
-            username="原始发布者"
+            post_id="post-001", user_id="user-001", username="原始发布者"
         )
 
         node = tracer.add_propagation(
             post_id="post-002",
             user_id="user-002",
             username="转发者1",
-            parent_id="post-001"
+            parent_id="post-001",
         )
 
         from services.propagation_service import NodeType
+
         assert node.node_type == NodeType.FORWARDER
         assert node.depth == 1
         assert node.parent_id == "post-001"
@@ -157,8 +148,8 @@ class TestPropagationTracer:
 
         tree = tracer.get_propagation_tree("post-001")
 
-        assert tree['id'] == "post-001"
-        assert len(tree['children']) == 2
+        assert tree["id"] == "post-001"
+        assert len(tree["children"]) == 2
 
 
 class TestKeyNodeIdentifier:
@@ -168,16 +159,29 @@ class TestKeyNodeIdentifier:
     def setup_graph(self):
         """设置图数据"""
         from services.propagation_service import (
-            PropagationGraph, PropagationNode, PropagationEdge
+            PropagationEdge,
+            PropagationGraph,
+            PropagationNode,
         )
 
         graph = PropagationGraph()
 
         nodes = [
-            PropagationNode(id="post-001", user_id="user-001", username="用户1", follower_count=10000),
-            PropagationNode(id="post-002", user_id="user-002", username="用户2", follower_count=5000),
-            PropagationNode(id="post-003", user_id="user-003", username="用户3", follower_count=1000),
-            PropagationNode(id="post-004", user_id="user-004", username="用户4", follower_count=500),
+            PropagationNode(
+                id="post-001",
+                user_id="user-001",
+                username="用户1",
+                follower_count=10000,
+            ),
+            PropagationNode(
+                id="post-002", user_id="user-002", username="用户2", follower_count=5000
+            ),
+            PropagationNode(
+                id="post-003", user_id="user-003", username="用户3", follower_count=1000
+            ),
+            PropagationNode(
+                id="post-004", user_id="user-004", username="用户4", follower_count=500
+            ),
         ]
 
         for node in nodes:
@@ -229,7 +233,9 @@ class TestPropagationSpeedAnalyzer:
     def setup_graph(self):
         """设置图数据"""
         from services.propagation_service import (
-            PropagationGraph, PropagationNode, PropagationEdge
+            PropagationEdge,
+            PropagationGraph,
+            PropagationNode,
         )
 
         graph = PropagationGraph()
@@ -240,15 +246,15 @@ class TestPropagationSpeedAnalyzer:
                 id=f"post-{i:03d}",
                 user_id=f"user-{i:03d}",
                 username=f"用户{i}",
-                created_at=base_time + timedelta(minutes=i * 10)
+                created_at=base_time + timedelta(minutes=i * 10),
             )
             graph.add_node(node)
 
             if i > 0:
                 edge = PropagationEdge(
-                    f"post-{(i-1):03d}",
+                    f"post-{(i - 1):03d}",
                     f"post-{i:03d}",
-                    base_time + timedelta(minutes=i * 10)
+                    base_time + timedelta(minutes=i * 10),
                 )
                 graph.add_edge(edge)
 
@@ -271,8 +277,8 @@ class TestPropagationSpeedAnalyzer:
         timeline = analyzer.get_propagation_timeline()
 
         assert len(timeline) >= 1
-        assert 'time' in timeline[0]
-        assert 'count' in timeline[0]
+        assert "time" in timeline[0]
+        assert "count" in timeline[0]
 
     def test_detect_peak_time(self, setup_graph):
         """测试峰值时间检测"""
@@ -290,10 +296,10 @@ class TestPropagationSpeedAnalyzer:
         analyzer = PropagationSpeedAnalyzer(setup_graph)
         metrics = analyzer.calculate_propagation_metrics()
 
-        assert 'initial_speed' in metrics
-        assert 'peak_speed' in metrics
-        assert 'avg_speed' in metrics
-        assert 'decay_rate' in metrics
+        assert "initial_speed" in metrics
+        assert "peak_speed" in metrics
+        assert "avg_speed" in metrics
+        assert "decay_rate" in metrics
 
     def test_predict_reach(self, setup_graph):
         """测试传播预测"""
@@ -302,9 +308,9 @@ class TestPropagationSpeedAnalyzer:
         analyzer = PropagationSpeedAnalyzer(setup_graph)
         prediction = analyzer.predict_reach(hours_ahead=24)
 
-        assert 'current_nodes' in prediction
-        assert 'predicted_nodes' in prediction
-        assert prediction['predicted_nodes'] >= prediction['current_nodes']
+        assert "current_nodes" in prediction
+        assert "predicted_nodes" in prediction
+        assert prediction["predicted_nodes"] >= prediction["current_nodes"]
 
 
 class TestPropagationAnalysisService:
@@ -314,6 +320,7 @@ class TestPropagationAnalysisService:
     def service(self):
         """创建服务实例"""
         from services.propagation_service import PropagationAnalysisService
+
         return PropagationAnalysisService()
 
     def test_add_propagation(self, service):
@@ -321,9 +328,7 @@ class TestPropagationAnalysisService:
         from services.propagation_service import NodeType
 
         node = service.add_propagation(
-            post_id="post-001",
-            user_id="user-001",
-            username="用户1"
+            post_id="post-001", user_id="user-001", username="用户1"
         )
 
         assert node.node_type == NodeType.ORIGIN
@@ -335,8 +340,8 @@ class TestPropagationAnalysisService:
 
         result = service.trace_propagation("post-001")
 
-        assert 'paths' in result
-        assert 'tree' in result
+        assert "paths" in result
+        assert "tree" in result
 
     def test_identify_key_nodes(self, service):
         """测试识别关键节点"""
@@ -357,14 +362,14 @@ class TestPropagationAnalysisService:
                 f"post-{i:03d}",
                 f"user-{i:03d}",
                 f"用户{i}",
-                parent_id=f"post-{(i-1):03d}" if i > 0 else None,
-                created_at=base_time + timedelta(minutes=i * 10)
+                parent_id=f"post-{(i - 1):03d}" if i > 0 else None,
+                created_at=base_time + timedelta(minutes=i * 10),
             )
 
         result = service.analyze_speed()
 
-        assert 'metrics' in result
-        assert 'timeline' in result
+        assert "metrics" in result
+        assert "timeline" in result
 
     def test_get_full_analysis(self, service):
         """测试完整分析"""
@@ -373,9 +378,9 @@ class TestPropagationAnalysisService:
 
         result = service.get_full_analysis("post-001")
 
-        assert 'stats' in result
-        assert 'key_nodes' in result
-        assert 'speed_analysis' in result
+        assert "stats" in result
+        assert "key_nodes" in result
+        assert "speed_analysis" in result
 
     def test_get_visualization_data(self, service):
         """测试可视化数据"""
@@ -384,10 +389,10 @@ class TestPropagationAnalysisService:
 
         result = service.get_visualization_data()
 
-        assert 'nodes' in result
-        assert 'edges' in result
-        assert result['total_nodes'] == 2
-        assert result['total_edges'] == 1
+        assert "nodes" in result
+        assert "edges" in result
+        assert result["total_nodes"] == 2
+        assert result["total_edges"] == 1
 
     def test_clear(self, service):
         """测试清空数据"""
@@ -396,7 +401,7 @@ class TestPropagationAnalysisService:
         service.clear()
 
         result = service.get_visualization_data()
-        assert result['total_nodes'] == 0
+        assert result["total_nodes"] == 0
 
 
 class TestIntegration:
@@ -410,42 +415,48 @@ class TestIntegration:
         base_time = datetime.now() - timedelta(hours=2)
 
         service.add_propagation(
-            "post-000", "user-000", "KOL用户",
+            "post-000",
+            "user-000",
+            "KOL用户",
             follower_count=50000,
-            created_at=base_time
+            created_at=base_time,
         )
 
         for i in range(1, 11):
-            parent = f"post-{(i-1):03d}"
+            parent = f"post-{(i - 1):03d}"
             service.add_propagation(
                 f"post-{i:03d}",
                 f"user-{i:03d}",
                 f"用户{i}",
                 parent_id=parent,
                 follower_count=1000 * (10 - i),
-                created_at=base_time + timedelta(minutes=i * 5)
+                created_at=base_time + timedelta(minutes=i * 5),
             )
 
         service.add_propagation(
-            "post-011", "user-011", "分支用户1",
+            "post-011",
+            "user-011",
+            "分支用户1",
             parent_id="post-005",
-            created_at=base_time + timedelta(minutes=30)
+            created_at=base_time + timedelta(minutes=30),
         )
         service.add_propagation(
-            "post-012", "user-012", "分支用户2",
+            "post-012",
+            "user-012",
+            "分支用户2",
             parent_id="post-005",
-            created_at=base_time + timedelta(minutes=35)
+            created_at=base_time + timedelta(minutes=35),
         )
 
         key_nodes = service.identify_key_nodes()
         assert len(key_nodes) >= 1
 
         speed_analysis = service.analyze_speed()
-        assert 'metrics' in speed_analysis
+        assert "metrics" in speed_analysis
 
         full_analysis = service.get_full_analysis("post-000")
-        assert full_analysis['stats']['total_nodes'] == 13
+        assert full_analysis["stats"]["total_nodes"] == 13
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v', '--tb=short'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v", "--tb=short"])

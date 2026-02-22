@@ -5,10 +5,9 @@
 """
 
 import logging
-import warnings
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 import numpy as np
 import pandas as pd
@@ -17,7 +16,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
-    balanced_accuracy_score,
     classification_report,
     f1_score,
 )
@@ -42,8 +40,10 @@ def parse_ngram_range(value: str) -> tuple[int, int]:
     }
     return options.get(value, (1, 1))
 
+
 try:
     import optuna
+
     OPTUNA_AVAILABLE = True
 except ImportError:
     OPTUNA_AVAILABLE = False
@@ -172,13 +172,15 @@ class HyperparameterOptimizer:
                     "best_estimator": grid_search.best_estimator_,
                 }
 
-                self.optimization_history.append({
-                    "model": model_name,
-                    "method": "GridSearchCV",
-                    "score": grid_search.best_score_,
-                    "params": grid_search.best_params_,
-                    "timestamp": datetime.now().isoformat(),
-                })
+                self.optimization_history.append(
+                    {
+                        "model": model_name,
+                        "method": "GridSearchCV",
+                        "score": grid_search.best_score_,
+                        "params": grid_search.best_params_,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
 
                 logger.info(f"{model_name} 最佳得分: {grid_search.best_score_:.4f}")
                 logger.info(f"{model_name} 最佳参数: {grid_search.best_params_}")
@@ -266,7 +268,9 @@ class HyperparameterOptimizer:
             )
 
             max_features = trial.suggest_int("max_features", 2000, 8000)
-            ngram_range = trial.suggest_categorical("ngram_range", ["(1,1)", "(1,2)", "(1,3)"])
+            ngram_range = trial.suggest_categorical(
+                "ngram_range", ["(1,1)", "(1,2)", "(1,3)"]
+            )
             ngram_tuple = parse_ngram_range(ngram_range)
 
             pipeline = self.build_pipeline(model_name)
@@ -350,6 +354,7 @@ class HyperparameterOptimizer:
 
             meta_path = self.model_dir / "model_metadata.json"
             import json
+
             metadata = {
                 "model_name": model_name,
                 "score": self.best_score,

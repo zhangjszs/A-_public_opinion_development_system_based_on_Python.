@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -9,6 +9,7 @@ class BaseRepository:
     """
     Base Repository class using SQLAlchemy.
     """
+
     def __init__(self, model):
         self.model = model
         self.session = db_session

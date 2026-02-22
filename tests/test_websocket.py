@@ -3,11 +3,11 @@
 WebSocket 服务单元测试
 """
 
-import pytest
 import sys
-from unittest.mock import MagicMock, patch
 
-sys.path.insert(0, 'src')
+import pytest
+
+sys.path.insert(0, "src")
 
 
 class TestWebSocketService:
@@ -17,6 +17,7 @@ class TestWebSocketService:
     def websocket_service(self):
         """创建 WebSocket 服务实例"""
         from services.websocket_service import WebSocketService
+
         return WebSocketService()
 
     def test_init(self, websocket_service):
@@ -38,9 +39,11 @@ class TestWebSocketService:
 
     def test_create_message(self):
         """测试消息创建"""
-        from services.websocket_service import create_message, MessageType
+        from services.websocket_service import MessageType, create_message
 
-        message = create_message(MessageType.ALERT, title="测试预警", content="测试内容")
+        message = create_message(
+            MessageType.ALERT, title="测试预警", content="测试内容"
+        )
 
         assert message.id is not None
         assert message.type == MessageType.ALERT
@@ -49,7 +52,7 @@ class TestWebSocketService:
 
     def test_message_to_dict(self):
         """测试消息序列化"""
-        from services.websocket_service import WebSocketMessage, MessageType
+        from services.websocket_service import MessageType, WebSocketMessage
 
         message = WebSocketMessage(
             id="test-id",
@@ -57,17 +60,17 @@ class TestWebSocketService:
             level="warning",
             title="测试",
             content="测试内容",
-            data={"key": "value"}
+            data={"key": "value"},
         )
 
         msg_dict = message.to_dict()
 
-        assert msg_dict['id'] == "test-id"
-        assert msg_dict['type'] == "alert"
-        assert msg_dict['level'] == "warning"
-        assert msg_dict['title'] == "测试"
-        assert msg_dict['content'] == "测试内容"
-        assert msg_dict['data'] == {"key": "value"}
+        assert msg_dict["id"] == "test-id"
+        assert msg_dict["type"] == "alert"
+        assert msg_dict["level"] == "warning"
+        assert msg_dict["title"] == "测试"
+        assert msg_dict["content"] == "测试内容"
+        assert msg_dict["data"] == {"key": "value"}
 
 
 class TestWebSocketMessage:
@@ -97,17 +100,18 @@ class TestIntegration:
         """测试模块导入"""
         try:
             from services.websocket_service import (
-                WebSocketService,
-                websocket_service,
-                WebSocketMessage,
                 MessageType,
                 RoomType,
-                create_message
+                WebSocketMessage,
+                WebSocketService,
+                create_message,
+                websocket_service,
             )
+
             assert True
         except ImportError as e:
             pytest.fail(f"WebSocket 模块导入失败: {e}")
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v', '--tb=short'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v", "--tb=short"])

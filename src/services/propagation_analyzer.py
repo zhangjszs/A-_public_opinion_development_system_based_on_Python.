@@ -4,13 +4,12 @@
 功能：转发链路追踪、传播路径可视化、KOL影响力分析
 """
 
-import json
 import logging
 import math
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +17,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class PropagationNode:
     """传播节点"""
+
     id: str
     user_id: str
     user_name: str
@@ -34,25 +34,28 @@ class PropagationNode:
 
     def to_dict(self) -> Dict:
         return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'user_name': self.user_name,
-            'content': self.content[:100] + '...' if len(self.content) > 100 else self.content,
-            'post_time': self.post_time.isoformat() if self.post_time else None,
-            'repost_count': self.repost_count,
-            'comment_count': self.comment_count,
-            'like_count': self.like_count,
-            'depth': self.depth,
-            'parent_id': self.parent_id,
-            'children': self.children,
-            'influence_score': round(self.influence_score, 4),
-            'is_kol': self.is_kol
+            "id": self.id,
+            "user_id": self.user_id,
+            "user_name": self.user_name,
+            "content": self.content[:100] + "..."
+            if len(self.content) > 100
+            else self.content,
+            "post_time": self.post_time.isoformat() if self.post_time else None,
+            "repost_count": self.repost_count,
+            "comment_count": self.comment_count,
+            "like_count": self.like_count,
+            "depth": self.depth,
+            "parent_id": self.parent_id,
+            "children": self.children,
+            "influence_score": round(self.influence_score, 4),
+            "is_kol": self.is_kol,
         }
 
 
 @dataclass
 class PropagationEdge:
     """传播边"""
+
     source: str
     target: str
     weight: float = 1.0
@@ -60,16 +63,17 @@ class PropagationEdge:
 
     def to_dict(self) -> Dict:
         return {
-            'source': self.source,
-            'target': self.target,
-            'weight': self.weight,
-            'propagation_time': self.propagation_time
+            "source": self.source,
+            "target": self.target,
+            "weight": self.weight,
+            "propagation_time": self.propagation_time,
         }
 
 
 @dataclass
 class PropagationPath:
     """传播路径"""
+
     origin_id: str
     origin_user: str
     total_depth: int
@@ -81,14 +85,14 @@ class PropagationPath:
 
     def to_dict(self) -> Dict:
         return {
-            'origin_id': self.origin_id,
-            'origin_user': self.origin_user,
-            'total_depth': self.total_depth,
-            'total_nodes': self.total_nodes,
-            'total_reposts': self.total_reposts,
-            'propagation_speed': round(self.propagation_speed, 2),
-            'key_nodes': self.key_nodes,
-            'kol_nodes': self.kol_nodes
+            "origin_id": self.origin_id,
+            "origin_user": self.origin_user,
+            "total_depth": self.total_depth,
+            "total_nodes": self.total_nodes,
+            "total_reposts": self.total_reposts,
+            "propagation_speed": round(self.propagation_speed, 2),
+            "key_nodes": self.key_nodes,
+            "kol_nodes": self.kol_nodes,
         }
 
 
@@ -97,10 +101,10 @@ class KOLDetector:
 
     def __init__(self, thresholds: Dict[str, float] = None):
         self.thresholds = thresholds or {
-            'min_followers': 10000,
-            'min_reposts': 100,
-            'min_engagement_rate': 0.05,
-            'influence_threshold': 0.7
+            "min_followers": 10000,
+            "min_reposts": 100,
+            "min_engagement_rate": 0.05,
+            "influence_threshold": 0.7,
         }
 
     def calculate_influence_score(
@@ -109,7 +113,7 @@ class KOLDetector:
         comment_count: int,
         like_count: int,
         follower_count: int = 0,
-        verified: bool = False
+        verified: bool = False,
     ) -> float:
         """
         计算影响力得分
@@ -125,9 +129,7 @@ class KOLDetector:
         verified_bonus = 0.1 if verified else 0
 
         influence_score = (
-            engagement_score * 0.5 +
-            follower_score * 0.3 +
-            verified_bonus * 0.2
+            engagement_score * 0.5 + follower_score * 0.3 + verified_bonus * 0.2
         )
 
         return min(1.0, influence_score)
@@ -139,7 +141,7 @@ class KOLDetector:
         like_count: int,
         follower_count: int = 0,
         verified: bool = False,
-        influence_score: float = None
+        influence_score: float = None,
     ) -> bool:
         """判断是否为KOL"""
         if influence_score is None:
@@ -147,13 +149,13 @@ class KOLDetector:
                 repost_count, comment_count, like_count, follower_count, verified
             )
 
-        if influence_score >= self.thresholds['influence_threshold']:
+        if influence_score >= self.thresholds["influence_threshold"]:
             return True
 
-        if repost_count >= self.thresholds['min_reposts']:
+        if repost_count >= self.thresholds["min_reposts"]:
             return True
 
-        if follower_count >= self.thresholds['min_followers']:
+        if follower_count >= self.thresholds["min_followers"]:
             return True
 
         return False
@@ -174,8 +176,10 @@ class PropagationAnalyzer:
             node.repost_count, node.comment_count, node.like_count
         )
         node.is_kol = self.kol_detector.is_kol(
-            node.repost_count, node.comment_count, node.like_count,
-            influence_score=node.influence_score
+            node.repost_count,
+            node.comment_count,
+            node.like_count,
+            influence_score=node.influence_score,
         )
 
         self.nodes[node.id] = node
@@ -183,11 +187,13 @@ class PropagationAnalyzer:
 
         if node.parent_id and node.parent_id in self.nodes:
             self.nodes[node.parent_id].children.append(node.id)
-            self.edges.append(PropagationEdge(
-                source=node.parent_id,
-                target=node.id,
-                weight=node.influence_score + 0.5
-            ))
+            self.edges.append(
+                PropagationEdge(
+                    source=node.parent_id,
+                    target=node.id,
+                    weight=node.influence_score + 0.5,
+                )
+            )
 
     def build_from_reposts(self, reposts: List[Dict]) -> int:
         """
@@ -205,16 +211,16 @@ class PropagationAnalyzer:
 
         for repost in reposts:
             node = PropagationNode(
-                id=str(repost.get('id', '')),
-                user_id=str(repost.get('user_id', '')),
-                user_name=repost.get('user_name', '匿名用户'),
-                content=repost.get('content', ''),
-                post_time=repost.get('post_time') or datetime.now(),
-                repost_count=repost.get('repost_count', 0),
-                comment_count=repost.get('comment_count', 0),
-                like_count=repost.get('like_count', 0),
-                depth=repost.get('depth', 0),
-                parent_id=repost.get('parent_id')
+                id=str(repost.get("id", "")),
+                user_id=str(repost.get("user_id", "")),
+                user_name=repost.get("user_name", "匿名用户"),
+                content=repost.get("content", ""),
+                post_time=repost.get("post_time") or datetime.now(),
+                repost_count=repost.get("repost_count", 0),
+                comment_count=repost.get("comment_count", 0),
+                like_count=repost.get("like_count", 0),
+                depth=repost.get("depth", 0),
+                parent_id=repost.get("parent_id"),
             )
             self.add_node(node)
 
@@ -257,7 +263,7 @@ class PropagationAnalyzer:
         sorted_nodes = sorted(
             self.nodes.values(),
             key=lambda n: (n.repost_count + n.comment_count + n.like_count),
-            reverse=True
+            reverse=True,
         )
         return sorted_nodes[:top_n]
 
@@ -272,14 +278,14 @@ class PropagationAnalyzer:
         key_nodes = self.get_key_nodes(5)
 
         return PropagationPath(
-            origin_id=origin.id if origin else '',
-            origin_user=origin.user_name if origin else '',
+            origin_id=origin.id if origin else "",
+            origin_user=origin.user_name if origin else "",
             total_depth=max((n.depth for n in self.nodes.values()), default=0),
             total_nodes=len(self.nodes),
             total_reposts=sum(n.repost_count for n in self.nodes.values()),
             propagation_speed=self.calculate_propagation_speed(),
             key_nodes=[n.id for n in key_nodes],
-            kol_nodes=[n.id for n in kol_nodes]
+            kol_nodes=[n.id for n in kol_nodes],
         )
 
     def get_graph_data(self) -> Dict[str, Any]:
@@ -287,53 +293,53 @@ class PropagationAnalyzer:
         nodes = []
         for node in self.nodes.values():
             node_data = node.to_dict()
-            node_data['label'] = node.user_name
-            node_data['value'] = node.influence_score
-            node_data['category'] = 0 if node.is_kol else (1 if node.depth == 0 else 2)
+            node_data["label"] = node.user_name
+            node_data["value"] = node.influence_score
+            node_data["category"] = 0 if node.is_kol else (1 if node.depth == 0 else 2)
             nodes.append(node_data)
 
         edges = [e.to_dict() for e in self.edges]
 
         return {
-            'nodes': nodes,
-            'edges': edges,
-            'categories': [
-                {'name': 'KOL', 'itemStyle': {'color': '#EF4444'}},
-                {'name': '原始发布', 'itemStyle': {'color': '#2563EB'}},
-                {'name': '普通转发', 'itemStyle': {'color': '#64748B'}}
-            ]
+            "nodes": nodes,
+            "edges": edges,
+            "categories": [
+                {"name": "KOL", "itemStyle": {"color": "#EF4444"}},
+                {"name": "原始发布", "itemStyle": {"color": "#2563EB"}},
+                {"name": "普通转发", "itemStyle": {"color": "#64748B"}},
+            ],
         }
 
     def get_user_influence_ranking(self, top_n: int = 20) -> List[Dict]:
         """获取用户影响力排名"""
-        user_stats = defaultdict(lambda: {
-            'repost_count': 0,
-            'comment_count': 0,
-            'like_count': 0,
-            'node_count': 0,
-            'influence_score': 0.0
-        })
+        user_stats = defaultdict(
+            lambda: {
+                "repost_count": 0,
+                "comment_count": 0,
+                "like_count": 0,
+                "node_count": 0,
+                "influence_score": 0.0,
+            }
+        )
 
         for node in self.nodes.values():
             stats = user_stats[node.user_id]
-            stats['repost_count'] += node.repost_count
-            stats['comment_count'] += node.comment_count
-            stats['like_count'] += node.like_count
-            stats['node_count'] += 1
-            stats['user_name'] = node.user_name
-            stats['influence_score'] = max(stats['influence_score'], node.influence_score)
+            stats["repost_count"] += node.repost_count
+            stats["comment_count"] += node.comment_count
+            stats["like_count"] += node.like_count
+            stats["node_count"] += 1
+            stats["user_name"] = node.user_name
+            stats["influence_score"] = max(
+                stats["influence_score"], node.influence_score
+            )
 
         ranking = sorted(
             [
-                {
-                    'user_id': uid,
-                    'user_name': stats['user_name'],
-                    **stats
-                }
+                {"user_id": uid, "user_name": stats["user_name"], **stats}
                 for uid, stats in user_stats.items()
             ],
-            key=lambda x: x['influence_score'],
-            reverse=True
+            key=lambda x: x["influence_score"],
+            reverse=True,
         )
 
         return ranking[:top_n]
@@ -356,15 +362,9 @@ class PropagationAnalyzer:
         while current_time <= max_time:
             next_time = current_time + timedelta(minutes=interval_minutes)
 
-            count = sum(
-                1 for t in times
-                if current_time <= t < next_time
-            )
+            count = sum(1 for t in times if current_time <= t < next_time)
 
-            distribution.append({
-                'time': current_time.isoformat(),
-                'count': count
-            })
+            distribution.append({"time": current_time.isoformat(), "count": count})
 
             current_time = next_time
 
@@ -380,14 +380,14 @@ class PropagationAnalyzer:
         time_dist = self.get_time_distribution()
 
         return {
-            'path': path.to_dict(),
-            'depth_distribution': depth_dist,
-            'kol_count': len(kol_nodes),
-            'kol_nodes': [n.to_dict() for n in kol_nodes[:5]],
-            'key_nodes': [n.to_dict() for n in key_nodes],
-            'user_ranking': user_ranking,
-            'time_distribution': time_dist,
-            'graph_data': self.get_graph_data()
+            "path": path.to_dict(),
+            "depth_distribution": depth_dist,
+            "kol_count": len(kol_nodes),
+            "kol_nodes": [n.to_dict() for n in kol_nodes[:5]],
+            "key_nodes": [n.to_dict() for n in key_nodes],
+            "user_ranking": user_ranking,
+            "time_distribution": time_dist,
+            "graph_data": self.get_graph_data(),
         }
 
 

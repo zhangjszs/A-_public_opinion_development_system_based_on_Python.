@@ -12,7 +12,8 @@ from utils.password_hasher import (
     verify_password,
 )
 
-logger = SafeLogger('auth_service', logging.INFO)
+logger = SafeLogger("auth_service", logging.INFO)
+
 
 class AuthService:
     def __init__(self):
@@ -27,24 +28,26 @@ class AuthService:
         if not user:
             return False, "用户名或密码错误", {}
 
-        if not verify_password(password, user.get('password', '')):
+        if not verify_password(password, user.get("password", "")):
             return False, "用户名或密码错误", {}
 
         # Generate Token
-        token = create_token(user.get('id'), username)
+        token = create_token(user.get("id"), username)
         user_data = {
-            'token': token,
-            'user': {
-                'id': user.get('id'),
-                'username': username,
-                'create_time': str(user.get('create_time', '')),
-                'is_admin': bool(Config.ADMIN_USERS and username in Config.ADMIN_USERS),
-            }
+            "token": token,
+            "user": {
+                "id": user.get("id"),
+                "username": username,
+                "create_time": str(user.get("create_time", "")),
+                "is_admin": bool(Config.ADMIN_USERS and username in Config.ADMIN_USERS),
+            },
         }
         logger.info(f"User login success: {username}")
         return True, "登录成功", user_data
 
-    def register(self, username: str, password: str, confirm_password: str) -> Tuple[bool, str]:
+    def register(
+        self, username: str, password: str, confirm_password: str
+    ) -> Tuple[bool, str]:
         """
         Register new user.
         Returns: (success, message)
@@ -56,7 +59,7 @@ class AuthService:
             return False, "两次输入的密码不一致"
 
         strength = check_password_strength(password)
-        if not strength['valid']:
+        if not strength["valid"]:
             return False, f"密码强度不足：{', '.join(strength['suggestions'])}"
 
         if self.user_repo.find_by_username(username):
@@ -64,7 +67,7 @@ class AuthService:
 
         try:
             hashed_password = hash_password(password)
-            current_time = time.strftime('%Y-%m-%d', time.localtime())
+            current_time = time.strftime("%Y-%m-%d", time.localtime())
             self.user_repo.create(username, hashed_password, current_time)
             logger.info(f"User registration success: {username}")
             return True, "注册成功"

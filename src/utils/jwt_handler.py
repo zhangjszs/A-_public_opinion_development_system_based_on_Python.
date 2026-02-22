@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 # JWT 配置
 JWT_SECRET_KEY = Config.JWT_SECRET_KEY
-JWT_ALGORITHM = 'HS256'
+JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = Config.JWT_EXPIRATION_HOURS
 
 
@@ -39,10 +39,10 @@ def create_token(user_id: int, username: str, expires_hours: int = None) -> str:
         expires_hours = JWT_EXPIRATION_HOURS
 
     payload = {
-        'user_id': user_id,
-        'username': username,
-        'iat': datetime.utcnow(),  # 签发时间
-        'exp': datetime.utcnow() + timedelta(hours=expires_hours)  # 过期时间
+        "user_id": user_id,
+        "username": username,
+        "iat": datetime.utcnow(),  # 签发时间
+        "exp": datetime.utcnow() + timedelta(hours=expires_hours),  # 过期时间
     }
 
     token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
@@ -63,9 +63,9 @@ def verify_token(token: str) -> dict:
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         return {
-            'user_id': payload.get('user_id'),
-            'username': payload.get('username'),
-            'exp': payload.get('exp')
+            "user_id": payload.get("user_id"),
+            "username": payload.get("username"),
+            "exp": payload.get("exp"),
         }
     except jwt.ExpiredSignatureError:
         logger.warning("JWT Token 已过期")
@@ -87,30 +87,35 @@ def jwt_required(f):
             user = request.current_user  # 获取当前用户信息
             return jsonify({'user': user})
     """
+
     @wraps(f)
     def decorated(*args, **kwargs):
         token = None
 
         # 从 Authorization header 获取 token
-        auth_header = request.headers.get('Authorization', '')
-        if auth_header.startswith('Bearer '):
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
             token = auth_header[7:]  # 去掉 'Bearer ' 前缀
 
         if not token:
-            return jsonify({
-                'code': 401,
-                'msg': '缺少认证令牌',
-                'error': 'Authorization header missing or invalid'
-            }), 401
+            return jsonify(
+                {
+                    "code": 401,
+                    "msg": "缺少认证令牌",
+                    "error": "Authorization header missing or invalid",
+                }
+            ), 401
 
         # 验证 token
         user_info = verify_token(token)
         if not user_info:
-            return jsonify({
-                'code': 401,
-                'msg': '认证令牌无效或已过期',
-                'error': 'Invalid or expired token'
-            }), 401
+            return jsonify(
+                {
+                    "code": 401,
+                    "msg": "认证令牌无效或已过期",
+                    "error": "Invalid or expired token",
+                }
+            ), 401
 
         # 将用户信息附加到 request 对象
         request.current_user = user_info
@@ -133,12 +138,13 @@ def jwt_optional(f):
             user = getattr(request, 'current_user', None)
             return jsonify({'user': user})
     """
+
     @wraps(f)
     def decorated(*args, **kwargs):
         token = None
 
-        auth_header = request.headers.get('Authorization', '')
-        if auth_header.startswith('Bearer '):
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
             token = auth_header[7:]
 
         if token:

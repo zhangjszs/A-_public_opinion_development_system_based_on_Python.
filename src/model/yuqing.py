@@ -5,32 +5,31 @@
 """
 
 import logging
-import os
 import pickle
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 class SentimentAnalyzer:
     """情感分析控制器 - 修复版本"""
 
     def __init__(self, model_dir: str = None):
         self.model_dir = Path(model_dir) if model_dir else Path(__file__).parent
-        self.model_path = self.model_dir / 'best_sentiment_model.pkl'
+        self.model_path = self.model_dir / "best_sentiment_model.pkl"
         self.model = None
 
-        self.target_csv = self.model_dir / 'target.csv'
-        self.freq_csv = self.model_dir / 'comment_1_fenci_qutingyongci_cipin.csv'
+        self.target_csv = self.model_dir / "target.csv"
+        self.freq_csv = self.model_dir / "comment_1_fenci_qutingyongci_cipin.csv"
 
         logger.info("情感分析器初始化完成")
 
@@ -41,7 +40,7 @@ class SentimentAnalyzer:
                 logger.error(f"模型文件不存在: {self.model_path}")
                 return False
 
-            with open(self.model_path, 'rb') as f:
+            with open(self.model_path, "rb") as f:
                 self.model = pickle.load(f)
 
             logger.info(f"模型加载成功: {self.model_path}")
@@ -54,7 +53,7 @@ class SentimentAnalyzer:
     def get_comment_data(self) -> List[List]:
         """获取评论数据 - 改进版"""
         try:
-            sys.path.append(str(self.model_dir.parent / 'utils'))
+            sys.path.append(str(self.model_dir.parent / "utils"))
             from getPublicData import getAllCommentsData
 
             comment_list = getAllCommentsData()
@@ -76,8 +75,8 @@ class SentimentAnalyzer:
         """从CSV文件读取数据作为备用方案"""
         try:
             csv_files = [
-                self.model_dir.parent / 'spider' / 'commentsData.csv',
-                self.model_dir.parent / 'cache' / 'comments.csv'
+                self.model_dir.parent / "spider" / "commentsData.csv",
+                self.model_dir.parent / "cache" / "comments.csv",
             ]
 
             for csv_file in csv_files:
@@ -108,8 +107,9 @@ class SentimentAnalyzer:
 
                     if text and len(text) > 2:
                         import re
-                        text = re.sub(r'[^\u4e00-\u9fa5a-zA-Z0-9\s]', '', text)
-                        text = re.sub(r'\s+', ' ', text).strip()
+
+                        text = re.sub(r"[^\u4e00-\u9fa5a-zA-Z0-9\s]", "", text)
+                        text = re.sub(r"\s+", " ", text).strip()
 
                         if text:
                             processed_texts.append(text)
@@ -139,26 +139,30 @@ class SentimentAnalyzer:
                     prediction = self.model.predict([text])
                     probability = self.model.predict_proba([text])
 
-                    sentiment_map = {0: '负面', 1: '中性', 2: '正面'}
-                    sentiment = sentiment_map.get(prediction[0], '未知')
+                    sentiment_map = {0: "负面", 1: "中性", 2: "正面"}
+                    sentiment = sentiment_map.get(prediction[0], "未知")
 
                     confidence = float(np.max(probability))
 
-                    results.append({
-                        'text': text,
-                        'sentiment': sentiment,
-                        'confidence': confidence,
-                        'raw_prediction': int(prediction[0])
-                    })
+                    results.append(
+                        {
+                            "text": text,
+                            "sentiment": sentiment,
+                            "confidence": confidence,
+                            "raw_prediction": int(prediction[0]),
+                        }
+                    )
 
                 except Exception as e:
                     logger.warning(f"分析第{i}条文本失败: {e}")
-                    results.append({
-                        'text': text,
-                        'sentiment': '未知',
-                        'confidence': 0.0,
-                        'raw_prediction': -1
-                    })
+                    results.append(
+                        {
+                            "text": text,
+                            "sentiment": "未知",
+                            "confidence": 0.0,
+                            "raw_prediction": -1,
+                        }
+                    )
 
             logger.info(f"情感分析完成，处理 {len(results)} 条文本")
             return results
@@ -176,17 +180,20 @@ class SentimentAnalyzer:
         try:
             df = pd.DataFrame(results)
 
-            df['analysis_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            df["analysis_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            output_file = self.model_dir / f'sentiment_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
-            df.to_csv(output_file, index=False, encoding='utf-8')
+            output_file = (
+                self.model_dir
+                / f"sentiment_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            )
+            df.to_csv(output_file, index=False, encoding="utf-8")
 
             if self.target_csv.exists():
-                backup_file = self.target_csv.with_suffix('.csv.bak')
+                backup_file = self.target_csv.with_suffix(".csv.bak")
                 if self.target_csv.exists():
                     self.target_csv.rename(backup_file)
 
-            df.to_csv(self.target_csv, index=False, encoding='utf-8')
+            df.to_csv(self.target_csv, index=False, encoding="utf-8")
 
             logger.info(f"分析结果已保存: {output_file}")
             logger.info(f"目标文件已更新: {self.target_csv}")
@@ -196,7 +203,9 @@ class SentimentAnalyzer:
             logger.error(f"保存分析结果失败: {e}")
             return False
 
-    def generate_summary_statistics(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def generate_summary_statistics(
+        self, results: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """生成汇总统计 - 新增功能"""
         if not results:
             return {}
@@ -207,8 +216,8 @@ class SentimentAnalyzer:
             confidence_sum = 0
 
             for result in results:
-                sentiment = result.get('sentiment', '未知')
-                confidence = result.get('confidence', 0)
+                sentiment = result.get("sentiment", "未知")
+                confidence = result.get("confidence", 0)
 
                 sentiment_counts[sentiment] = sentiment_counts.get(sentiment, 0) + 1
                 confidence_sum += confidence
@@ -219,11 +228,13 @@ class SentimentAnalyzer:
             }
 
             summary = {
-                'total_comments': total_count,
-                'sentiment_counts': sentiment_counts,
-                'sentiment_ratios': sentiment_ratios,
-                'average_confidence': confidence_sum / total_count if total_count > 0 else 0,
-                'analysis_time': datetime.now().isoformat()
+                "total_comments": total_count,
+                "sentiment_counts": sentiment_counts,
+                "sentiment_ratios": sentiment_ratios,
+                "average_confidence": confidence_sum / total_count
+                if total_count > 0
+                else 0,
+                "analysis_time": datetime.now().isoformat(),
             }
 
             logger.info(f"统计汇总完成: {summary}")
@@ -262,9 +273,10 @@ class SentimentAnalyzer:
 
             summary = self.generate_summary_statistics(analysis_results)
             if summary:
-                summary_file = self.model_dir / 'analysis_summary.json'
+                summary_file = self.model_dir / "analysis_summary.json"
                 import json
-                with open(summary_file, 'w', encoding='utf-8') as f:
+
+                with open(summary_file, "w", encoding="utf-8") as f:
                     json.dump(summary, f, ensure_ascii=False, indent=2)
                 logger.info(f"统计汇总已保存: {summary_file}")
 
@@ -280,10 +292,12 @@ class SentimentAnalyzer:
         temp_files = []
 
         if not keep_results:
-            temp_files.extend([
-                self.model_dir / 'comment_1_fenci.txt',
-                self.model_dir / 'temp_analysis.csv'
-            ])
+            temp_files.extend(
+                [
+                    self.model_dir / "comment_1_fenci.txt",
+                    self.model_dir / "temp_analysis.csv",
+                ]
+            )
 
         for file_path in temp_files:
             try:
@@ -292,6 +306,7 @@ class SentimentAnalyzer:
                     logger.info(f"已删除临时文件: {file_path}")
             except Exception as e:
                 logger.warning(f"删除临时文件失败 {file_path}: {e}")
+
 
 def main():
     """主函数 - 程序入口"""
@@ -313,5 +328,6 @@ def main():
         logger.error(f"程序异常退出: {e}")
         sys.exit(1)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

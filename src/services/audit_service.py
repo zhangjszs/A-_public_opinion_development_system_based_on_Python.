@@ -9,10 +9,10 @@ import logging
 from utils.log_sanitizer import SafeLogger
 from utils.query import querys
 
-logger = SafeLogger('audit_service', logging.INFO)
+logger = SafeLogger("audit_service", logging.INFO)
 
 
-def audit_log(user_id, username, action, detail='', ip=''):
+def audit_log(user_id, username, action, detail="", ip=""):
     """
     写入审计日志
 
@@ -25,10 +25,16 @@ def audit_log(user_id, username, action, detail='', ip=''):
     """
     try:
         querys(
-            '''INSERT INTO audit_log (user_id, username, action, detail, ip)
-               VALUES (%s, %s, %s, %s, %s)''',
-            [user_id, str(username)[:50], str(action)[:50], str(detail)[:500], str(ip)[:45]],
-            'insert'
+            """INSERT INTO audit_log (user_id, username, action, detail, ip)
+               VALUES (%s, %s, %s, %s, %s)""",
+            [
+                user_id,
+                str(username)[:50],
+                str(action)[:50],
+                str(detail)[:500],
+                str(ip)[:45],
+            ],
+            "insert",
         )
     except Exception as e:
         # 审计日志写入失败不应影响业务流程

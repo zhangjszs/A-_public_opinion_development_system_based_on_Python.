@@ -3,8 +3,6 @@
 提供统一的情感标签转换功能
 """
 
-from typing import Tuple
-
 
 def get_sentiment_label(score: float) -> str:
     """
@@ -17,11 +15,11 @@ def get_sentiment_label(score: float) -> str:
         str: 情感标签 ('正面', '中性', '负面')
     """
     if score > 0.5:
-        return '正面'
+        return "正面"
     elif score == 0.5:
-        return '中性'
+        return "中性"
     else:
-        return '负面'
+        return "负面"
 
 
 def get_sentiment_score(label: str) -> float:
@@ -34,13 +32,7 @@ def get_sentiment_score(label: str) -> float:
     Returns:
         float: 情感分数
     """
-    label_map = {
-        '正面': 0.8,
-        '中性': 0.5,
-        '负面': 0.2,
-        '积极': 0.8,
-        '消极': 0.2
-    }
+    label_map = {"正面": 0.8, "中性": 0.5, "负面": 0.2, "积极": 0.8, "消极": 0.2}
     return label_map.get(label, 0.5)
 
 
@@ -55,11 +47,11 @@ def get_sentiment_type(score: float) -> str:
         str: 情感类型 ('positive', 'neutral', 'negative')
     """
     if score > 0.5:
-        return 'positive'
+        return "positive"
     elif score == 0.5:
-        return 'neutral'
+        return "neutral"
     else:
-        return 'negative'
+        return "negative"
 
 
 def get_sentiment_color(score: float) -> str:
@@ -73,11 +65,11 @@ def get_sentiment_color(score: float) -> str:
         str: 颜色代码
     """
     if score > 0.5:
-        return '#67C23A'
+        return "#67C23A"
     elif score == 0.5:
-        return '#E6A23C'
+        return "#E6A23C"
     else:
-        return '#F56C6C'
+        return "#F56C6C"
 
 
 def analyze_sentiment_distribution(scores: list) -> dict:
@@ -91,13 +83,7 @@ def analyze_sentiment_distribution(scores: list) -> dict:
         dict: 情感分布统计
     """
     if not scores:
-        return {
-            'positive': 0,
-            'neutral': 0,
-            'negative': 0,
-            'total': 0,
-            'average': 0
-        }
+        return {"positive": 0, "neutral": 0, "negative": 0, "total": 0, "average": 0}
 
     positive = sum(1 for s in scores if s > 0.5)
     neutral = sum(1 for s in scores if s == 0.5)
@@ -106,21 +92,21 @@ def analyze_sentiment_distribution(scores: list) -> dict:
     average = sum(scores) / total if total > 0 else 0
 
     return {
-        'positive': positive,
-        'neutral': neutral,
-        'negative': negative,
-        'total': total,
-        'average': round(average, 4),
-        'positive_ratio': round(positive / total, 4) if total > 0 else 0,
-        'neutral_ratio': round(neutral / total, 4) if total > 0 else 0,
-        'negative_ratio': round(negative / total, 4) if total > 0 else 0
+        "positive": positive,
+        "neutral": neutral,
+        "negative": negative,
+        "total": total,
+        "average": round(average, 4),
+        "positive_ratio": round(positive / total, 4) if total > 0 else 0,
+        "neutral_ratio": round(neutral / total, 4) if total > 0 else 0,
+        "negative_ratio": round(negative / total, 4) if total > 0 else 0,
     }
 
 
 __all__ = [
-    'get_sentiment_label',
-    'get_sentiment_score',
-    'get_sentiment_type',
-    'get_sentiment_color',
-    'analyze_sentiment_distribution'
+    "get_sentiment_label",
+    "get_sentiment_score",
+    "get_sentiment_type",
+    "get_sentiment_color",
+    "analyze_sentiment_distribution",
 ]

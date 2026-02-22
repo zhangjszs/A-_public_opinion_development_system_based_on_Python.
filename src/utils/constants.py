@@ -64,7 +64,7 @@ SENTIMENT_NEGATIVE_THRESHOLD: Final[float] = 0.5
 """情感分析中判断为负面的阈值"""
 
 # 情感标签
-SENTIMENT_LABELS: Final[tuple] = ('正面', '中性', '负面')
+SENTIMENT_LABELS: Final[tuple] = ("正面", "中性", "负面")
 """情感分析的三种标签"""
 
 
@@ -84,13 +84,13 @@ WORDCLOUD_DPI: Final[int] = 500
 
 # ========== 数据库表名 ==========
 
-TABLE_ARTICLE: Final[str] = 'article'
+TABLE_ARTICLE: Final[str] = "article"
 """文章数据表名"""
 
-TABLE_COMMENTS: Final[str] = 'comments'
+TABLE_COMMENTS: Final[str] = "comments"
 """评论数据表名"""
 
-TABLE_USER: Final[str] = 'user'
+TABLE_USER: Final[str] = "user"
 """用户数据表名"""
 
 
@@ -103,34 +103,34 @@ from config.settings import Config
 # ========== 文件路径常量 ==========
 
 # 停用词文件路径
-STOPWORDS_FILE: Final[str] = os.path.join(Config.MODEL_DIR, 'stopWords.txt')
+STOPWORDS_FILE: Final[str] = os.path.join(Config.MODEL_DIR, "stopWords.txt")
 """停用词文件路径"""
 
 # 词云模板图片路径
-CONTENT_MASK_IMAGE: Final[str] = os.path.join(Config.STATIC_DIR, 'content.jpg')
+CONTENT_MASK_IMAGE: Final[str] = os.path.join(Config.STATIC_DIR, "content.jpg")
 """内容词云遮罩图片"""
 
-COMMENT_MASK_IMAGE: Final[str] = os.path.join(Config.STATIC_DIR, 'comment.jpg')
+COMMENT_MASK_IMAGE: Final[str] = os.path.join(Config.STATIC_DIR, "comment.jpg")
 """评论词云遮罩图片"""
 
 # 词云输出路径
-CONTENT_CLOUD_OUTPUT: Final[str] = os.path.join(Config.STATIC_DIR, 'contentCloud.jpg')
+CONTENT_CLOUD_OUTPUT: Final[str] = os.path.join(Config.STATIC_DIR, "contentCloud.jpg")
 """内容词云输出路径"""
 
-COMMENT_CLOUD_OUTPUT: Final[str] = os.path.join(Config.STATIC_DIR, 'commentCloud.jpg')
+COMMENT_CLOUD_OUTPUT: Final[str] = os.path.join(Config.STATIC_DIR, "commentCloud.jpg")
 """评论词云输出路径"""
 
 
 # ========== 字体配置 ==========
 
 # 词云使用的字体
-WORDCLOUD_FONT: Final[str] = 'STHUPO.TTF'
+WORDCLOUD_FONT: Final[str] = "STHUPO.TTF"
 """词云使用的中文字体"""
 
 # 词云颜色方案
-WORDCLOUD_COLORMAP: Final[str] = 'Blues'
+WORDCLOUD_COLORMAP: Final[str] = "Blues"
 """词云颜色方案"""
 
 # 词云背景颜色
-WORDCLOUD_BACKGROUND: Final[str] = 'white'
+WORDCLOUD_BACKGROUND: Final[str] = "white"
 """词云背景颜色"""

@@ -4,8 +4,8 @@
 多角色权限、数据分享、操作日志、评论批注
 """
 
-import uuid
 import logging
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, auto
@@ -37,19 +37,30 @@ class RoleManager:
         self._register_defaults()
 
     def _register_defaults(self):
-        self.register(Role(
-            name="admin",
-            permissions={Permission.READ, Permission.WRITE, Permission.DELETE,
-                         Permission.MANAGE_USERS, Permission.EXPORT},
-        ))
-        self.register(Role(
-            name="analyst",
-            permissions={Permission.READ, Permission.WRITE, Permission.EXPORT},
-        ))
-        self.register(Role(
-            name="viewer",
-            permissions={Permission.READ},
-        ))
+        self.register(
+            Role(
+                name="admin",
+                permissions={
+                    Permission.READ,
+                    Permission.WRITE,
+                    Permission.DELETE,
+                    Permission.MANAGE_USERS,
+                    Permission.EXPORT,
+                },
+            )
+        )
+        self.register(
+            Role(
+                name="analyst",
+                permissions={Permission.READ, Permission.WRITE, Permission.EXPORT},
+            )
+        )
+        self.register(
+            Role(
+                name="viewer",
+                permissions={Permission.READ},
+            )
+        )
 
     def register(self, role: Role):
         self._roles[role.name] = role
@@ -79,9 +90,14 @@ class ShareService:
     def __init__(self):
         self._shares: Dict[str, ShareRecord] = {}
 
-    def create_share(self, resource_type: str, resource_id: str,
-                     owner_id: str, share_to: List[str],
-                     permission: str = "read") -> ShareRecord:
+    def create_share(
+        self,
+        resource_type: str,
+        resource_id: str,
+        owner_id: str,
+        share_to: List[str],
+        permission: str = "read",
+    ) -> ShareRecord:
         record = ShareRecord(
             share_id=str(uuid.uuid4()),
             resource_type=resource_type,
@@ -94,17 +110,16 @@ class ShareService:
         return record
 
     def get_shares_for_user(self, user_id: str) -> List[ShareRecord]:
-        return [r for r in self._shares.values()
-                if r.active and user_id in r.share_to]
+        return [r for r in self._shares.values() if r.active and user_id in r.share_to]
 
     def revoke_share(self, share_id: str):
         if share_id in self._shares:
             self._shares[share_id].active = False
 
-    def check_access(self, user_id: str, resource_type: str,
-                     resource_id: str) -> bool:
+    def check_access(self, user_id: str, resource_type: str, resource_id: str) -> bool:
         return any(
-            r.active and user_id in r.share_to
+            r.active
+            and user_id in r.share_to
             and r.resource_type == resource_type
             and r.resource_id == resource_id
             for r in self._shares.values()
@@ -126,8 +141,14 @@ class OperationLogger:
     def __init__(self):
         self._logs: List[OperationLog] = []
 
-    def log(self, user_id: str, action: str, resource_type: str,
-            resource_id: str, detail: Dict = None) -> OperationLog:
+    def log(
+        self,
+        user_id: str,
+        action: str,
+        resource_type: str,
+        resource_id: str,
+        detail: Dict = None,
+    ) -> OperationLog:
         entry = OperationLog(
             log_id=str(uuid.uuid4()),
             user_id=user_id,
@@ -139,7 +160,9 @@ class OperationLogger:
         self._logs.append(entry)
         return entry
 
-    def get_logs(self, user_id: str = None, resource_id: str = None) -> List[OperationLog]:
+    def get_logs(
+        self, user_id: str = None, resource_id: str = None
+    ) -> List[OperationLog]:
         result = self._logs
         if user_id:
             result = [l for l in result if l.user_id == user_id]
@@ -167,8 +190,14 @@ class AnnotationService:
     def __init__(self):
         self._annotations: Dict[str, Annotation] = {}
 
-    def add(self, resource_type: str, resource_id: str, user_id: str,
-            content: str, position: Dict) -> Annotation:
+    def add(
+        self,
+        resource_type: str,
+        resource_id: str,
+        user_id: str,
+        content: str,
+        position: Dict,
+    ) -> Annotation:
         ann = Annotation(
             annotation_id=str(uuid.uuid4()),
             resource_type=resource_type,
@@ -196,11 +225,12 @@ class AnnotationService:
         self._annotations[ann.annotation_id] = ann
         return ann
 
-    def get_by_resource(self, resource_type: str,
-                        resource_id: str) -> List[Annotation]:
-        return [a for a in self._annotations.values()
-                if a.resource_type == resource_type
-                and a.resource_id == resource_id]
+    def get_by_resource(self, resource_type: str, resource_id: str) -> List[Annotation]:
+        return [
+            a
+            for a in self._annotations.values()
+            if a.resource_type == resource_type and a.resource_id == resource_id
+        ]
 
     def delete(self, annotation_id: str):
         self._annotations.pop(annotation_id, None)

@@ -4,7 +4,6 @@
 功能：邮件通知、短信通知、WebSocket推送、通知队列、失败重试
 """
 
-import json
 import logging
 import smtplib
 import threading
@@ -12,7 +11,7 @@ import time
 import uuid
 from collections import deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from enum import Enum
@@ -23,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 class NotificationChannel(Enum):
     """通知渠道"""
+
     EMAIL = "email"
     SMS = "sms"
     WEBSOCKET = "websocket"
@@ -30,6 +30,7 @@ class NotificationChannel(Enum):
 
 class NotificationStatus(Enum):
     """通知状态"""
+
     PENDING = "pending"
     SENT = "sent"
     FAILED = "failed"
@@ -38,6 +39,7 @@ class NotificationStatus(Enum):
 
 class NotificationLevel(Enum):
     """通知级别"""
+
     INFO = "info"
     WARNING = "warning"
     DANGER = "danger"
@@ -47,6 +49,7 @@ class NotificationLevel(Enum):
 @dataclass
 class NotificationRecipient:
     """通知接收人"""
+
     user_id: int
     email: Optional[str] = None
     phone: Optional[str] = None
@@ -55,7 +58,9 @@ class NotificationRecipient:
     quiet_hours: Dict[str, str] = field(default_factory=dict)
     enabled: bool = True
 
-    def can_receive(self, level: NotificationLevel, channel: NotificationChannel) -> bool:
+    def can_receive(
+        self, level: NotificationLevel, channel: NotificationChannel
+    ) -> bool:
         """检查是否可以接收通知"""
         if not self.enabled:
             return False
@@ -64,7 +69,7 @@ class NotificationRecipient:
             NotificationLevel.INFO: 0,
             NotificationLevel.WARNING: 1,
             NotificationLevel.DANGER: 2,
-            NotificationLevel.CRITICAL: 3
+            NotificationLevel.CRITICAL: 3,
         }
 
         if level_order.get(level, 0) < level_order.get(self.min_level, 0):
@@ -75,9 +80,9 @@ class NotificationRecipient:
 
         if self.quiet_hours:
             now = datetime.now()
-            start = self.quiet_hours.get('start', '00:00')
-            end = self.quiet_hours.get('end', '00:00')
-            current_time = now.strftime('%H:%M')
+            start = self.quiet_hours.get("start", "00:00")
+            end = self.quiet_hours.get("end", "00:00")
+            current_time = now.strftime("%H:%M")
 
             if start <= end:
                 if start <= current_time <= end:
@@ -92,6 +97,7 @@ class NotificationRecipient:
 @dataclass
 class NotificationMessage:
     """通知消息"""
+
     id: str
     alert_id: str
     channel: NotificationChannel
@@ -109,26 +115,27 @@ class NotificationMessage:
 
     def to_dict(self) -> Dict:
         return {
-            'id': self.id,
-            'alert_id': self.alert_id,
-            'channel': self.channel.value,
-            'recipient_user_id': self.recipient.user_id,
-            'subject': self.subject,
-            'content': self.content,
-            'level': self.level.value,
-            'status': self.status.value,
-            'retry_count': self.retry_count,
-            'max_retries': self.max_retries,
-            'error_message': self.error_message,
-            'sent_at': self.sent_at.isoformat() if self.sent_at else None,
-            'created_at': self.created_at.isoformat(),
-            'metadata': self.metadata
+            "id": self.id,
+            "alert_id": self.alert_id,
+            "channel": self.channel.value,
+            "recipient_user_id": self.recipient.user_id,
+            "subject": self.subject,
+            "content": self.content,
+            "level": self.level.value,
+            "status": self.status.value,
+            "retry_count": self.retry_count,
+            "max_retries": self.max_retries,
+            "error_message": self.error_message,
+            "sent_at": self.sent_at.isoformat() if self.sent_at else None,
+            "created_at": self.created_at.isoformat(),
+            "metadata": self.metadata,
         }
 
 
 @dataclass
 class NotificationTemplate:
     """通知模板"""
+
     name: str
     alert_type: str
     channel: NotificationChannel
@@ -150,27 +157,28 @@ class EmailSender:
 
     def __init__(self, config: Dict = None):
         self.config = config or {}
-        self.smtp_host = self.config.get('smtp_host', 'smtp.example.com')
-        self.smtp_port = self.config.get('smtp_port', 465)
-        self.smtp_user = self.config.get('smtp_user', '')
-        self.smtp_password = self.config.get('smtp_password', '')
-        self.from_email = self.config.get('from_email', 'noreply@example.com')
-        self.from_name = self.config.get('from_name', '舆情监测系统')
-        self.use_ssl = self.config.get('use_ssl', True)
+        self.smtp_host = self.config.get("smtp_host", "smtp.example.com")
+        self.smtp_port = self.config.get("smtp_port", 465)
+        self.smtp_user = self.config.get("smtp_user", "")
+        self.smtp_password = self.config.get("smtp_password", "")
+        self.from_email = self.config.get("from_email", "noreply@example.com")
+        self.from_name = self.config.get("from_name", "舆情监测系统")
+        self.use_ssl = self.config.get("use_ssl", True)
 
-    def send(self, to_email: str, subject: str, content: str,
-             html: bool = True) -> tuple:
+    def send(
+        self, to_email: str, subject: str, content: str, html: bool = True
+    ) -> tuple:
         """发送邮件"""
         try:
-            msg = MIMEMultipart('alternative')
-            msg['From'] = f"{self.from_name} <{self.from_email}>"
-            msg['To'] = to_email
-            msg['Subject'] = subject
+            msg = MIMEMultipart("alternative")
+            msg["From"] = f"{self.from_name} <{self.from_email}>"
+            msg["To"] = to_email
+            msg["Subject"] = subject
 
             if html:
-                msg.attach(MIMEText(content, 'html', 'utf-8'))
+                msg.attach(MIMEText(content, "html", "utf-8"))
             else:
-                msg.attach(MIMEText(content, 'plain', 'utf-8'))
+                msg.attach(MIMEText(content, "plain", "utf-8"))
 
             if self.use_ssl:
                 server = smtplib.SMTP_SSL(self.smtp_host, self.smtp_port)
@@ -195,10 +203,10 @@ class SMSSender:
 
     def __init__(self, config: Dict = None):
         self.config = config or {}
-        self.access_key = self.config.get('access_key', '')
-        self.secret_key = self.config.get('secret_key', '')
-        self.sign_name = self.config.get('sign_name', '舆情监测')
-        self.template_code = self.config.get('template_code', '')
+        self.access_key = self.config.get("access_key", "")
+        self.secret_key = self.config.get("secret_key", "")
+        self.sign_name = self.config.get("sign_name", "舆情监测")
+        self.template_code = self.config.get("template_code", "")
 
     def send(self, phone: str, content: str, template_params: Dict = None) -> tuple:
         """发送短信"""
@@ -227,10 +235,10 @@ class NotificationQueue:
         self._retry_queue: deque = deque(maxlen=max_size)
         self._lock = threading.Lock()
         self._stats = {
-            'total_queued': 0,
-            'total_sent': 0,
-            'total_failed': 0,
-            'total_retries': 0
+            "total_queued": 0,
+            "total_sent": 0,
+            "total_failed": 0,
+            "total_retries": 0,
         }
 
     def enqueue(self, message: NotificationMessage) -> bool:
@@ -240,7 +248,7 @@ class NotificationQueue:
                 logger.warning("通知队列已满")
                 return False
             self._queue.append(message)
-            self._stats['total_queued'] += 1
+            self._stats["total_queued"] += 1
             return True
 
     def dequeue(self) -> Optional[NotificationMessage]:
@@ -257,7 +265,7 @@ class NotificationQueue:
                 return False
             message.status = NotificationStatus.RETRYING
             self._retry_queue.append(message)
-            self._stats['total_retries'] += 1
+            self._stats["total_retries"] += 1
             return True
 
     def get_retry_message(self) -> Optional[NotificationMessage]:
@@ -282,8 +290,8 @@ class NotificationQueue:
         with self._lock:
             return {
                 **self._stats,
-                'queue_size': len(self._queue),
-                'retry_queue_size': len(self._retry_queue)
+                "queue_size": len(self._queue),
+                "retry_queue_size": len(self._retry_queue),
             }
 
 
@@ -334,7 +342,7 @@ class NotificationService:
 舆情监测系统
 {system_time}
 """,
-                sms_template="【舆情预警】负面舆情激增：{message}。详情请登录系统查看。"
+                sms_template="【舆情预警】负面舆情激增：{message}。详情请登录系统查看。",
             ),
             NotificationTemplate(
                 name="情感突变",
@@ -360,7 +368,7 @@ class NotificationService:
 舆情监测系统
 {system_time}
 """,
-                sms_template="【舆情预警】情感突变：{direction}{magnitude:.2f}。请关注。"
+                sms_template="【舆情预警】情感突变：{direction}{magnitude:.2f}。请关注。",
             ),
             NotificationTemplate(
                 name="热点话题",
@@ -382,8 +390,8 @@ class NotificationService:
 舆情监测系统
 {system_time}
 """,
-                sms_template="【舆情预警】热点话题：{topic_name}，提及{mention_count}次。"
-            )
+                sms_template="【舆情预警】热点话题：{topic_name}，提及{mention_count}次。",
+            ),
         ]
 
         for template in default_templates:
@@ -418,39 +426,48 @@ class NotificationService:
             except Exception as e:
                 logger.error(f"回调执行失败: {e}")
 
-    def create_notification(self, alert_data: Dict,
-                            channel: NotificationChannel,
-                            recipient: NotificationRecipient) -> Optional[NotificationMessage]:
+    def create_notification(
+        self,
+        alert_data: Dict,
+        channel: NotificationChannel,
+        recipient: NotificationRecipient,
+    ) -> Optional[NotificationMessage]:
         """创建通知消息"""
-        alert_type = alert_data.get('alert_type', 'custom')
+        alert_type = alert_data.get("alert_type", "custom")
         template = self.templates.get(alert_type)
 
         if not template:
             subject = f"【舆情预警】{alert_data.get('title', '未知预警')}"
-            content = alert_data.get('message', '')
+            content = alert_data.get("message", "")
             sms_content = content[:70]
         else:
             context = {
-                'level': alert_data.get('level', 'warning'),
-                'trigger_time': alert_data.get('created_at', datetime.now().isoformat()),
-                'message': alert_data.get('message', ''),
-                'system_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                **alert_data
+                "level": alert_data.get("level", "warning"),
+                "trigger_time": alert_data.get(
+                    "created_at", datetime.now().isoformat()
+                ),
+                "message": alert_data.get("message", ""),
+                "system_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                **alert_data,
             }
             subject, content, sms_content = template.render(context)
 
-        level_str = alert_data.get('level', 'warning')
-        level = NotificationLevel(level_str) if level_str in [e.value for e in NotificationLevel] else NotificationLevel.WARNING
+        level_str = alert_data.get("level", "warning")
+        level = (
+            NotificationLevel(level_str)
+            if level_str in [e.value for e in NotificationLevel]
+            else NotificationLevel.WARNING
+        )
 
         message = NotificationMessage(
             id=str(uuid.uuid4()),
-            alert_id=alert_data.get('id', ''),
+            alert_id=alert_data.get("id", ""),
             channel=channel,
             recipient=recipient,
             subject=subject,
             content=content if channel == NotificationChannel.EMAIL else sms_content,
             level=level,
-            metadata={'alert_data': alert_data}
+            metadata={"alert_data": alert_data},
         )
 
         return message
@@ -463,9 +480,7 @@ class NotificationService:
         if message.channel == NotificationChannel.EMAIL:
             if message.recipient.email:
                 success, error_msg = self.email_sender.send(
-                    message.recipient.email,
-                    message.subject,
-                    message.content
+                    message.recipient.email, message.subject, message.content
                 )
             else:
                 error_msg = "接收人邮箱为空"
@@ -473,8 +488,7 @@ class NotificationService:
         elif message.channel == NotificationChannel.SMS:
             if message.recipient.phone:
                 success, error_msg = self.sms_sender.send(
-                    message.recipient.phone,
-                    message.content
+                    message.recipient.phone, message.content
                 )
             else:
                 error_msg = "接收人手机号为空"
@@ -482,6 +496,7 @@ class NotificationService:
         elif message.channel == NotificationChannel.WEBSOCKET:
             try:
                 from services.websocket_service import websocket_service
+
                 if websocket_service.socketio:
                     websocket_service.send_to_user(
                         str(message.recipient.user_id),
@@ -489,8 +504,8 @@ class NotificationService:
                             websocket_service.MessageType.NOTIFICATION,
                             title=message.subject,
                             content=message.content,
-                            level=message.level.value
-                        )
+                            level=message.level.value,
+                        ),
                     )
                     success = True
                 else:
@@ -501,23 +516,28 @@ class NotificationService:
         if success:
             message.status = NotificationStatus.SENT
             message.sent_at = datetime.now()
-            self.queue._stats['total_sent'] += 1
+            self.queue._stats["total_sent"] += 1
         else:
             message.status = NotificationStatus.FAILED
             message.error_message = error_msg
-            self.queue._stats['total_failed'] += 1
+            self.queue._stats["total_failed"] += 1
 
         self._trigger_callbacks(message)
         return success, error_msg
 
-    def queue_notification(self, alert_data: Dict,
-                           channels: List[NotificationChannel] = None):
+    def queue_notification(
+        self, alert_data: Dict, channels: List[NotificationChannel] = None
+    ):
         """将通知加入队列"""
         if channels is None:
             channels = [NotificationChannel.EMAIL, NotificationChannel.SMS]
 
-        level_str = alert_data.get('level', 'warning')
-        level = NotificationLevel(level_str) if level_str in [e.value for e in NotificationLevel] else NotificationLevel.WARNING
+        level_str = alert_data.get("level", "warning")
+        level = (
+            NotificationLevel(level_str)
+            if level_str in [e.value for e in NotificationLevel]
+            else NotificationLevel.WARNING
+        )
 
         with self._lock:
             recipients = list(self.recipients.values())
@@ -544,7 +564,7 @@ class NotificationService:
 
             retry_message = self.queue.get_retry_message()
             if retry_message:
-                time.sleep(2 ** retry_message.retry_count)
+                time.sleep(2**retry_message.retry_count)
                 self.send_notification(retry_message)
 
             time.sleep(0.1)
@@ -569,10 +589,10 @@ class NotificationService:
     def get_stats(self) -> Dict:
         """获取统计"""
         return {
-            'queue_stats': self.queue.get_stats(),
-            'recipient_count': len(self.recipients),
-            'template_count': len(self.templates),
-            'running': self._running
+            "queue_stats": self.queue.get_stats(),
+            "recipient_count": len(self.recipients),
+            "template_count": len(self.templates),
+            "running": self._running,
         }
 
 
@@ -580,15 +600,15 @@ notification_service = NotificationService()
 
 
 __all__ = [
-    'NotificationChannel',
-    'NotificationStatus',
-    'NotificationLevel',
-    'NotificationRecipient',
-    'NotificationMessage',
-    'NotificationTemplate',
-    'EmailSender',
-    'SMSSender',
-    'NotificationQueue',
-    'NotificationService',
-    'notification_service'
+    "NotificationChannel",
+    "NotificationStatus",
+    "NotificationLevel",
+    "NotificationRecipient",
+    "NotificationMessage",
+    "NotificationTemplate",
+    "EmailSender",
+    "SMSSender",
+    "NotificationQueue",
+    "NotificationService",
+    "notification_service",
 ]

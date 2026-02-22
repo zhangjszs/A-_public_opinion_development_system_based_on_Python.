@@ -9,9 +9,9 @@ import io
 import logging
 import threading
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from models.alert import Alert, AlertHistory, AlertLevel, AlertType
 
@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AlertHistoryFilter:
     """历史记录筛选条件"""
+
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     alert_type: Optional[AlertType] = None
@@ -48,8 +49,10 @@ class AlertHistoryFilter:
             return False
         if self.keyword:
             keyword_lower = self.keyword.lower()
-            if (keyword_lower not in alert.title.lower() and
-                keyword_lower not in alert.message.lower()):
+            if (
+                keyword_lower not in alert.title.lower()
+                and keyword_lower not in alert.message.lower()
+            ):
                 return False
         return True
 
@@ -57,6 +60,7 @@ class AlertHistoryFilter:
 @dataclass
 class PaginationParams:
     """分页参数"""
+
     page: int = 1
     page_size: int = 20
     sort_by: str = "created_at"
@@ -66,6 +70,7 @@ class PaginationParams:
 @dataclass
 class PaginatedResult:
     """分页结果"""
+
     items: List[Dict]
     total: int
     page: int
@@ -99,14 +104,14 @@ class AlertHistoryManager:
             is_read=alert.is_read,
             is_handled=alert.is_handled,
             handler=alert.handler,
-            handled_at=alert.handled_at
+            handled_at=alert.handled_at,
         )
 
         with self._lock:
             self._history.append(history)
 
             if len(self._history) > self.max_records:
-                self._history = self._history[-self.max_records:]
+                self._history = self._history[-self.max_records :]
 
             self._invalidate_stats_cache()
 
@@ -121,8 +126,11 @@ class AlertHistoryManager:
                     return alert
         return None
 
-    def query(self, filter_params: AlertHistoryFilter = None,
-              pagination: PaginationParams = None) -> PaginatedResult:
+    def query(
+        self,
+        filter_params: AlertHistoryFilter = None,
+        pagination: PaginationParams = None,
+    ) -> PaginatedResult:
         """查询历史记录"""
         with self._lock:
             filtered = list(self._history)
@@ -142,7 +150,7 @@ class AlertHistoryManager:
                         AlertLevel.INFO: 0,
                         AlertLevel.WARNING: 1,
                         AlertLevel.DANGER: 2,
-                        AlertLevel.CRITICAL: 3
+                        AlertLevel.CRITICAL: 3,
                     }
                     return level_order.get(alert.level, 0)
                 elif sort_key == "alert_type":
@@ -153,7 +161,11 @@ class AlertHistoryManager:
             filtered.sort(key=get_sort_value, reverse=reverse)
 
             total = len(filtered)
-            total_pages = (total + pagination.page_size - 1) // pagination.page_size if pagination.page_size > 0 else 0
+            total_pages = (
+                (total + pagination.page_size - 1) // pagination.page_size
+                if pagination.page_size > 0
+                else 0
+            )
 
             start_idx = (pagination.page - 1) * pagination.page_size
             end_idx = start_idx + pagination.page_size
@@ -166,7 +178,7 @@ class AlertHistoryManager:
                 page_size=pagination.page_size,
                 total_pages=total_pages,
                 has_next=pagination.page < total_pages,
-                has_prev=pagination.page > 1
+                has_prev=pagination.page > 1,
             )
 
         return PaginatedResult(
@@ -176,7 +188,7 @@ class AlertHistoryManager:
             page_size=len(filtered),
             total_pages=1,
             has_next=False,
-            has_prev=False
+            has_prev=False,
         )
 
     def mark_read(self, alert_id: str) -> bool:
@@ -189,8 +201,9 @@ class AlertHistoryManager:
                     return True
         return False
 
-    def mark_handled(self, alert_id: str, handler: str,
-                     notes: Optional[str] = None) -> bool:
+    def mark_handled(
+        self, alert_id: str, handler: str, notes: Optional[str] = None
+    ) -> bool:
         """标记为已处理"""
         with self._lock:
             for alert in self._history:
@@ -265,9 +278,11 @@ class AlertHistoryManager:
         cache_key = f"stats_{time_range}"
         now = datetime.now()
 
-        if (self._stats_cache_time and
-            self._stats_cache.get(cache_key) and
-            (now - self._stats_cache_time).total_seconds() < 300):
+        if (
+            self._stats_cache_time
+            and self._stats_cache.get(cache_key)
+            and (now - self._stats_cache_time).total_seconds() < 300
+        ):
             return self._stats_cache[cache_key]
 
         with self._lock:
@@ -285,10 +300,10 @@ class AlertHistoryManager:
             level_counts[alert.level.value] += 1
             type_counts[alert.alert_type.value] += 1
 
-            date_key = alert.created_at.strftime('%Y-%m-%d')
+            date_key = alert.created_at.strftime("%Y-%m-%d")
             daily_counts[date_key] += 1
 
-            hour_key = alert.created_at.strftime('%Y-%m-%d %H:00')
+            hour_key = alert.created_at.strftime("%Y-%m-%d %H:00")
             hourly_counts[hour_key] += 1
 
         total = len(recent)
@@ -297,32 +312,26 @@ class AlertHistoryManager:
 
         daily_trend = []
         for i in range(time_range):
-            date = (now - timedelta(days=i)).strftime('%Y-%m-%d')
-            daily_trend.append({
-                'date': date,
-                'count': daily_counts.get(date, 0)
-            })
+            date = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+            daily_trend.append({"date": date, "count": daily_counts.get(date, 0)})
         daily_trend.reverse()
 
         hourly_trend = []
         for i in range(24):
-            hour = (now - timedelta(hours=i)).strftime('%Y-%m-%d %H:00')
-            hourly_trend.append({
-                'hour': hour,
-                'count': hourly_counts.get(hour, 0)
-            })
+            hour = (now - timedelta(hours=i)).strftime("%Y-%m-%d %H:00")
+            hourly_trend.append({"hour": hour, "count": hourly_counts.get(hour, 0)})
         hourly_trend.reverse()
 
         stats = {
-            'time_range_days': time_range,
-            'total_alerts': total,
-            'unread_count': unread,
-            'unhandled_count': unhandled,
-            'level_distribution': dict(level_counts),
-            'type_distribution': dict(type_counts),
-            'daily_trend': daily_trend,
-            'hourly_trend': hourly_trend,
-            'generated_at': now.isoformat()
+            "time_range_days": time_range,
+            "total_alerts": total,
+            "unread_count": unread,
+            "unhandled_count": unhandled,
+            "level_distribution": dict(level_counts),
+            "type_distribution": dict(type_counts),
+            "daily_trend": daily_trend,
+            "hourly_trend": hourly_trend,
+            "generated_at": now.isoformat(),
         }
 
         self._stats_cache[cache_key] = stats
@@ -359,26 +368,42 @@ class AlertHistoryManager:
         output = io.StringIO()
         writer = csv.writer(output)
 
-        writer.writerow([
-            'ID', '规则ID', '预警类型', '预警级别', '标题', '消息',
-            '创建时间', '已读', '已处理', '处理人', '处理时间', '备注'
-        ])
+        writer.writerow(
+            [
+                "ID",
+                "规则ID",
+                "预警类型",
+                "预警级别",
+                "标题",
+                "消息",
+                "创建时间",
+                "已读",
+                "已处理",
+                "处理人",
+                "处理时间",
+                "备注",
+            ]
+        )
 
         for alert in filtered:
-            writer.writerow([
-                alert.id,
-                alert.rule_id,
-                alert.alert_type.value,
-                alert.level.value,
-                alert.title,
-                alert.message,
-                alert.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-                '是' if alert.is_read else '否',
-                '是' if alert.is_handled else '否',
-                alert.handler or '',
-                alert.handled_at.strftime('%Y-%m-%d %H:%M:%S') if alert.handled_at else '',
-                alert.notes or ''
-            ])
+            writer.writerow(
+                [
+                    alert.id,
+                    alert.rule_id,
+                    alert.alert_type.value,
+                    alert.level.value,
+                    alert.title,
+                    alert.message,
+                    alert.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                    "是" if alert.is_read else "否",
+                    "是" if alert.is_handled else "否",
+                    alert.handler or "",
+                    alert.handled_at.strftime("%Y-%m-%d %H:%M:%S")
+                    if alert.handled_at
+                    else "",
+                    alert.notes or "",
+                ]
+            )
 
         return output.getvalue()
 
@@ -394,11 +419,7 @@ class AlertHistoryManager:
 
         filtered.sort(key=lambda x: x.created_at, reverse=True)
 
-        return json.dumps(
-            [a.to_dict() for a in filtered],
-            ensure_ascii=False,
-            indent=2
-        )
+        return json.dumps([a.to_dict() for a in filtered], ensure_ascii=False, indent=2)
 
     def count(self) -> int:
         """获取记录总数"""
@@ -420,9 +441,9 @@ alert_history_manager = AlertHistoryManager()
 
 
 __all__ = [
-    'AlertHistoryFilter',
-    'PaginationParams',
-    'PaginatedResult',
-    'AlertHistoryManager',
-    'alert_history_manager'
+    "AlertHistoryFilter",
+    "PaginationParams",
+    "PaginatedResult",
+    "AlertHistoryManager",
+    "alert_history_manager",
 ]

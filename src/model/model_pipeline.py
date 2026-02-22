@@ -5,27 +5,29 @@
 """
 
 import logging
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 # 添加项目路径
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
-sys.path.append(str(project_root / 'utils'))
+sys.path.append(str(project_root / "utils"))
 
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler(project_root / 'logs' / 'model_pipeline.log', encoding='utf-8'),
-        logging.StreamHandler()
-    ]
+        logging.FileHandler(
+            project_root / "logs" / "model_pipeline.log", encoding="utf-8"
+        ),
+        logging.StreamHandler(),
+    ],
 )
 logger = logging.getLogger(__name__)
+
 
 class ModelPipeline:
     """完整的模型处理流水线"""
@@ -41,11 +43,11 @@ class ModelPipeline:
 
         # 流水线状态
         self.pipeline_status = {
-            'data_processing': False,
-            'sentiment_analysis': False,
-            'frequency_analysis': False,
-            'start_time': None,
-            'end_time': None
+            "data_processing": False,
+            "sentiment_analysis": False,
+            "frequency_analysis": False,
+            "start_time": None,
+            "end_time": None,
         }
 
         logger.info("模型流水线初始化完成")
@@ -83,7 +85,7 @@ class ModelPipeline:
                 return False
 
             success = self.data_processor.process_data_pipeline()
-            self.pipeline_status['data_processing'] = success
+            self.pipeline_status["data_processing"] = success
 
             if success:
                 logger.info("✅ 数据处理完成")
@@ -106,7 +108,7 @@ class ModelPipeline:
                 return False
 
             success = self.sentiment_analyzer.run_analysis_pipeline()
-            self.pipeline_status['sentiment_analysis'] = success
+            self.pipeline_status["sentiment_analysis"] = success
 
             if success:
                 logger.info("✅ 情感分析完成")
@@ -129,7 +131,7 @@ class ModelPipeline:
                 return False
 
             success = self.frequency_analyzer.run_frequency_analysis()
-            self.pipeline_status['frequency_analysis'] = success
+            self.pipeline_status["frequency_analysis"] = success
 
             if success:
                 logger.info("✅ 词频分析完成")
@@ -147,38 +149,44 @@ class ModelPipeline:
         try:
             # 计算执行时间
             execution_time = None
-            if self.pipeline_status['start_time'] and self.pipeline_status['end_time']:
+            if self.pipeline_status["start_time"] and self.pipeline_status["end_time"]:
                 execution_time = (
-                    self.pipeline_status['end_time'] -
-                    self.pipeline_status['start_time']
+                    self.pipeline_status["end_time"]
+                    - self.pipeline_status["start_time"]
                 ).total_seconds()
 
             # 统计成功步骤
-            successful_steps = sum(1 for status in self.pipeline_status.values() if status is True)
+            successful_steps = sum(
+                1 for status in self.pipeline_status.values() if status is True
+            )
             total_steps = 3  # 数据处理、情感分析、词频分析
 
             # 收集文件信息
             output_files = []
             for file_path in [
-                self.model_dir / 'comment_1_fenci.txt',
-                self.model_dir / 'target.csv',
-                self.model_dir / 'comment_1_fenci_qutingyongci_cipin.csv',
-                self.model_dir / 'analysis_summary.json',
-                self.model_dir / 'frequency_report.json'
+                self.model_dir / "comment_1_fenci.txt",
+                self.model_dir / "target.csv",
+                self.model_dir / "comment_1_fenci_qutingyongci_cipin.csv",
+                self.model_dir / "analysis_summary.json",
+                self.model_dir / "frequency_report.json",
             ]:
                 if file_path.exists():
-                    output_files.append({
-                        'file': str(file_path),
-                        'size': file_path.stat().st_size,
-                        'modified': datetime.fromtimestamp(file_path.stat().st_mtime).isoformat()
-                    })
+                    output_files.append(
+                        {
+                            "file": str(file_path),
+                            "size": file_path.stat().st_size,
+                            "modified": datetime.fromtimestamp(
+                                file_path.stat().st_mtime
+                            ).isoformat(),
+                        }
+                    )
 
             report = {
-                'pipeline_status': self.pipeline_status,
-                'execution_time_seconds': execution_time,
-                'success_rate': f"{successful_steps}/{total_steps}",
-                'output_files': output_files,
-                'timestamp': datetime.now().isoformat()
+                "pipeline_status": self.pipeline_status,
+                "execution_time_seconds": execution_time,
+                "success_rate": f"{successful_steps}/{total_steps}",
+                "output_files": output_files,
+                "timestamp": datetime.now().isoformat(),
             }
 
             return report
@@ -192,9 +200,12 @@ class ModelPipeline:
         try:
             import json
 
-            report_file = self.model_dir / f'pipeline_report_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+            report_file = (
+                self.model_dir
+                / f"pipeline_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            )
 
-            with open(report_file, 'w', encoding='utf-8') as f:
+            with open(report_file, "w", encoding="utf-8") as f:
                 json.dump(report, f, ensure_ascii=False, indent=2)
 
             logger.info(f"流水线报告已保存: {report_file}")
@@ -210,7 +221,7 @@ class ModelPipeline:
 
         try:
             # 记录开始时间
-            self.pipeline_status['start_time'] = datetime.now()
+            self.pipeline_status["start_time"] = datetime.now()
 
             # 1. 初始化模块
             if not self._initialize_modules():
@@ -236,7 +247,7 @@ class ModelPipeline:
                 return False
 
             # 记录结束时间
-            self.pipeline_status['end_time'] = datetime.now()
+            self.pipeline_status["end_time"] = datetime.now()
 
             # 5. 生成和保存报告
             report = self.generate_pipeline_report()
@@ -244,11 +255,7 @@ class ModelPipeline:
                 self.save_pipeline_report(report)
 
             # 判断总体成功
-            overall_success = all([
-                data_success,
-                sentiment_success,
-                frequency_success
-            ])
+            overall_success = all([data_success, sentiment_success, frequency_success])
 
             if overall_success:
                 logger.info("🎉 完整模型流水线执行成功!")
@@ -259,7 +266,7 @@ class ModelPipeline:
 
         except Exception as e:
             logger.error(f"流水线执行异常: {e}")
-            self.pipeline_status['end_time'] = datetime.now()
+            self.pipeline_status["end_time"] = datetime.now()
             return False
 
     def run_step_by_step(self) -> bool:
@@ -271,13 +278,13 @@ class ModelPipeline:
             if not self._initialize_modules():
                 return False
 
-            self.pipeline_status['start_time'] = datetime.now()
+            self.pipeline_status["start_time"] = datetime.now()
 
             # 逐步执行
             steps = [
                 ("数据处理", self.run_data_processing),
                 ("情感分析", self.run_sentiment_analysis),
-                ("词频分析", self.run_frequency_analysis)
+                ("词频分析", self.run_frequency_analysis),
             ]
 
             for step_name, step_func in steps:
@@ -291,18 +298,20 @@ class ModelPipeline:
                         logger.error(f"❌ {step_name} 失败")
 
                         # 询问是否继续
-                        user_input = input(f"{step_name} 失败，是否继续下一步？(y/n): ").lower()
-                        if user_input != 'y':
+                        user_input = input(
+                            f"{step_name} 失败，是否继续下一步？(y/n): "
+                        ).lower()
+                        if user_input != "y":
                             logger.info("用户选择终止流水线")
                             return False
 
                 except Exception as e:
                     logger.error(f"{step_name} 异常: {e}")
                     user_input = input(f"{step_name} 异常，是否继续？(y/n): ").lower()
-                    if user_input != 'y':
+                    if user_input != "y":
                         return False
 
-            self.pipeline_status['end_time'] = datetime.now()
+            self.pipeline_status["end_time"] = datetime.now()
 
             # 生成报告
             report = self.generate_pipeline_report()
@@ -319,6 +328,7 @@ class ModelPipeline:
             logger.error(f"逐步执行异常: {e}")
             return False
 
+
 def main():
     """主函数"""
     try:
@@ -327,26 +337,32 @@ def main():
 
         # 检查命令行参数
         import argparse
-        parser = argparse.ArgumentParser(description='模型处理流水线')
-        parser.add_argument('--mode', choices=['complete', 'step', 'data', 'sentiment', 'frequency'],
-                          default='complete', help='执行模式')
-        parser.add_argument('--skip-on-error', action='store_true',
-                          help='遇到错误时跳过继续执行')
+
+        parser = argparse.ArgumentParser(description="模型处理流水线")
+        parser.add_argument(
+            "--mode",
+            choices=["complete", "step", "data", "sentiment", "frequency"],
+            default="complete",
+            help="执行模式",
+        )
+        parser.add_argument(
+            "--skip-on-error", action="store_true", help="遇到错误时跳过继续执行"
+        )
 
         args = parser.parse_args()
 
         # 根据模式执行
-        if args.mode == 'complete':
+        if args.mode == "complete":
             success = pipeline.run_complete_pipeline(skip_on_error=args.skip_on_error)
-        elif args.mode == 'step':
+        elif args.mode == "step":
             success = pipeline.run_step_by_step()
-        elif args.mode == 'data':
+        elif args.mode == "data":
             pipeline._initialize_modules()
             success = pipeline.run_data_processing()
-        elif args.mode == 'sentiment':
+        elif args.mode == "sentiment":
             pipeline._initialize_modules()
             success = pipeline.run_sentiment_analysis()
-        elif args.mode == 'frequency':
+        elif args.mode == "frequency":
             pipeline._initialize_modules()
             success = pipeline.run_frequency_analysis()
         else:
@@ -367,5 +383,6 @@ def main():
         logger.error(f"程序异常: {e}")
         sys.exit(1)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

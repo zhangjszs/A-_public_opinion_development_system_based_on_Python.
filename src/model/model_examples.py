@@ -4,7 +4,6 @@
 演示如何使用新的模型处理模块
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -12,8 +11,9 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 model_dir = Path(__file__).parent
 sys.path.append(str(project_root))
-sys.path.append(str(project_root / 'utils'))
+sys.path.append(str(project_root / "utils"))
 sys.path.append(str(model_dir))
+
 
 def example_data_processing():
     """示例：数据处理"""
@@ -32,7 +32,7 @@ def example_data_processing():
         [2, "user2", "2024-01-01", "comment", "质量一般，价格有点贵"],
         [3, "user3", "2024-01-01", "comment", "客服态度很好，物流也很快"],
         [4, "user4", "2024-01-01", "comment", "包装精美，产品符合预期"],
-        [5, "user5", "2024-01-01", "comment", "性价比不错，值得购买"]
+        [5, "user5", "2024-01-01", "comment", "性价比不错，值得购买"],
     ]
 
     # 处理文本
@@ -47,6 +47,7 @@ def example_data_processing():
         # 计算词频
         freq_success = processor.calculate_word_frequency(max_words=50)
         print(f"词频计算: {'成功' if freq_success else '失败'}")
+
 
 def example_sentiment_analysis():
     """示例：情感分析"""
@@ -65,11 +66,13 @@ def example_sentiment_analysis():
         "质量一般，不太满意",
         "还可以吧，中规中矩",
         "非常失望，完全不值这个价格",
-        "超出预期，物超所值"
+        "超出预期，物超所值",
     ]
 
     # 预处理文本
-    processed_texts = analyzer.preprocess_comments([[1, 2, 3, 4, text] for text in test_texts])
+    processed_texts = analyzer.preprocess_comments(
+        [[1, 2, 3, 4, text] for text in test_texts]
+    )
     print(f"预处理完成，文本数量: {len(processed_texts)}")
 
     # 检查模型文件
@@ -94,6 +97,7 @@ def example_sentiment_analysis():
     else:
         print(f"模型文件不存在: {analyzer.model_path}")
         print("请先运行 trainModel.py 训练模型")
+
 
 def example_word_frequency():
     """示例：词频分析"""
@@ -133,6 +137,7 @@ def example_word_frequency():
         print(f"输入文件不存在: {analyzer.input_file}")
         print("请先运行数据处理步骤")
 
+
 def example_pipeline():
     """示例：完整流水线"""
     print("=" * 50)
@@ -163,6 +168,7 @@ def example_pipeline():
         # 生成示例报告
         report = pipeline.generate_pipeline_report()
         print(f"\n流水线报告生成: {'成功' if report else '失败'}")
+
 
 def main():
     """主函数"""
@@ -195,7 +201,9 @@ def main():
     except Exception as e:
         print(f"示例执行出错: {e}")
         import traceback
+
         traceback.print_exc()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

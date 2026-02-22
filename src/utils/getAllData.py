@@ -1,7 +1,4 @@
-import pandas as pd
-from snownlp import SnowNLP
-
-from .getPublicData import getAllCiPingTotal, getAllCommentsData, getAllData
+from .getPublicData import getAllCommentsData, getAllData
 
 allData = getAllData()
 commentList = getAllCommentsData()
@@ -163,4 +160,3 @@ commentList = getAllCommentsData()
 #
 #     return xData,yData,y1Data,y2Data,y3Data,treeData,barData,barData1
 #
-

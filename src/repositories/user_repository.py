@@ -27,7 +27,7 @@ class UserRepository(BaseRepository):
 
     def update_profile(self, user_id: int, **kwargs) -> bool:
         """Update user profile fields (nickname, email, bio, avatar_color)."""
-        allowed_fields = {'nickname', 'email', 'bio', 'avatar_color'}
+        allowed_fields = {"nickname", "email", "bio", "avatar_color"}
         updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
         if not updates:
             return False
@@ -43,7 +43,7 @@ class UserRepository(BaseRepository):
         """Update user password."""
         try:
             self.session.query(User).filter_by(id=user_id).update(
-                {'password': new_password_hash}
+                {"password": new_password_hash}
             )
             self.session.commit()
             return True
@@ -54,12 +54,12 @@ class UserRepository(BaseRepository):
     @staticmethod
     def _user_to_dict(user: User) -> Dict[str, Any]:
         return {
-            'id': user.id,
-            'username': user.username,
-            'password': user.password,
-            'create_time': user.create_time,
-            'nickname': user.nickname,
-            'email': user.email,
-            'bio': user.bio,
-            'avatar_color': user.avatar_color,
+            "id": user.id,
+            "username": user.username,
+            "password": user.password,
+            "create_time": user.create_time,
+            "nickname": user.nickname,
+            "email": user.email,
+            "bio": user.bio,
+            "avatar_color": user.avatar_color,
         }

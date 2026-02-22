@@ -3,13 +3,11 @@
 高级搜索服务单元测试
 """
 
-import pytest
 import sys
-import os
-from datetime import datetime
-from pathlib import Path
 
-sys.path.insert(0, 'src')
+import pytest
+
+sys.path.insert(0, "src")
 
 
 class TestPinyinConverter:
@@ -31,7 +29,7 @@ class TestPinyinConverter:
         converter = PinyinConverter()
         result = converter.to_full_pinyin("微博")
 
-        assert 'wei' in result or 'bo' in result
+        assert "wei" in result or "bo" in result
 
     def test_mixed_content(self):
         """测试混合内容"""
@@ -51,7 +49,7 @@ class TestAdvancedSearchEngine:
         """创建搜索引擎实例"""
         from services.search_service import AdvancedSearchEngine
 
-        db_path = str(tmp_path / 'test_search.db')
+        db_path = str(tmp_path / "test_search.db")
         return AdvancedSearchEngine(db_path)
 
     def test_init(self, engine):
@@ -65,24 +63,24 @@ class TestAdvancedSearchEngine:
             title="测试文章",
             content="这是一篇测试文章的内容",
             source_type="article",
-            author="测试作者"
+            author="测试作者",
         )
 
         stats = engine.get_stats()
-        assert stats['total_documents'] == 1
+        assert stats["total_documents"] == 1
 
     def test_batch_index(self, engine):
         """测试批量索引"""
         documents = [
-            {'id': 'doc-001', 'title': '文章1', 'content': '内容1', 'author': '作者1'},
-            {'id': 'doc-002', 'title': '文章2', 'content': '内容2', 'author': '作者2'},
-            {'id': 'doc-003', 'title': '文章3', 'content': '内容3', 'author': '作者3'},
+            {"id": "doc-001", "title": "文章1", "content": "内容1", "author": "作者1"},
+            {"id": "doc-002", "title": "文章2", "content": "内容2", "author": "作者2"},
+            {"id": "doc-003", "title": "文章3", "content": "内容3", "author": "作者3"},
         ]
 
         engine.batch_index(documents)
 
         stats = engine.get_stats()
-        assert stats['total_documents'] == 3
+        assert stats["total_documents"] == 3
 
     def test_search(self, engine):
         """测试搜索"""
@@ -91,7 +89,7 @@ class TestAdvancedSearchEngine:
             title="微博舆情分析",
             content="这是一篇关于微博舆情分析的测试文章",
             source_type="article",
-            author="测试作者"
+            author="测试作者",
         )
 
         results = engine.search("微博")
@@ -105,14 +103,14 @@ class TestAdvancedSearchEngine:
             title="测试文章",
             content="测试内容",
             source_type="article",
-            author="作者1"
+            author="作者1",
         )
         engine.index_document(
             doc_id="test-002",
             title="测试评论",
             content="测试评论内容",
             source_type="comment",
-            author="作者2"
+            author="作者2",
         )
 
         results = engine.search("测试", source_type="article")
@@ -123,16 +121,10 @@ class TestAdvancedSearchEngine:
     def test_get_suggestions(self, engine):
         """测试搜索建议"""
         engine.index_document(
-            doc_id="test-001",
-            title="微博舆情分析系统",
-            content="内容",
-            author="作者"
+            doc_id="test-001", title="微博舆情分析系统", content="内容", author="作者"
         )
         engine.index_document(
-            doc_id="test-002",
-            title="微博数据分析",
-            content="内容",
-            author="作者"
+            doc_id="test-002", title="微博数据分析", content="内容", author="作者"
         )
 
         suggestions = engine.get_suggestions("微博")
@@ -141,33 +133,27 @@ class TestAdvancedSearchEngine:
 
     def test_remove_document(self, engine):
         """测试删除文档"""
-        engine.index_document(
-            doc_id="test-001",
-            title="测试文章",
-            content="测试内容"
-        )
+        engine.index_document(doc_id="test-001", title="测试文章", content="测试内容")
 
         stats = engine.get_stats()
-        assert stats['total_documents'] == 1
+        assert stats["total_documents"] == 1
 
         engine.remove_document("test-001")
 
         stats = engine.get_stats()
-        assert stats['total_documents'] == 0
+        assert stats["total_documents"] == 0
 
     def test_clear_index(self, engine):
         """测试清空索引"""
         for i in range(5):
             engine.index_document(
-                doc_id=f"test-{i}",
-                title=f"测试文章{i}",
-                content=f"测试内容{i}"
+                doc_id=f"test-{i}", title=f"测试文章{i}", content=f"测试内容{i}"
             )
 
         engine.clear_index()
 
         stats = engine.get_stats()
-        assert stats['total_documents'] == 0
+        assert stats["total_documents"] == 0
 
 
 class TestSearchResult:
@@ -185,14 +171,14 @@ class TestSearchResult:
             author="测试作者",
             created_at="2026-02-21",
             score=0.95,
-            highlights=["高亮片段"]
+            highlights=["高亮片段"],
         )
 
         data = result.to_dict()
 
-        assert data['id'] == "test-001"
-        assert data['score'] == 0.95
-        assert '...' in data['content']
+        assert data["id"] == "test-001"
+        assert data["score"] == 0.95
+        assert "..." in data["content"]
 
 
 class TestSearchSuggestion:
@@ -202,18 +188,14 @@ class TestSearchSuggestion:
         """测试序列化"""
         from services.search_service import SearchSuggestion
 
-        suggestion = SearchSuggestion(
-            text="微博舆情",
-            type="title",
-            count=10
-        )
+        suggestion = SearchSuggestion(text="微博舆情", type="title", count=10)
 
         data = suggestion.to_dict()
 
-        assert data['text'] == "微博舆情"
-        assert data['type'] == "title"
-        assert data['count'] == 10
+        assert data["text"] == "微博舆情"
+        assert data["type"] == "title"
+        assert data["count"] == 10
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v', '--tb=short'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v", "--tb=short"])

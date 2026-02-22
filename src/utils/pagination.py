@@ -6,7 +6,9 @@
 from typing import Tuple
 
 
-def get_pagination_params(request, default_limit: int = 10, max_limit: int = 100) -> Tuple[int, int, int]:
+def get_pagination_params(
+    request, default_limit: int = 10, max_limit: int = 100
+) -> Tuple[int, int, int]:
     """
     从请求中获取分页参数
 
@@ -19,12 +21,12 @@ def get_pagination_params(request, default_limit: int = 10, max_limit: int = 100
         Tuple[int, int, int]: (page, limit, offset)
     """
     try:
-        page = max(1, int(request.args.get('page', 1)))
+        page = max(1, int(request.args.get("page", 1)))
     except (ValueError, TypeError):
         page = 1
 
     try:
-        limit = min(max(1, int(request.args.get('limit', default_limit))), max_limit)
+        limit = min(max(1, int(request.args.get("limit", default_limit))), max_limit)
     except (ValueError, TypeError):
         limit = default_limit
 
@@ -49,16 +51,16 @@ def get_pagination_response(total: int, page: int, limit: int, items: list) -> d
     total_pages = (total + limit - 1) // limit if limit > 0 else 0
 
     return {
-        'items': items,
-        'pagination': {
-            'page': page,
-            'limit': limit,
-            'total': total,
-            'total_pages': total_pages,
-            'has_next': page < total_pages,
-            'has_prev': page > 1
-        }
+        "items": items,
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_prev": page > 1,
+        },
     }
 
 
-__all__ = ['get_pagination_params', 'get_pagination_response']
+__all__ = ["get_pagination_params", "get_pagination_response"]

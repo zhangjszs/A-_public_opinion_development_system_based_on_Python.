@@ -1,6 +1,6 @@
 from flask import Flask, g
 
-from utils.api_response import ok, error
+from utils.api_response import error, ok
 
 
 def test_ok_includes_timestamp_and_request_id():
@@ -26,4 +26,3 @@ def test_error_includes_timestamp_and_request_id():
         assert payload["msg"] == "bad"
         assert "timestamp" in payload
         assert payload["request_id"] == "rid_456"
-

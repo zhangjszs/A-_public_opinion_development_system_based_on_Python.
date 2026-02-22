@@ -7,7 +7,6 @@
 """
 
 import logging
-from typing import Optional
 
 import bcrypt
 
@@ -45,14 +44,14 @@ class PasswordHasher:
 
         try:
             # 将密码编码为bytes
-            password_bytes = password.encode('utf-8')
+            password_bytes = password.encode("utf-8")
 
             # 生成salt并哈希密码
             salt = bcrypt.gensalt(rounds=PasswordHasher.ROUNDS)
             hashed_password = bcrypt.hashpw(password_bytes, salt)
 
             # 将bytes解码为字符串存储
-            return hashed_password.decode('utf-8')
+            return hashed_password.decode("utf-8")
 
         except Exception as e:
             logger.error(f"密码哈希失败: {e}")
@@ -82,8 +81,8 @@ class PasswordHasher:
 
         try:
             # 将密码和哈希密码编码为bytes
-            password_bytes = password.encode('utf-8')
-            hashed_bytes = hashed_password.encode('utf-8')
+            password_bytes = password.encode("utf-8")
+            hashed_bytes = hashed_password.encode("utf-8")
 
             # 验证密码
             return bcrypt.checkpw(password_bytes, hashed_bytes)
@@ -103,54 +102,49 @@ class PasswordHasher:
         Returns:
             dict: 包含强度信息和建议的字典
         """
-        result = {
-            'valid': True,
-            'strength': 'weak',
-            'score': 0,
-            'suggestions': []
-        }
+        result = {"valid": True, "strength": "weak", "score": 0, "suggestions": []}
 
         # 长度检查
         if len(password) < 6:
-            result['valid'] = False
-            result['suggestions'].append('密码长度至少6位')
+            result["valid"] = False
+            result["suggestions"].append("密码长度至少6位")
         elif len(password) < 8:
-            result['score'] += 1
-            result['suggestions'].append('建议密码长度至少8位')
+            result["score"] += 1
+            result["suggestions"].append("建议密码长度至少8位")
         else:
-            result['score'] += 2
+            result["score"] += 2
 
         # 复杂度检查
         has_upper = any(c.isupper() for c in password)
         has_lower = any(c.islower() for c in password)
         has_digit = any(c.isdigit() for c in password)
-        has_special = any(c in '!@#$%^&*()_+-=[]{}|;:,.<>?' for c in password)
+        has_special = any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password)
 
         if has_upper:
-            result['score'] += 1
+            result["score"] += 1
         else:
-            result['suggestions'].append('建议包含大写字母')
+            result["suggestions"].append("建议包含大写字母")
 
         if has_lower:
-            result['score'] += 1
+            result["score"] += 1
         else:
-            result['suggestions'].append('建议包含小写字母')
+            result["suggestions"].append("建议包含小写字母")
 
         if has_digit:
-            result['score'] += 1
+            result["score"] += 1
         else:
-            result['suggestions'].append('建议包含数字')
+            result["suggestions"].append("建议包含数字")
 
         if has_special:
-            result['score'] += 1
+            result["score"] += 1
         else:
-            result['suggestions'].append('建议包含特殊字符')
+            result["suggestions"].append("建议包含特殊字符")
 
         # 判断强度
-        if result['score'] >= 4:
-            result['strength'] = 'strong'
-        elif result['score'] >= 2:
-            result['strength'] = 'medium'
+        if result["score"] >= 4:
+            result["strength"] = "strong"
+        elif result["score"] >= 2:
+            result["strength"] = "medium"
 
         return result
 

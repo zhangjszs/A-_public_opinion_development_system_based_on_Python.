@@ -6,9 +6,9 @@
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
+from typing import Dict, List
 
-from models.platform import Platform, PlatformContent, ContentType
+from models.platform import ContentType, Platform, PlatformContent
 
 logger = logging.getLogger(__name__)
 

@@ -10,16 +10,15 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List
 
 import jieba
-import jieba.analyse as analyse
-import pandas as pd
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'utils'))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "utils"))
+
 
 class ModelDataProcessor:
     """模型数据处理类 - 修复版本"""
@@ -28,26 +27,55 @@ class ModelDataProcessor:
         self.model_dir = Path(model_dir) if model_dir else Path(__file__).parent
         self.stop_words = self._load_stop_words()
 
-        self.target_txt = self.model_dir / 'comment_1_fenci.txt'
-        self.target_csv = self.model_dir / 'target.csv'
-        self.freq_csv = self.model_dir / 'comment_1_fenci_qutingyongci_cipin.csv'
-        self.stop_words_file = self.model_dir / 'stopWords.txt'
+        self.target_txt = self.model_dir / "comment_1_fenci.txt"
+        self.target_csv = self.model_dir / "target.csv"
+        self.freq_csv = self.model_dir / "comment_1_fenci_qutingyongci_cipin.csv"
+        self.stop_words_file = self.model_dir / "stopWords.txt"
 
         logger.info("模型数据处理器初始化完成")
 
     def _load_stop_words(self) -> set:
         """加载停用词 - 改进版"""
-        stop_words_path = self.model_dir / 'stopWords.txt'
+        stop_words_path = self.model_dir / "stopWords.txt"
         stop_words = set()
 
         try:
             if stop_words_path.exists():
-                with open(stop_words_path, 'r', encoding='UTF-8') as f:
+                with open(stop_words_path, encoding="UTF-8") as f:
                     stop_words = {line.strip() for line in f if line.strip()}
                 logger.info(f"加载停用词 {len(stop_words)} 个")
             else:
                 logger.warning(f"停用词文件不存在: {stop_words_path}")
-                stop_words = {'的', '了', '在', '是', '我', '有', '和', '就', '不', '人', '都', '一', '一个', '上', '也', '很', '到', '说', '要', '去', '你', '会', '着', '没有', '看', '好', '自己', '这'}
+                stop_words = {
+                    "的",
+                    "了",
+                    "在",
+                    "是",
+                    "我",
+                    "有",
+                    "和",
+                    "就",
+                    "不",
+                    "人",
+                    "都",
+                    "一",
+                    "一个",
+                    "上",
+                    "也",
+                    "很",
+                    "到",
+                    "说",
+                    "要",
+                    "去",
+                    "你",
+                    "会",
+                    "着",
+                    "没有",
+                    "看",
+                    "好",
+                    "自己",
+                    "这",
+                }
         except Exception as e:
             logger.error(f"加载停用词失败: {e}")
             stop_words = set()
@@ -58,6 +86,7 @@ class ModelDataProcessor:
         """获取评论数据 - 改进版"""
         try:
             from getPublicData import getAllCommentsData
+
             comment_list = getAllCommentsData()
             if not comment_list:
                 logger.warning("未获取到评论数据")
@@ -99,14 +128,16 @@ class ModelDataProcessor:
             filtered_words = []
             for word in word_list:
                 word = word.strip()
-                if (word and
-                    len(word) > 1 and
-                    word not in self.stop_words and
-                    not re.match(r'^\d+$', word) and
-                    not re.match(r'^\W+$', word)):
+                if (
+                    word
+                    and len(word) > 1
+                    and word not in self.stop_words
+                    and not re.match(r"^\d+$", word)
+                    and not re.match(r"^\W+$", word)
+                ):
                     filtered_words.append(word)
 
-            result = ' '.join(filtered_words)
+            result = " ".join(filtered_words)
             logger.info(f"分词完成，有效词数: {len(filtered_words)}")
 
             return result
@@ -122,7 +153,7 @@ class ModelDataProcessor:
             return False
 
         try:
-            with open(self.target_txt, 'w', encoding='utf-8') as f:
+            with open(self.target_txt, "w", encoding="utf-8") as f:
                 f.write(segmented_text)
 
             logger.info(f"分词结果已保存到: {self.target_txt}")
@@ -139,7 +170,7 @@ class ModelDataProcessor:
             return False
 
         try:
-            with open(self.target_txt, 'r', encoding='utf8') as f:
+            with open(self.target_txt, encoding="utf8") as f:
                 content = f.read()
 
             if not content.strip():
@@ -151,10 +182,12 @@ class ModelDataProcessor:
             valid_words = []
             for word in word_list:
                 word = word.strip()
-                if (word and
-                    len(word) > 1 and
-                    not re.search(r'\d+', word) and
-                    not re.search(r'\W+', word)):
+                if (
+                    word
+                    and len(word) > 1
+                    and not re.search(r"\d+", word)
+                    and not re.search(r"\W+", word)
+                ):
                     valid_words.append(word)
 
             if not valid_words:
@@ -170,7 +203,7 @@ class ModelDataProcessor:
 
             output_count = min(max_words, len(sorted_words))
 
-            with open(self.freq_csv, 'w', encoding='utf-8', newline='') as f:
+            with open(self.freq_csv, "w", encoding="utf-8", newline="") as f:
                 writer = csv.writer(f)
                 for i in range(output_count):
                     writer.writerow([sorted_words[i][0], sorted_words[i][1]])
@@ -224,6 +257,7 @@ class ModelDataProcessor:
             except Exception as e:
                 logger.warning(f"删除文件失败 {file_path}: {e}")
 
+
 def main():
     """主函数 - 入口点"""
     processor = ModelDataProcessor()
@@ -236,5 +270,6 @@ def main():
         logger.error("模型数据处理失败")
         sys.exit(1)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

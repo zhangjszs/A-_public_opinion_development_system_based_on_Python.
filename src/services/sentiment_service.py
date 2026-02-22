@@ -14,7 +14,7 @@ from typing import List, Optional
 
 import requests
 from circuitbreaker import circuit
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from snownlp import SnowNLP
 
 from config.settings import Config
@@ -88,7 +88,7 @@ class SentimentSchema(BaseModel):
         default_factory=list, description="关键词列表"
     )
 
-    @validator("label")
+    @field_validator("label")
     def validate_label(cls, v):
         allowed = ["positive", "neutral", "negative"]
         if v not in allowed:

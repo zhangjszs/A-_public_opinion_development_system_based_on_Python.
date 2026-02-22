@@ -7,7 +7,9 @@
             <div class="card-header">
               <span class="header-title">爬虫任务</span>
               <div class="header-actions">
-                <el-button :icon="Refresh" @click="refreshSpider" :loading="spiderLoading">刷新</el-button>
+                <el-button :icon="Refresh" @click="refreshSpider" :loading="spiderLoading"
+                  >刷新</el-button
+                >
               </div>
             </div>
           </template>
@@ -32,7 +34,11 @@
             <el-table-column prop="action" label="动作" min-width="160" show-overflow-tooltip />
             <el-table-column prop="status" label="状态" width="120" align="center">
               <template #default="{ row }">
-                <el-tag :type="row.status === 'success' ? 'success' : 'danger'" effect="plain" round>
+                <el-tag
+                  :type="row.status === 'success' ? 'success' : 'danger'"
+                  effect="plain"
+                  round
+                >
                   {{ row.status === 'success' ? '成功' : '失败' }}
                 </el-tag>
               </template>
@@ -49,8 +55,16 @@
             <div class="card-header">
               <span class="header-title">运行日志</span>
               <div class="header-actions">
-                <el-input-number v-model="logLines" :min="50" :max="500" size="small" style="width: 120px" />
-                <el-button :icon="Refresh" @click="refreshLogs" :loading="logsLoading">刷新</el-button>
+                <el-input-number
+                  v-model="logLines"
+                  :min="50"
+                  :max="500"
+                  size="small"
+                  style="width: 120px"
+                />
+                <el-button :icon="Refresh" @click="refreshLogs" :loading="logsLoading"
+                  >刷新</el-button
+                >
               </div>
             </div>
           </template>
@@ -60,7 +74,12 @@
               <el-empty description="暂无日志" :image-size="60" />
             </div>
             <div v-else>
-              <div v-for="(line, idx) in logs" :key="idx" class="log-line" :class="getLogLevel(line)">
+              <div
+                v-for="(line, idx) in logs"
+                :key="idx"
+                class="log-line"
+                :class="getLogLevel(line)"
+              >
                 {{ line }}
               </div>
             </div>
@@ -81,7 +100,14 @@
           <el-input v-model="taskId" placeholder="输入 task_id" clearable style="width: 420px" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :icon="Search" :disabled="!taskId.trim()" @click="queryTask" :loading="taskLoading">查询</el-button>
+          <el-button
+            type="primary"
+            :icon="Search"
+            :disabled="!taskId.trim()"
+            @click="queryTask"
+            :loading="taskLoading"
+            >查询</el-button
+          >
           <el-button :disabled="recentTasks.length === 0" @click="clearRecent">清空记录</el-button>
         </el-form-item>
       </el-form>
@@ -89,8 +115,12 @@
       <div v-if="taskResult" class="task-result">
         <el-descriptions :column="2" border>
           <el-descriptions-item label="状态">{{ taskResult.state || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="进度">{{ taskResult.progress != null ? taskResult.progress + '%' : '-' }}</el-descriptions-item>
-          <el-descriptions-item label="消息" :span="2">{{ taskResult.message || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="进度">{{
+            taskResult.progress != null ? taskResult.progress + '%' : '-'
+          }}</el-descriptions-item>
+          <el-descriptions-item label="消息" :span="2">{{
+            taskResult.message || '-'
+          }}</el-descriptions-item>
         </el-descriptions>
       </div>
 
@@ -115,201 +145,203 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Refresh, Search } from '@element-plus/icons-vue'
-import { getSpiderLogs, getSpiderOverview } from '@/api/spider'
-import { getTaskStatus } from '@/api/tasks'
+  import { computed, onMounted, ref } from 'vue'
+  import { ElMessage } from 'element-plus'
+  import { Refresh, Search } from '@element-plus/icons-vue'
+  import { getSpiderLogs, getSpiderOverview } from '@/api/spider'
+  import { getTaskStatus } from '@/api/tasks'
 
-const spiderLoading = ref(false)
-const logsLoading = ref(false)
-const taskLoading = ref(false)
+  const spiderLoading = ref(false)
+  const logsLoading = ref(false)
+  const taskLoading = ref(false)
 
-const spiderOverview = ref(null)
-const logs = ref([])
-const logLines = ref(200)
+  const spiderOverview = ref(null)
+  const logs = ref([])
+  const logLines = ref(200)
 
-const taskId = ref('')
-const taskResult = ref(null)
-const recentTasks = ref([])
+  const taskId = ref('')
+  const taskResult = ref(null)
+  const recentTasks = ref([])
 
-const spiderHistory = computed(() => spiderOverview.value?.history || [])
+  const spiderHistory = computed(() => spiderOverview.value?.history || [])
 
-const refreshSpider = async () => {
-  spiderLoading.value = true
-  try {
-    const res = await getSpiderOverview()
-    if (res.code === 200) {
-      spiderOverview.value = res.data || {}
+  const refreshSpider = async () => {
+    spiderLoading.value = true
+    try {
+      const res = await getSpiderOverview()
+      if (res.code === 200) {
+        spiderOverview.value = res.data || {}
+      }
+    } catch (e) {
+      ElMessage.error('加载爬虫概览失败')
+    } finally {
+      spiderLoading.value = false
     }
-  } catch (e) {
-    ElMessage.error('加载爬虫概览失败')
-  } finally {
-    spiderLoading.value = false
   }
-}
 
-const refreshLogs = async () => {
-  logsLoading.value = true
-  try {
-    const res = await getSpiderLogs(logLines.value)
-    if (res.code === 200) {
-      logs.value = res.data?.logs || []
+  const refreshLogs = async () => {
+    logsLoading.value = true
+    try {
+      const res = await getSpiderLogs(logLines.value)
+      if (res.code === 200) {
+        logs.value = res.data?.logs || []
+      }
+    } catch (e) {
+      ElMessage.error('加载日志失败')
+    } finally {
+      logsLoading.value = false
     }
-  } catch (e) {
-    ElMessage.error('加载日志失败')
-  } finally {
-    logsLoading.value = false
   }
-}
 
-const loadRecent = () => {
-  try {
-    const raw = localStorage.getItem('weibo_recent_tasks')
-    recentTasks.value = raw ? JSON.parse(raw) : []
-  } catch (e) {
+  const loadRecent = () => {
+    try {
+      const raw = localStorage.getItem('weibo_recent_tasks')
+      recentTasks.value = raw ? JSON.parse(raw) : []
+    } catch (e) {
+      recentTasks.value = []
+    }
+  }
+
+  const saveRecent = () => {
+    localStorage.setItem('weibo_recent_tasks', JSON.stringify(recentTasks.value.slice(0, 20)))
+  }
+
+  const addRecent = (id) => {
+    const next = [id, ...recentTasks.value.filter((x) => x !== id)]
+    recentTasks.value = next.slice(0, 20)
+    saveRecent()
+  }
+
+  const removeRecent = (id) => {
+    recentTasks.value = recentTasks.value.filter((x) => x !== id)
+    saveRecent()
+  }
+
+  const clearRecent = () => {
     recentTasks.value = []
+    saveRecent()
   }
-}
 
-const saveRecent = () => {
-  localStorage.setItem('weibo_recent_tasks', JSON.stringify(recentTasks.value.slice(0, 20)))
-}
+  const selectRecent = (id) => {
+    taskId.value = id
+    queryTask()
+  }
 
-const addRecent = (id) => {
-  const next = [id, ...recentTasks.value.filter((x) => x !== id)]
-  recentTasks.value = next.slice(0, 20)
-  saveRecent()
-}
-
-const removeRecent = (id) => {
-  recentTasks.value = recentTasks.value.filter((x) => x !== id)
-  saveRecent()
-}
-
-const clearRecent = () => {
-  recentTasks.value = []
-  saveRecent()
-}
-
-const selectRecent = (id) => {
-  taskId.value = id
-  queryTask()
-}
-
-const queryTask = async () => {
-  const id = taskId.value.trim()
-  if (!id) return
-  taskLoading.value = true
-  try {
-    const res = await getTaskStatus(id)
-    if (res.code === 200) {
-      taskResult.value = res.data || null
-      addRecent(id)
+  const queryTask = async () => {
+    const id = taskId.value.trim()
+    if (!id) return
+    taskLoading.value = true
+    try {
+      const res = await getTaskStatus(id)
+      if (res.code === 200) {
+        taskResult.value = res.data || null
+        addRecent(id)
+      }
+    } catch (e) {
+      ElMessage.error('查询任务状态失败')
+    } finally {
+      taskLoading.value = false
     }
-  } catch (e) {
-    ElMessage.error('查询任务状态失败')
-  } finally {
-    taskLoading.value = false
   }
-}
 
-function getLogLevel(line) {
-  if (line.includes('ERROR') || line.includes('CRITICAL')) return 'log-error'
-  if (line.includes('WARNING')) return 'log-warn'
-  if (line.includes('INFO')) return 'log-info'
-  return 'log-debug'
-}
+  function getLogLevel(line) {
+    if (line.includes('ERROR') || line.includes('CRITICAL')) return 'log-error'
+    if (line.includes('WARNING')) return 'log-warn'
+    if (line.includes('INFO')) return 'log-info'
+    return 'log-debug'
+  }
 
-onMounted(async () => {
-  loadRecent()
-  await Promise.all([refreshSpider(), refreshLogs()])
-})
+  onMounted(async () => {
+    loadRecent()
+    await Promise.all([refreshSpider(), refreshLogs()])
+  })
 </script>
 
 <style lang="scss" scoped>
-.tasks-page {
-  max-width: 1400px;
-  margin: 0 auto;
-}
+  .tasks-page {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
 
-.header-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: $text-primary;
-}
+  .header-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: $text-primary;
+  }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
 
-.status-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
 
-.status-text {
-  color: $text-secondary;
-  font-size: 13px;
-}
+  .status-text {
+    color: $text-secondary;
+    font-size: 13px;
+  }
 
-.log-container {
-  height: 420px;
-  overflow: auto;
-  border: 1px solid $border-color-light;
-  border-radius: $border-radius-base;
-  background: $background-color;
-  padding: 12px;
-}
+  .log-container {
+    height: 420px;
+    overflow: auto;
+    border: 1px solid $border-color-light;
+    border-radius: $border-radius-base;
+    background: $background-color;
+    padding: 12px;
+  }
 
-.log-line {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 12px;
-  line-height: 1.6;
-  padding: 2px 6px;
-  border-radius: 4px;
-  color: $text-regular;
-  word-break: break-word;
-}
+  .log-line {
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+      monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: $text-regular;
+    word-break: break-word;
+  }
 
-.log-info {
-  background: rgba(59, 130, 246, 0.06);
-}
+  .log-info {
+    background: rgba(59, 130, 246, 0.06);
+  }
 
-.log-warn {
-  background: rgba(245, 158, 11, 0.08);
-}
+  .log-warn {
+    background: rgba(245, 158, 11, 0.08);
+  }
 
-.log-error {
-  background: rgba(239, 68, 68, 0.08);
-}
+  .log-error {
+    background: rgba(239, 68, 68, 0.08);
+  }
 
-.query-form {
-  margin-bottom: 12px;
-}
+  .query-form {
+    margin-bottom: 12px;
+  }
 
-.task-result {
-  margin: 12px 0 16px;
-}
+  .task-result {
+    margin: 12px 0 16px;
+  }
 
-.recent-title {
-  font-size: 13px;
-  color: $text-secondary;
-  margin-bottom: 8px;
-}
+  .recent-title {
+    font-size: 13px;
+    color: $text-secondary;
+    margin-bottom: 8px;
+  }
 
-.recent-tag {
-  cursor: pointer;
-}
+  .recent-tag {
+    cursor: pointer;
+  }
 </style>

@@ -16,8 +16,8 @@ export const supportedLocales = ['zh-CN', 'en-US']
 import { ref, computed } from 'vue'
 
 const currentLocale = ref(
-  typeof localStorage \!== 'undefined'
-    ? (localStorage.getItem('weibo_locale') || defaultLocale)
+  typeof localStorage !== 'undefined'
+    ? localStorage.getItem('weibo_locale') || defaultLocale
     : defaultLocale
 )
 
@@ -25,12 +25,12 @@ export function useI18n() {
   const locale = currentLocale
 
   const setLocale = (lang) => {
-    if (\!supportedLocales.includes(lang)) return
+    if (!supportedLocales.includes(lang)) return
     currentLocale.value = lang
-    if (typeof localStorage \!== 'undefined') {
+    if (typeof localStorage !== 'undefined') {
       localStorage.setItem('weibo_locale', lang)
     }
-    if (typeof document \!== 'undefined') {
+    if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('lang', lang)
     }
   }
@@ -50,7 +50,7 @@ export function useI18n() {
         if (value === undefined) break
       }
     }
-    if (typeof value \!== 'string') return key
+    if (typeof value !== 'string') return key
     return value.replace(/\{(\w+)\}/g, (_, k) => params[k] ?? '')
   }
 

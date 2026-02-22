@@ -13,54 +13,54 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
+  import { useRouter } from 'vue-router'
 
-const router = useRouter()
+  const router = useRouter()
 
-const refresh = () => {
-  window.location.reload()
-}
+  const refresh = () => {
+    window.location.reload()
+  }
 
-const goHome = () => {
-  router.push('/home')
-}
+  const goHome = () => {
+    router.push('/home')
+  }
 </script>
 
 <style lang="scss" scoped>
-.error-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
+  .error-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
 
-.error-content {
-  text-align: center;
-  color: #fff;
-}
+  .error-content {
+    text-align: center;
+    color: #fff;
+  }
 
-.error-code {
-  font-size: 120px;
-  font-weight: bold;
-  line-height: 1;
-  text-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
-}
+  .error-code {
+    font-size: 120px;
+    font-weight: bold;
+    line-height: 1;
+    text-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
+  }
 
-.error-title {
-  font-size: 32px;
-  margin: 20px 0 10px;
-}
+  .error-title {
+    font-size: 32px;
+    margin: 20px 0 10px;
+  }
 
-.error-desc {
-  font-size: 16px;
-  margin-bottom: 30px;
-  opacity: 0.9;
-}
+  .error-desc {
+    font-size: 16px;
+    margin-bottom: 30px;
+    opacity: 0.9;
+  }
 
-.error-actions {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-}
+  .error-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+  }
 </style>

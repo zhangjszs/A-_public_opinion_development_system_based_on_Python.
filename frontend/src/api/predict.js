@@ -5,7 +5,7 @@ export function predictSentiment(text, mode = 'custom') {
     url: '/api/sentiment/analyze',
     method: 'post',
     data: { text, mode },
-    loadingOptions: { text: '分析中...' }
+    loadingOptions: { text: '分析中...' },
   })
 }
 
@@ -14,7 +14,7 @@ export function predictBatch(texts, mode = 'custom') {
     url: '/api/predict/batch',
     method: 'post',
     data: { texts, mode },
-    loadingOptions: { text: '批量分析中...' }
+    loadingOptions: { text: '批量分析中...' },
   })
 }
 
@@ -22,7 +22,7 @@ export function getModelInfo() {
   return request({
     url: '/api/model/info',
     method: 'get',
-    loadingOptions: { text: '获取模型信息...' }
+    loadingOptions: { text: '获取模型信息...' },
   })
 }
 
@@ -31,6 +31,6 @@ export function retrainModel(params = {}) {
     url: '/api/model/retrain',
     method: 'post',
     data: params,
-    loadingOptions: { text: '模型训练中...' }
+    loadingOptions: { text: '模型训练中...' },
   })
 }

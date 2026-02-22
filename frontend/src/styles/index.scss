@@ -1,4 +1,4 @@
-@use "sass:color";
+@use 'sass:color';
 
 // Global Reset & Base Styles
 * {
@@ -149,7 +149,7 @@ a {
   // Remove outer borders
   &--border,
   .el-table--border th.el-table__cell,
-  .el-table__body-wrapper .el-table--border.is-scrolling-left~.el-table__fixed {
+  .el-table__body-wrapper .el-table--border.is-scrolling-left ~ .el-table__fixed {
     border-right: none;
   }
 }
@@ -165,7 +165,9 @@ a {
   }
 
   &.is-focus {
-    box-shadow: 0 0 0 2px rgba($primary-color, 0.2) inset, 0 0 0 1px $primary-color inset !important;
+    box-shadow:
+      0 0 0 2px rgba($primary-color, 0.2) inset,
+      0 0 0 1px $primary-color inset !important;
   }
 }
 
@@ -223,47 +225,47 @@ a {
 
 // Dark Mode
 .dark {
-  background-color: #0F172A !important; // Slate 900
-  color: #E2E8F0 !important; // Slate 200
+  background-color: #0f172a !important; // Slate 900
+  color: #e2e8f0 !important; // Slate 200
 
   .el-card {
-    background-color: #1E293B; // Slate 800
+    background-color: #1e293b; // Slate 800
     border: 1px solid #334155; // Slate 700
 
     &__header {
       border-bottom-color: #334155;
-      color: #F8FAFC;
+      color: #f8fafc;
     }
   }
 
   .el-table {
-    --el-table-header-bg-color: #1E293B;
-    --el-table-bg-color: #1E293B;
-    --el-table-tr-bg-color: #1E293B;
+    --el-table-header-bg-color: #1e293b;
+    --el-table-bg-color: #1e293b;
+    --el-table-tr-bg-color: #1e293b;
     --el-table-border-color: #334155;
     --el-table-row-hover-bg-color: #334155;
 
-    background-color: #1E293B;
-    color: #E2E8F0;
+    background-color: #1e293b;
+    color: #e2e8f0;
 
     th.el-table__cell {
-      background-color: #0F172A !important;
-      color: #94A3B8;
+      background-color: #0f172a !important;
+      color: #94a3b8;
       border-bottom-color: #334155;
     }
 
     td.el-table__cell {
       border-bottom-color: #334155;
-      color: #E2E8F0;
+      color: #e2e8f0;
     }
   }
 
   .el-input__wrapper {
-    background-color: #1E293B;
+    background-color: #1e293b;
     box-shadow: 0 0 0 1px #334155 inset !important;
 
     &:hover {
-      box-shadow: 0 0 0 1px #64748B inset !important;
+      box-shadow: 0 0 0 1px #64748b inset !important;
     }
   }
 

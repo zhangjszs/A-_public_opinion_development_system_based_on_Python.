@@ -22,13 +22,17 @@ export const useAppStore = defineStore('app', () => {
     sidebarCollapsed.value = !sidebarCollapsed.value
   }
 
-  watch(theme, (newTheme) => {
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }, { immediate: true })
+  watch(
+    theme,
+    (newTheme) => {
+      if (newTheme === 'dark') {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+    },
+    { immediate: true }
+  )
 
   return {
     sidebarCollapsed,
@@ -36,6 +40,6 @@ export const useAppStore = defineStore('app', () => {
     device,
     toggleTheme,
     setTheme,
-    toggleSidebar
+    toggleSidebar,
   }
 })

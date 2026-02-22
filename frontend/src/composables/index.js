@@ -1,9 +1,17 @@
 import { ref, onMounted, onUnmounted } from 'vue'
-import { formatNumber, formatPercent, formatDate, formatRelativeTime, debounce, throttle, copyToClipboard } from '@/utils'
+import {
+  formatNumber,
+  formatPercent,
+  formatDate,
+  formatRelativeTime,
+  debounce,
+  throttle,
+  copyToClipboard,
+} from '@/utils'
 
 export function useDebounce(fn, delay = 300) {
   let timer = null
-  
+
   const debouncedFn = (...args) => {
     if (timer) {
       clearTimeout(timer)
@@ -12,25 +20,25 @@ export function useDebounce(fn, delay = 300) {
       fn(...args)
     }, delay)
   }
-  
+
   const cancel = () => {
     if (timer) {
       clearTimeout(timer)
       timer = null
     }
   }
-  
+
   onUnmounted(cancel)
-  
+
   return {
     debouncedFn,
-    cancel
+    cancel,
   }
 }
 
 export function useThrottle(fn, delay = 300) {
   let lastTime = 0
-  
+
   const throttledFn = (...args) => {
     const now = Date.now()
     if (now - lastTime >= delay) {
@@ -38,13 +46,13 @@ export function useThrottle(fn, delay = 300) {
       lastTime = now
     }
   }
-  
+
   return throttledFn
 }
 
 export function useClickOutside(targetRef, callback) {
   const isClickOutside = ref(false)
-  
+
   const handleClick = (event) => {
     if (targetRef.value) {
       isClickOutside.value = !targetRef.value.contains(event.target)
@@ -53,23 +61,23 @@ export function useClickOutside(targetRef, callback) {
       }
     }
   }
-  
+
   onMounted(() => {
     document.addEventListener('click', handleClick)
   })
-  
+
   onUnmounted(() => {
     document.removeEventListener('click', handleClick)
   })
-  
+
   return {
-    isClickOutside
+    isClickOutside,
   }
 }
 
 export function useCopyToClipboard() {
   const copied = ref(false)
-  
+
   const copy = async (text) => {
     try {
       await copyToClipboard(text)
@@ -83,10 +91,10 @@ export function useCopyToClipboard() {
       return false
     }
   }
-  
+
   return {
     copied,
-    copy
+    copy,
   }
 }
 
@@ -100,7 +108,7 @@ export function useLocalStorage() {
       return defaultValue
     }
   }
-  
+
   const set = (key, value) => {
     try {
       localStorage.setItem(key, JSON.stringify(value))
@@ -110,7 +118,7 @@ export function useLocalStorage() {
       return false
     }
   }
-  
+
   const remove = (key) => {
     try {
       localStorage.removeItem(key)
@@ -120,24 +128,24 @@ export function useLocalStorage() {
       return false
     }
   }
-  
+
   return {
     get,
     set,
-    remove
+    remove,
   }
 }
 
 export function useNumberFormat() {
   return {
     format: formatNumber,
-    formatPercent
+    formatPercent,
   }
 }
 
 export function useDateFormat() {
   return {
     format: formatDate,
-    formatRelative: formatRelativeTime
+    formatRelative: formatRelativeTime,
   }
 }

@@ -74,6 +74,6 @@ export const useUserStore = defineStore('user', () => {
     doLogin,
     doLogout,
     initAuth,
-    updateUserInfo
+    updateUserInfo,
   }
 })

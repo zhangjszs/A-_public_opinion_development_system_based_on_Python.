@@ -1,6 +1,6 @@
 export function formatNumber(num, decimals = 2) {
   if (num === null || num === undefined) return '-'
-  
+
   if (num >= 100000000) {
     return (num / 100000000).toFixed(decimals) + '亿'
   }
@@ -10,7 +10,7 @@ export function formatNumber(num, decimals = 2) {
   if (num >= 1000) {
     return (num / 1000).toFixed(decimals) + 'k'
   }
-  
+
   return num.toLocaleString()
 }
 
@@ -21,7 +21,7 @@ export function formatPercent(value, decimals = 2) {
 
 export function formatDate(date, pattern = 'YYYY-MM-DD HH:mm:ss') {
   if (!date) return '-'
-  
+
   const d = new Date(date)
   const year = d.getFullYear()
   const month = String(d.getMonth() + 1).padStart(2, '0')
@@ -29,7 +29,7 @@ export function formatDate(date, pattern = 'YYYY-MM-DD HH:mm:ss') {
   const hour = String(d.getHours()).padStart(2, '0')
   const minute = String(d.getMinutes()).padStart(2, '0')
   const second = String(d.getSeconds()).padStart(2, '0')
-  
+
   return pattern
     .replace('YYYY', year)
     .replace('MM', month)
@@ -41,16 +41,16 @@ export function formatDate(date, pattern = 'YYYY-MM-DD HH:mm:ss') {
 
 export function formatRelativeTime(date) {
   if (!date) return '-'
-  
+
   const now = new Date()
   const target = new Date(date)
   const diff = now - target
-  
+
   const seconds = Math.floor(diff / 1000)
   const minutes = Math.floor(seconds / 60)
   const hours = Math.floor(minutes / 60)
   const days = Math.floor(hours / 24)
-  
+
   if (seconds < 60) {
     return '刚刚'
   }
@@ -63,23 +63,23 @@ export function formatRelativeTime(date) {
   if (days < 7) {
     return `${days}天前`
   }
-  
+
   return formatDate(date, 'YYYY-MM-DD')
 }
 
 export function formatFileSize(bytes) {
   if (bytes === 0) return '0 B'
-  
+
   const k = 1024
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
 export function debounce(fn, delay = 300) {
   let timer = null
-  
+
   return function (...args) {
     if (timer) {
       clearTimeout(timer)
@@ -92,7 +92,7 @@ export function debounce(fn, delay = 300) {
 
 export function throttle(fn, delay = 300) {
   let lastTime = 0
-  
+
   return function (...args) {
     const now = Date.now()
     if (now - lastTime >= delay) {
@@ -106,14 +106,14 @@ export function copyToClipboard(text) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     return navigator.clipboard.writeText(text)
   }
-  
+
   const textarea = document.createElement('textarea')
   textarea.value = text
   textarea.style.position = 'fixed'
   textarea.style.opacity = '0'
   document.body.appendChild(textarea)
   textarea.select()
-  
+
   try {
     document.execCommand('copy')
     return Promise.resolve(true)
@@ -132,15 +132,15 @@ export function deepClone(obj) {
   if (obj === null || typeof obj !== 'object') {
     return obj
   }
-  
+
   if (obj instanceof Date) {
     return new Date(obj.getTime())
   }
-  
+
   if (obj instanceof Array) {
-    return obj.map(item => deepClone(item))
+    return obj.map((item) => deepClone(item))
   }
-  
+
   if (obj instanceof Object) {
     const clonedObj = {}
     for (const key in obj) {
@@ -150,7 +150,7 @@ export function deepClone(obj) {
     }
     return clonedObj
   }
-  
+
   return obj
 }
 

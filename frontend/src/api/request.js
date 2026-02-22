@@ -12,7 +12,7 @@ const showLoading = (options = {}) => {
       lock: false,
       text: options.text || '加载中...',
       background: 'rgba(248, 250, 252, 0.6)',
-      ...options
+      ...options,
     })
   }
   loadingCount++
@@ -32,8 +32,8 @@ const request = axios.create({
   baseURL: '',
   timeout: 30000,
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+  },
 })
 
 let redirectingToLogin = false
@@ -55,7 +55,7 @@ request.interceptors.request.use(
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
     }
-    
+
     const loadingOptions = config.loadingOptions
     const shouldShowLoading =
       !config.hideLoading &&
@@ -66,7 +66,7 @@ request.interceptors.request.use(
     if (shouldShowLoading) {
       showLoading(loadingOptions)
     }
-    
+
     return config
   },
   (error) => {
@@ -80,13 +80,13 @@ request.interceptors.response.use(
   (response) => {
     if (loadingInstance) hideLoading()
     const res = response.data
-    
+
     if (res.code === 200) {
       return res
     } else {
       // 业务错误处理
       const errorMsg = res.msg || '请求失败'
-      
+
       // 根据错误码处理
       switch (res.code) {
         case 401:
@@ -105,13 +105,13 @@ request.interceptors.response.use(
         default:
           ElMessage.error(errorMsg)
       }
-      
+
       return Promise.reject(new Error(errorMsg))
     }
   },
   (error) => {
     if (loadingInstance) hideLoading()
-    
+
     // 网络错误处理
     if (error.response) {
       const { status, data } = error.response
@@ -152,7 +152,7 @@ request.interceptors.response.use(
       // 请求配置错误
       ElMessage.error('请求配置错误')
     }
-    
+
     return Promise.reject(error)
   }
 )
@@ -162,23 +162,23 @@ export const http = {
   get(url, config = {}) {
     return request.get(url, config)
   },
-  
+
   post(url, data, config = {}) {
     return request.post(url, data, config)
   },
-  
+
   put(url, data, config = {}) {
     return request.put(url, data, config)
   },
-  
+
   delete(url, config = {}) {
     return request.delete(url, config)
   },
-  
+
   // 带加载提示的请求
   request(config) {
     return request(config)
-  }
+  },
 }
 
 export default request

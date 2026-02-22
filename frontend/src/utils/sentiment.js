@@ -49,13 +49,13 @@ export function analyzeSentimentDistribution(scores) {
       neutral: 0,
       negative: 0,
       total: 0,
-      average: 0
+      average: 0,
     }
   }
 
-  const positive = scores.filter(s => s > 0.5).length
-  const neutral = scores.filter(s => s === 0.5).length
-  const negative = scores.filter(s => s < 0.5).length
+  const positive = scores.filter((s) => s > 0.5).length
+  const neutral = scores.filter((s) => s === 0.5).length
+  const negative = scores.filter((s) => s < 0.5).length
   const total = scores.length
   const average = scores.reduce((a, b) => a + b, 0) / total
 
@@ -67,17 +67,17 @@ export function analyzeSentimentDistribution(scores) {
     average: Math.round(average * 10000) / 10000,
     positiveRatio: Math.round((positive / total) * 10000) / 10000,
     neutralRatio: Math.round((neutral / total) * 10000) / 10000,
-    negativeRatio: Math.round((negative / total) * 10000) / 10000
+    negativeRatio: Math.round((negative / total) * 10000) / 10000,
   }
 }
 
 export function getLogLevel(level) {
   const levelMap = {
-    'DEBUG': 'info',
-    'INFO': 'primary',
-    'WARNING': 'warning',
-    'ERROR': 'danger',
-    'CRITICAL': 'danger'
+    DEBUG: 'info',
+    INFO: 'primary',
+    WARNING: 'warning',
+    ERROR: 'danger',
+    CRITICAL: 'danger',
   }
   return levelMap[level?.toUpperCase()] || 'info'
 }

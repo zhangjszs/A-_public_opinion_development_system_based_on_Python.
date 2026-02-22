@@ -3,10 +3,7 @@
     <template v-for="(row, rowIndex) in rows" :key="rowIndex">
       <div class="skeleton-row">
         <template v-for="(item, itemIndex) in row" :key="itemIndex">
-          <div
-            class="skeleton-item"
-            :style="getItemStyle(item)"
-          >
+          <div class="skeleton-item" :style="getItemStyle(item)">
             <div v-if="item.avatar" class="skeleton-avatar"></div>
             <div v-if="item.title" class="skeleton-title"></div>
             <div v-if="item.text" class="skeleton-text"></div>
@@ -18,123 +15,108 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+  import { computed } from 'vue'
 
-const props = defineProps({
-  rows: {
-    type: Array,
-    default: () => [
-      [{ title: true, text: 3 }],
-      [{ avatar: true }, { title: true }, { text: 2 }],
-      [{ title: true, text: 4 }]
-    ]
-  },
-  height: {
-    type: String,
-    default: '200px'
-  },
-  animated: {
-    type: Boolean,
-    default: true
-  }
-})
+  const props = defineProps({
+    rows: {
+      type: Array,
+      default: () => [
+        [{ title: true, text: 3 }],
+        [{ avatar: true }, { title: true }, { text: 2 }],
+        [{ title: true, text: 4 }],
+      ],
+    },
+    height: {
+      type: String,
+      default: '200px',
+    },
+    animated: {
+      type: Boolean,
+      default: true,
+    },
+  })
 
-const wrapperStyle = computed(() => ({
-  height: props.height
-}))
+  const wrapperStyle = computed(() => ({
+    height: props.height,
+  }))
 
-const getItemStyle = (item) => {
-  const styles = {}
-  
-  if (item.width) {
-    styles.width = typeof item.width === 'number' ? `${item.width}px` : item.width
+  const getItemStyle = (item) => {
+    const styles = {}
+
+    if (item.width) {
+      styles.width = typeof item.width === 'number' ? `${item.width}px` : item.width
+    }
+
+    if (item.height) {
+      styles.height = typeof item.height === 'number' ? `${item.height}px` : item.height
+    }
+
+    return styles
   }
-  
-  if (item.height) {
-    styles.height = typeof item.height === 'number' ? `${item.height}px` : item.height
-  }
-  
-  return styles
-}
 </script>
 
 <style lang="scss" scoped>
-.skeleton-wrapper {
-  padding: 20px;
-}
-
-.skeleton-row {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-  
-  &:last-child {
-    margin-bottom: 0;
+  .skeleton-wrapper {
+    padding: 20px;
   }
-}
 
-.skeleton-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+  .skeleton-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
 
-.skeleton-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(
-    90deg,
-    #f0f0f0 25%,
-    #e0e0e0 50%,
-    #f0f0f0 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.skeleton-title {
-  width: 60%;
-  height: 20px;
-  border-radius: 4px;
-  background: linear-gradient(
-    90deg,
-    #f0f0f0 25%,
-    #e0e0e0 50%,
-    #f0f0f0 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.skeleton-text {
-  width: 100%;
-  height: 14px;
-  border-radius: 4px;
-  background: linear-gradient(
-    90deg,
-    #f0f0f0 25%,
-    #e0e0e0 50%,
-    #f0f0f0 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  
-  &:nth-child(2) {
-    width: 80%;
+    &:last-child {
+      margin-bottom: 0;
+    }
   }
-  
-  &:nth-child(3) {
+
+  .skeleton-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .skeleton-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  .skeleton-title {
     width: 60%;
+    height: 20px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
   }
-}
 
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
+  .skeleton-text {
+    width: 100%;
+    height: 14px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+
+    &:nth-child(2) {
+      width: 80%;
+    }
+
+    &:nth-child(3) {
+      width: 60%;
+    }
   }
-  100% {
-    background-position: 200% 0;
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
   }
-}
 </style>

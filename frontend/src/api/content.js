@@ -5,7 +5,7 @@ export function getArticles(params = {}) {
     url: '/api/articles',
     method: 'get',
     params,
-    loadingOptions: { text: '加载文章列表...' }
+    loadingOptions: { text: '加载文章列表...' },
   })
 }
 
@@ -14,7 +14,6 @@ export function getComments(params = {}) {
     url: '/api/comments',
     method: 'get',
     params,
-    loadingOptions: { text: '加载评论列表...' }
+    loadingOptions: { text: '加载评论列表...' },
   })
 }
-

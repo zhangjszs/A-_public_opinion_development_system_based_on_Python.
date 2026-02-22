@@ -25,7 +25,8 @@ app.use(ElementPlus, { locale: zhCn })
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    navigator.serviceWorker
+      .register('/sw.js')
       .then((registration) => {
         console.log('SW registered:', registration.scope)
       })

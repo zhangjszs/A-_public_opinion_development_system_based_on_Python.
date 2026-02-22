@@ -5,7 +5,7 @@ export function generateReport(data) {
     url: '/api/report/generate',
     method: 'post',
     data,
-    loadingOptions: { text: '正在生成报告...' }
+    loadingOptions: { text: '正在生成报告...' },
   })
 }
 
@@ -14,21 +14,21 @@ export function generateAllReports(data) {
     url: '/api/report/generate-all',
     method: 'post',
     data,
-    loadingOptions: { text: '正在生成所有报告...' }
+    loadingOptions: { text: '正在生成所有报告...' },
   })
 }
 
 export function getReportTemplates() {
   return request({
     url: '/api/report/templates',
-    method: 'get'
+    method: 'get',
   })
 }
 
 export function getDemoData() {
   return request({
     url: '/api/report/demo-data',
-    method: 'get'
+    method: 'get',
   })
 }
 

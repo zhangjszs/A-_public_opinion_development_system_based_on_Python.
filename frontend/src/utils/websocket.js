@@ -36,7 +36,7 @@ class WebSocketClient {
         this.socket = window.io(wsUrl, {
           transports: ['websocket', 'polling'],
           reconnection: false,
-          autoConnect: true
+          autoConnect: true,
         })
 
         this.socket.on('connect', () => {
@@ -156,7 +156,7 @@ class WebSocketClient {
 
   off(event, handler) {
     if (this.messageHandlers[event]) {
-      this.messageHandlers[event] = this.messageHandlers[event].filter(h => h !== handler)
+      this.messageHandlers[event] = this.messageHandlers[event].filter((h) => h !== handler)
     }
     if (this.socket) {
       this.socket.off(event, handler)
@@ -180,7 +180,9 @@ class WebSocketClient {
     this.reconnectAttempts++
     const delay = RECONNECT_DELAY * this.reconnectAttempts
 
-    console.log(`WebSocket ${delay / 1000}秒后尝试重连 (${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`)
+    console.log(
+      `WebSocket ${delay / 1000}秒后尝试重连 (${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`
+    )
 
     this.reconnectTimer = setTimeout(() => {
       this.disconnect()

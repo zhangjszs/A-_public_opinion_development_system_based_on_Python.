@@ -10,44 +10,44 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
+  import { useRouter } from 'vue-router'
 
-const router = useRouter()
+  const router = useRouter()
 
-const goHome = () => {
-  router.push('/')
-}
+  const goHome = () => {
+    router.push('/')
+  }
 </script>
 
 <style lang="scss" scoped>
-.error-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f5f7fa;
-}
+  .error-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f7fa;
+  }
 
-.error-content {
-  text-align: center;
-  
-  .error-code {
-    font-size: 120px;
-    font-weight: bold;
-    color: #667eea;
-    margin-bottom: 16px;
+  .error-content {
+    text-align: center;
+
+    .error-code {
+      font-size: 120px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 16px;
+    }
+
+    .error-message {
+      font-size: 24px;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .error-desc {
+      color: #999;
+      margin-bottom: 32px;
+    }
   }
-  
-  .error-message {
-    font-size: 24px;
-    font-weight: 500;
-    color: #333;
-    margin-bottom: 8px;
-  }
-  
-  .error-desc {
-    color: #999;
-    margin-bottom: 32px;
-  }
-}
 </style>

@@ -8,66 +8,66 @@ const errorHandler = (error, vm, info) => {
 
   if (error.response) {
     const { status, data } = error.response
-    
+
     switch (status) {
       case 400:
         ElNotification.error({
           title: '请求错误',
-          message: data?.msg || '请求参数错误'
+          message: data?.msg || '请求参数错误',
         })
         break
-        
+
       case 401:
         ElMessageBox.confirm('登录已过期，请重新登录', '登录过期', {
           confirmButtonText: '重新登录',
           cancelButtonText: '留在当前页',
-          type: 'warning'
+          type: 'warning',
         }).then(() => {
           localStorage.removeItem('weibo_token')
           localStorage.removeItem('weibo_user')
           router.push('/login')
         })
         break
-        
+
       case 403:
         ElNotification.error({
           title: '访问拒绝',
-          message: '您没有权限访问该资源'
+          message: '您没有权限访问该资源',
         })
         break
-        
+
       case 404:
         ElNotification.error({
           title: '资源未找到',
-          message: '请求的资源不存在'
+          message: '请求的资源不存在',
         })
         break
-        
+
       case 422:
         ElNotification.warning({
           title: '数据验证失败',
-          message: data?.msg || '请检查输入数据'
+          message: data?.msg || '请检查输入数据',
         })
         break
-        
+
       case 429:
         ElNotification.warning({
           title: '请求过于频繁',
-          message: '请稍后再试'
+          message: '请稍后再试',
         })
         break
-        
+
       case 500:
         ElNotification.error({
           title: '服务器错误',
-          message: '服务暂时不可用，请稍后重试'
+          message: '服务暂时不可用，请稍后重试',
         })
         break
-        
+
       default:
         ElNotification.error({
           title: '请求失败',
-          message: data?.msg || '发生未知错误'
+          message: data?.msg || '发生未知错误',
         })
     }
   } else if (error.request) {

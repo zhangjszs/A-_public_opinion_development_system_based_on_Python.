@@ -8,7 +8,9 @@ export function useResponsive() {
   const windowHeight = ref(typeof window !== 'undefined' ? window.innerHeight : 0)
 
   const isMobile = computed(() => windowWidth.value < MOBILE_BREAKPOINT)
-  const isTablet = computed(() => windowWidth.value >= MOBILE_BREAKPOINT && windowWidth.value < TABLET_BREAKPOINT)
+  const isTablet = computed(
+    () => windowWidth.value >= MOBILE_BREAKPOINT && windowWidth.value < TABLET_BREAKPOINT
+  )
   const isDesktop = computed(() => windowWidth.value >= TABLET_BREAKPOINT)
 
   const breakpoints = computed(() => ({
@@ -16,7 +18,7 @@ export function useResponsive() {
     sm: windowWidth.value >= 480 && windowWidth.value < MOBILE_BREAKPOINT,
     md: windowWidth.value >= MOBILE_BREAKPOINT && windowWidth.value < TABLET_BREAKPOINT,
     lg: windowWidth.value >= TABLET_BREAKPOINT && windowWidth.value < 1440,
-    xl: windowWidth.value >= 1440
+    xl: windowWidth.value >= 1440,
   }))
 
   const colSpan = computed(() => {
@@ -48,7 +50,7 @@ export function useResponsive() {
     isTablet,
     isDesktop,
     breakpoints,
-    colSpan
+    colSpan,
   }
 }
 
@@ -71,7 +73,7 @@ export function useTouch() {
   const getSwipeDirection = () => {
     const diffX = touchEndX.value - touchStartX.value
     const diffY = touchEndY.value - touchStartY.value
-    
+
     if (Math.abs(diffX) > Math.abs(diffY)) {
       return diffX > 0 ? 'right' : 'left'
     } else {
@@ -82,7 +84,7 @@ export function useTouch() {
   const getSwipeDistance = () => {
     return {
       x: touchEndX.value - touchStartX.value,
-      y: touchEndY.value - touchStartY.value
+      y: touchEndY.value - touchStartY.value,
     }
   }
 
@@ -100,7 +102,7 @@ export function useTouch() {
     touchStartX,
     touchStartY,
     touchEndX,
-    touchEndY
+    touchEndY,
   }
 }
 
@@ -143,10 +145,9 @@ export function usePullRefresh(callback) {
     pullDistance,
     onTouchStart,
     onTouchMove,
-    onTouchEnd
+    onTouchEnd,
   }
 }
-
 
 export function useGesture(elementRef) {
   const scale = ref(1)
@@ -214,7 +215,7 @@ export function useMobileChart(containerRef) {
     const el = containerRef?.value
     if (el) {
       chartWidth.value = el.clientWidth || el.offsetWidth
-    } else if (typeof window \!== 'undefined') {
+    } else if (typeof window !== 'undefined') {
       chartWidth.value = window.innerWidth
     }
     if (isMobile.value) {
@@ -227,14 +228,20 @@ export function useMobileChart(containerRef) {
   }
 
   const chartOption = (baseOption) => {
-    if (\!isMobile.value) return baseOption
+    if (!isMobile.value) return baseOption
     return {
       ...baseOption,
       legend: { ...(baseOption.legend || {}), show: false },
       grid: { top: 30, right: 10, bottom: 40, left: 40, ...(baseOption.grid || {}) },
       xAxis: Array.isArray(baseOption.xAxis)
-        ? baseOption.xAxis.map(a => ({ ...a, axisLabel: { ...(a.axisLabel || {}), fontSize: 10 } }))
-        : { ...baseOption.xAxis, axisLabel: { ...(baseOption.xAxis?.axisLabel || {}), fontSize: 10 } },
+        ? baseOption.xAxis.map((a) => ({
+            ...a,
+            axisLabel: { ...(a.axisLabel || {}), fontSize: 10 },
+          }))
+        : {
+            ...baseOption.xAxis,
+            axisLabel: { ...(baseOption.xAxis?.axisLabel || {}), fontSize: 10 },
+          },
     }
   }
 

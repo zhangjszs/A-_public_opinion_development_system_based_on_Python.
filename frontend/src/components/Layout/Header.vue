@@ -15,7 +15,9 @@
       </el-icon>
       <el-breadcrumb separator="/">
         <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-        <el-breadcrumb-item v-if="currentRoute.path !== '/'">{{ currentRoute.meta?.title || '' }}</el-breadcrumb-item>
+        <el-breadcrumb-item v-if="currentRoute.path !== '/'">{{
+          currentRoute.meta?.title || ''
+        }}</el-breadcrumb-item>
       </el-breadcrumb>
     </div>
     <div class="header-right">
@@ -57,130 +59,130 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { useAppStore } from '@/stores/app'
-import { ElMessageBox } from 'element-plus'
+  import { computed } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
+  import { useUserStore } from '@/stores/user'
+  import { useAppStore } from '@/stores/app'
+  import { ElMessageBox } from 'element-plus'
 
-defineEmits(['toggle'])
+  defineEmits(['toggle'])
 
-const route = useRoute()
-const router = useRouter()
-const userStore = useUserStore()
-const appStore = useAppStore()
+  const route = useRoute()
+  const router = useRouter()
+  const userStore = useUserStore()
+  const appStore = useAppStore()
 
-const currentRoute = computed(() => route)
-const username = computed(() => userStore.username)
-const userInfo = computed(() => userStore.userInfo)
-const isDark = computed(() => appStore.theme === 'dark')
+  const currentRoute = computed(() => route)
+  const username = computed(() => userStore.username)
+  const userInfo = computed(() => userStore.userInfo)
+  const isDark = computed(() => appStore.theme === 'dark')
 
-const handleCommand = (command) => {
-  switch (command) {
-    case 'profile':
-      router.push('/profile')
-      break
-    case 'favorites':
-      router.push('/favorites')
-      break
-    case 'help':
-      router.push('/help')
-      break
-    case 'theme':
-      appStore.toggleTheme()
-      break
-    case 'logout':
-      ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-        title: '提示'
-      }).then(() => {
-        userStore.doLogout()
-      })
-      break
+  const handleCommand = (command) => {
+    switch (command) {
+      case 'profile':
+        router.push('/profile')
+        break
+      case 'favorites':
+        router.push('/favorites')
+        break
+      case 'help':
+        router.push('/help')
+        break
+      case 'theme':
+        appStore.toggleTheme()
+        break
+      case 'logout':
+        ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning',
+          title: '提示',
+        }).then(() => {
+          userStore.doLogout()
+        })
+        break
+    }
   }
-}
 </script>
 
 <style lang="scss" scoped>
-.header-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  background: $surface-color;
-  height: 64px;
-  border-bottom: 1px solid $border-color-light;
-  transition: all 0.3s ease;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  
-  .collapse-btn {
-    font-size: 20px;
-    cursor: pointer;
-    color: $text-secondary;
-    transition: color 0.2s;
-    
-    &:hover {
-      color: $primary-color;
-    }
+  .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    background: $surface-color;
+    height: 64px;
+    border-bottom: 1px solid $border-color-light;
+    transition: all 0.3s ease;
   }
-  
-  :deep(.el-breadcrumb) {
-    font-size: 14px;
-    
-    .el-breadcrumb__inner {
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+
+    .collapse-btn {
+      font-size: 20px;
+      cursor: pointer;
       color: $text-secondary;
-      
-      &.is-link:hover {
+      transition: color 0.2s;
+
+      &:hover {
         color: $primary-color;
       }
     }
-    
-    .el-breadcrumb__item:last-child .el-breadcrumb__inner {
-      color: $text-primary;
-      font-weight: 500;
+
+    :deep(.el-breadcrumb) {
+      font-size: 14px;
+
+      .el-breadcrumb__inner {
+        color: $text-secondary;
+
+        &.is-link:hover {
+          color: $primary-color;
+        }
+      }
+
+      .el-breadcrumb__item:last-child .el-breadcrumb__inner {
+        color: $text-primary;
+        font-weight: 500;
+      }
     }
   }
-}
 
-.header-right {
-  display: flex;
-  align-items: center;
-  
-  .user-info {
+  .header-right {
     display: flex;
     align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    padding: 6px 12px;
-    border-radius: 6px;
-    transition: background-color 0.2s;
-    
-    &:hover {
-      background-color: $background-color;
-    }
-    
-    .user-avatar {
-      background-color: $primary-light;
-      color: $primary-color;
-      font-weight: 600;
-    }
-    
-    .username {
-      font-size: 14px;
-      color: $text-primary;
-      font-weight: 500;
-    }
-    
-    .el-icon--right {
-      color: $text-secondary;
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: $background-color;
+      }
+
+      .user-avatar {
+        background-color: $primary-light;
+        color: $primary-color;
+        font-weight: 600;
+      }
+
+      .username {
+        font-size: 14px;
+        color: $text-primary;
+        font-weight: 500;
+      }
+
+      .el-icon--right {
+        color: $text-secondary;
+      }
     }
   }
-}
 </style>

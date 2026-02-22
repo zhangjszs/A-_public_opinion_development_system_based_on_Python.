@@ -27,72 +27,72 @@
 </template>
 
 <script setup>
-defineProps({
-  title: {
-    type: String,
-    default: ''
-  },
-  description: {
-    type: String,
-    default: ''
-  },
-  sticky: {
-    type: Boolean,
-    default: false
-  },
-  actions: {
-    type: Array,
-    default: () => []
-  }
-})
+  defineProps({
+    title: {
+      type: String,
+      default: '',
+    },
+    description: {
+      type: String,
+      default: '',
+    },
+    sticky: {
+      type: Boolean,
+      default: false,
+    },
+    actions: {
+      type: Array,
+      default: () => [],
+    },
+  })
 
-const emit = defineEmits(['action'])
+  const emit = defineEmits(['action'])
 
-const handleAction = (action) => {
-  if (action.callback) {
-    action.callback()
+  const handleAction = (action) => {
+    if (action.callback) {
+      action.callback()
+    }
+    emit('action', action.key)
   }
-  emit('action', action.key)
-}
 </script>
 
 <style lang="scss" scoped>
-.action-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  background: #fff;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-  
-  &.is-sticky {
-    position: sticky;
-    top: 0;
-    z-index: 100;
+  .action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: #fff;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+
+    &.is-sticky {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    &__left {
+      flex: 1;
+    }
+
+    &__title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #303133;
+      margin: 0 0 4px;
+    }
+
+    &__description {
+      font-size: 14px;
+      color: #909399;
+      margin: 0;
+    }
+
+    &__right {
+      flex-shrink: 0;
+      margin-left: 20px;
+    }
   }
-  
-  &__left {
-    flex: 1;
-  }
-  
-  &__title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #303133;
-    margin: 0 0 4px;
-  }
-  
-  &__description {
-    font-size: 14px;
-    color: #909399;
-    margin: 0;
-  }
-  
-  &__right {
-    flex-shrink: 0;
-    margin-left: 20px;
-  }
-}
 </style>

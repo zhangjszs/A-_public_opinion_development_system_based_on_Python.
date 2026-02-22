@@ -62,20 +62,31 @@
             <div class="card-header">
               <span>预警历史</span>
               <div class="header-actions">
-                <el-select v-model="filterLevel" placeholder="预警级别" clearable size="small" style="width: 120px">
+                <el-select
+                  v-model="filterLevel"
+                  placeholder="预警级别"
+                  clearable
+                  size="small"
+                  style="width: 120px"
+                >
                   <el-option label="全部" value="" />
                   <el-option label="信息" value="info" />
                   <el-option label="警告" value="warning" />
                   <el-option label="危险" value="danger" />
                   <el-option label="严重" value="critical" />
                 </el-select>
-                <el-button type="primary" size="small" @click="handleMarkAllRead" :disabled="stats.unread_count === 0">
+                <el-button
+                  type="primary"
+                  size="small"
+                  @click="handleMarkAllRead"
+                  :disabled="stats.unread_count === 0"
+                >
                   全部已读
                 </el-button>
               </div>
             </div>
           </template>
-          
+
           <el-table :data="alerts" style="width: 100%" v-loading="loading">
             <el-table-column width="60" align="center">
               <template #default="{ row }">
@@ -117,7 +128,7 @@
               </template>
             </el-table-column>
           </el-table>
-          
+
           <div class="pagination-container">
             <el-pagination
               v-model:current-page="currentPage"
@@ -129,7 +140,7 @@
           </div>
         </el-card>
       </el-col>
-      
+
       <el-col :xs="24" :lg="8">
         <el-card class="rules-card">
           <template #header>
@@ -140,7 +151,7 @@
               </el-button>
             </div>
           </template>
-          
+
           <div class="rules-list">
             <div v-for="rule in rules" :key="rule.id" class="rule-item">
               <div class="rule-info">
@@ -153,7 +164,7 @@
             </div>
           </div>
         </el-card>
-        
+
         <el-card class="test-card mt-4">
           <template #header>
             <span>测试预警</span>
@@ -187,9 +198,13 @@
             {{ getLevelLabel(selectedAlert.level) }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="预警类型">{{ getTypeLabel(selectedAlert.alert_type) }}</el-descriptions-item>
+        <el-descriptions-item label="预警类型">{{
+          getTypeLabel(selectedAlert.alert_type)
+        }}</el-descriptions-item>
         <el-descriptions-item label="预警内容">{{ selectedAlert.message }}</el-descriptions-item>
-        <el-descriptions-item label="触发时间">{{ formatTime(selectedAlert.created_at) }}</el-descriptions-item>
+        <el-descriptions-item label="触发时间">{{
+          formatTime(selectedAlert.created_at)
+        }}</el-descriptions-item>
         <el-descriptions-item label="附加数据" v-if="selectedAlert.data">
           <pre class="data-json">{{ JSON.stringify(selectedAlert.data, null, 2) }}</pre>
         </el-descriptions-item>
@@ -235,304 +250,328 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Bell, Warning, CircleCloseFilled, Setting, InfoFilled } from '@element-plus/icons-vue'
-import { 
-  getAlertHistory, 
-  getAlertStats, 
-  getAlertRules, 
-  createAlertRule, 
-  toggleAlertRule,
-  markAllAlertsRead,
-  testAlert
-} from '@/api/alert'
+  import { ref, onMounted, computed } from 'vue'
+  import { ElMessage } from 'element-plus'
+  import { Bell, Warning, CircleCloseFilled, Setting, InfoFilled } from '@element-plus/icons-vue'
+  import {
+    getAlertHistory,
+    getAlertStats,
+    getAlertRules,
+    createAlertRule,
+    toggleAlertRule,
+    markAllAlertsRead,
+    testAlert,
+  } from '@/api/alert'
 
-const loading = ref(false)
-const alerts = ref([])
-const stats = ref({})
-const rules = ref([])
-const filterLevel = ref('')
-const currentPage = ref(1)
-const pageSize = ref(20)
-const total = ref(0)
+  const loading = ref(false)
+  const alerts = ref([])
+  const stats = ref({})
+  const rules = ref([])
+  const filterLevel = ref('')
+  const currentPage = ref(1)
+  const pageSize = ref(20)
+  const total = ref(0)
 
-const showDetailDialog = ref(false)
-const selectedAlert = ref(null)
-const showRuleDialog = ref(false)
-const testing = ref(false)
-const creating = ref(false)
+  const showDetailDialog = ref(false)
+  const selectedAlert = ref(null)
+  const showRuleDialog = ref(false)
+  const testing = ref(false)
+  const creating = ref(false)
 
-const testForm = ref({
-  level: 'warning',
-  message: '这是一条测试预警消息'
-})
+  const testForm = ref({
+    level: 'warning',
+    message: '这是一条测试预警消息',
+  })
 
-const ruleForm = ref({
-  id: '',
-  name: '',
-  alert_type: 'custom',
-  level: 'warning',
-  cooldown_minutes: 30,
-  conditions: {}
-})
+  const ruleForm = ref({
+    id: '',
+    name: '',
+    alert_type: 'custom',
+    level: 'warning',
+    cooldown_minutes: 30,
+    conditions: {},
+  })
 
-const getLevelIcon = (level) => {
-  const icons = {
-    'info': InfoFilled,
-    'warning': Warning,
-    'danger': CircleCloseFilled,
-    'critical': CircleCloseFilled
-  }
-  return icons[level] || InfoFilled
-}
-
-const getLevelClass = (level) => {
-  return `level-${level}`
-}
-
-const getLevelTagType = (level) => {
-  const types = {
-    'info': 'info',
-    'warning': 'warning',
-    'danger': 'danger',
-    'critical': 'danger'
-  }
-  return types[level] || 'info'
-}
-
-const getLevelLabel = (level) => {
-  const labels = {
-    'info': '信息',
-    'warning': '警告',
-    'danger': '危险',
-    'critical': '严重'
-  }
-  return labels[level] || level
-}
-
-const getTypeLabel = (type) => {
-  const labels = {
-    'volume_spike': '讨论量激增',
-    'negative_surge': '负面激增',
-    'sentiment_shift': '情感突变',
-    'hot_topic': '热点话题',
-    'keyword_match': '关键词匹配',
-    'custom': '自定义'
-  }
-  return labels[type] || type
-}
-
-const formatTime = (timeStr) => {
-  if (!timeStr) return ''
-  const date = new Date(timeStr)
-  return date.toLocaleString()
-}
-
-const fetchAlerts = async () => {
-  loading.value = true
-  try {
-    const res = await getAlertHistory({ 
-      limit: pageSize.value,
-      level: filterLevel.value || undefined
-    })
-    if (res.code === 200) {
-      alerts.value = res.data.alerts
-      total.value = res.data.total
+  const getLevelIcon = (level) => {
+    const icons = {
+      info: InfoFilled,
+      warning: Warning,
+      danger: CircleCloseFilled,
+      critical: CircleCloseFilled,
     }
-  } catch (error) {
-    console.error('获取预警历史失败:', error)
-  } finally {
-    loading.value = false
+    return icons[level] || InfoFilled
   }
-}
 
-const fetchStats = async () => {
-  try {
-    const res = await getAlertStats()
-    if (res.code === 200) {
-      stats.value = res.data
+  const getLevelClass = (level) => {
+    return `level-${level}`
+  }
+
+  const getLevelTagType = (level) => {
+    const types = {
+      info: 'info',
+      warning: 'warning',
+      danger: 'danger',
+      critical: 'danger',
     }
-  } catch (error) {
-    console.error('获取预警统计失败:', error)
+    return types[level] || 'info'
   }
-}
 
-const fetchRules = async () => {
-  try {
-    const res = await getAlertRules()
-    if (res.code === 200) {
-      rules.value = res.data.rules
+  const getLevelLabel = (level) => {
+    const labels = {
+      info: '信息',
+      warning: '警告',
+      danger: '危险',
+      critical: '严重',
     }
-  } catch (error) {
-    console.error('获取预警规则失败:', error)
+    return labels[level] || level
   }
-}
 
-const showAlertDetail = (alert) => {
-  selectedAlert.value = alert
-  showDetailDialog.value = true
-}
-
-const handleMarkAllRead = async () => {
-  try {
-    const res = await markAllAlertsRead()
-    if (res.code === 200) {
-      ElMessage.success('已全部标记为已读')
-      fetchAlerts()
-      fetchStats()
+  const getTypeLabel = (type) => {
+    const labels = {
+      volume_spike: '讨论量激增',
+      negative_surge: '负面激增',
+      sentiment_shift: '情感突变',
+      hot_topic: '热点话题',
+      keyword_match: '关键词匹配',
+      custom: '自定义',
     }
-  } catch (error) {
-    ElMessage.error('操作失败')
+    return labels[type] || type
   }
-}
 
-const handleToggleRule = async (rule) => {
-  try {
-    await toggleAlertRule(rule.id)
-    ElMessage.success(rule.enabled ? '规则已启用' : '规则已禁用')
-  } catch (error) {
-    rule.enabled = !rule.enabled
-    ElMessage.error('操作失败')
+  const formatTime = (timeStr) => {
+    if (!timeStr) return ''
+    const date = new Date(timeStr)
+    return date.toLocaleString()
   }
-}
 
-const handleTestAlert = async () => {
-  testing.value = true
-  try {
-    const res = await testAlert(testForm.value)
-    if (res.code === 200) {
-      ElMessage.success('测试预警已发送')
-      fetchAlerts()
-      fetchStats()
+  const fetchAlerts = async () => {
+    loading.value = true
+    try {
+      const res = await getAlertHistory({
+        limit: pageSize.value,
+        level: filterLevel.value || undefined,
+      })
+      if (res.code === 200) {
+        alerts.value = res.data.alerts
+        total.value = res.data.total
+      }
+    } catch (error) {
+      console.error('获取预警历史失败:', error)
+    } finally {
+      loading.value = false
     }
-  } catch (error) {
-    ElMessage.error('发送失败')
-  } finally {
-    testing.value = false
   }
-}
 
-const handleCreateRule = async () => {
-  if (!ruleForm.value.id || !ruleForm.value.name) {
-    ElMessage.warning('请填写规则ID和名称')
-    return
-  }
-  
-  creating.value = true
-  try {
-    const res = await createAlertRule(ruleForm.value)
-    if (res.code === 201) {
-      ElMessage.success('规则创建成功')
-      showRuleDialog.value = false
-      fetchRules()
+  const fetchStats = async () => {
+    try {
+      const res = await getAlertStats()
+      if (res.code === 200) {
+        stats.value = res.data
+      }
+    } catch (error) {
+      console.error('获取预警统计失败:', error)
     }
-  } catch (error) {
-    ElMessage.error('创建失败')
-  } finally {
-    creating.value = false
   }
-}
 
-onMounted(() => {
-  fetchAlerts()
-  fetchStats()
-  fetchRules()
-})
+  const fetchRules = async () => {
+    try {
+      const res = await getAlertRules()
+      if (res.code === 200) {
+        rules.value = res.data.rules
+      }
+    } catch (error) {
+      console.error('获取预警规则失败:', error)
+    }
+  }
+
+  const showAlertDetail = (alert) => {
+    selectedAlert.value = alert
+    showDetailDialog.value = true
+  }
+
+  const handleMarkAllRead = async () => {
+    try {
+      const res = await markAllAlertsRead()
+      if (res.code === 200) {
+        ElMessage.success('已全部标记为已读')
+        fetchAlerts()
+        fetchStats()
+      }
+    } catch (error) {
+      ElMessage.error('操作失败')
+    }
+  }
+
+  const handleToggleRule = async (rule) => {
+    try {
+      await toggleAlertRule(rule.id)
+      ElMessage.success(rule.enabled ? '规则已启用' : '规则已禁用')
+    } catch (error) {
+      rule.enabled = !rule.enabled
+      ElMessage.error('操作失败')
+    }
+  }
+
+  const handleTestAlert = async () => {
+    testing.value = true
+    try {
+      const res = await testAlert(testForm.value)
+      if (res.code === 200) {
+        ElMessage.success('测试预警已发送')
+        fetchAlerts()
+        fetchStats()
+      }
+    } catch (error) {
+      ElMessage.error('发送失败')
+    } finally {
+      testing.value = false
+    }
+  }
+
+  const handleCreateRule = async () => {
+    if (!ruleForm.value.id || !ruleForm.value.name) {
+      ElMessage.warning('请填写规则ID和名称')
+      return
+    }
+
+    creating.value = true
+    try {
+      const res = await createAlertRule(ruleForm.value)
+      if (res.code === 201) {
+        ElMessage.success('规则创建成功')
+        showRuleDialog.value = false
+        fetchRules()
+      }
+    } catch (error) {
+      ElMessage.error('创建失败')
+    } finally {
+      creating.value = false
+    }
+  }
+
+  onMounted(() => {
+    fetchAlerts()
+    fetchStats()
+    fetchRules()
+  })
 </script>
 
 <style lang="scss" scoped>
-.alert-center-container {
-  .stat-card {
-    .stat-content {
-      display: flex;
-      align-items: center;
-      
-      .stat-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
+  .alert-center-container {
+    .stat-card {
+      .stat-content {
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        margin-right: 16px;
-        
-        &.info { background: var(--el-color-info-light-8); color: var(--el-color-info); }
-        &.warning { background: var(--el-color-warning-light-8); color: var(--el-color-warning); }
-        &.danger { background: var(--el-color-danger-light-8); color: var(--el-color-danger); }
-        &.success { background: var(--el-color-success-light-8); color: var(--el-color-success); }
-      }
-      
-      .stat-info {
-        .stat-value {
+
+        .stat-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           font-size: 24px;
-          font-weight: 600;
+          margin-right: 16px;
+
+          &.info {
+            background: var(--el-color-info-light-8);
+            color: var(--el-color-info);
+          }
+          &.warning {
+            background: var(--el-color-warning-light-8);
+            color: var(--el-color-warning);
+          }
+          &.danger {
+            background: var(--el-color-danger-light-8);
+            color: var(--el-color-danger);
+          }
+          &.success {
+            background: var(--el-color-success-light-8);
+            color: var(--el-color-success);
+          }
         }
-        .stat-label {
-          font-size: 14px;
-          color: var(--el-text-color-secondary);
+
+        .stat-info {
+          .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+          }
+          .stat-label {
+            font-size: 14px;
+            color: var(--el-text-color-secondary);
+          }
         }
       }
     }
-  }
-  
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    
-    .header-actions {
-      display: flex;
-      gap: 12px;
-    }
-  }
-  
-  .level-info { color: var(--el-color-info); }
-  .level-warning { color: var(--el-color-warning); }
-  .level-danger { color: var(--el-color-danger); }
-  .level-critical { color: var(--el-color-danger); }
-  
-  .pagination-container {
-    margin-top: 16px;
-    display: flex;
-    justify-content: flex-end;
-  }
-  
-  .rules-list {
-    .rule-item {
+
+    .card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px;
-      border-bottom: 1px solid var(--el-border-color-lighter);
-      
-      &:last-child {
-        border-bottom: none;
+
+      .header-actions {
+        display: flex;
+        gap: 12px;
       }
-      
-      .rule-info {
-        .rule-name {
-          font-weight: 500;
+    }
+
+    .level-info {
+      color: var(--el-color-info);
+    }
+    .level-warning {
+      color: var(--el-color-warning);
+    }
+    .level-danger {
+      color: var(--el-color-danger);
+    }
+    .level-critical {
+      color: var(--el-color-danger);
+    }
+
+    .pagination-container {
+      margin-top: 16px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .rules-list {
+      .rule-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        border-bottom: 1px solid var(--el-border-color-lighter);
+
+        &:last-child {
+          border-bottom: none;
         }
-        .rule-type {
-          font-size: 12px;
-          color: var(--el-text-color-secondary);
+
+        .rule-info {
+          .rule-name {
+            font-weight: 500;
+          }
+          .rule-type {
+            font-size: 12px;
+            color: var(--el-text-color-secondary);
+          }
         }
       }
     }
+
+    .data-json {
+      background: var(--el-fill-color-light);
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      max-height: 200px;
+      overflow: auto;
+    }
+
+    .mt-4 {
+      margin-top: 16px;
+    }
+    .mb-4 {
+      margin-bottom: 16px;
+    }
   }
-  
-  .data-json {
-    background: var(--el-fill-color-light);
-    padding: 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    max-height: 200px;
-    overflow: auto;
-  }
-  
-  .mt-4 { margin-top: 16px; }
-  .mb-4 { margin-bottom: 16px; }
-}
 </style>

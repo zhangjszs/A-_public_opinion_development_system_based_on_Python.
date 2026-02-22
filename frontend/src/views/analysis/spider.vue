@@ -85,7 +85,9 @@
       <el-col :xs="24" :lg="10">
         <div class="panel operation-panel">
           <div class="panel-header">
-            <h3><el-icon><Opportunity /></el-icon> 爬取操作</h3>
+            <h3>
+              <el-icon><Opportunity /></el-icon> 爬取操作
+            </h3>
           </div>
           <div class="panel-body">
             <!-- 刷新热门 -->
@@ -96,7 +98,13 @@
               </div>
               <p class="action-desc">获取微博热门时间线最新内容</p>
               <div class="action-controls">
-                <el-input-number v-model="hotPageNum" :min="1" :max="10" size="small" style="width: 100px" />
+                <el-input-number
+                  v-model="hotPageNum"
+                  :min="1"
+                  :max="10"
+                  size="small"
+                  style="width: 100px"
+                />
                 <span class="control-label">页</span>
                 <el-button
                   type="warning"
@@ -125,7 +133,13 @@
                   style="width: 160px"
                   clearable
                 />
-                <el-input-number v-model="searchPageNum" :min="1" :max="10" size="small" style="width: 80px" />
+                <el-input-number
+                  v-model="searchPageNum"
+                  :min="1"
+                  :max="10"
+                  size="small"
+                  style="width: 80px"
+                />
                 <el-button
                   type="primary"
                   :loading="overview.isRunning"
@@ -164,7 +178,9 @@
         <!-- 爬取历史 -->
         <div class="panel history-panel">
           <div class="panel-header">
-            <h3><el-icon><Clock /></el-icon> 爬取历史</h3>
+            <h3>
+              <el-icon><Clock /></el-icon> 爬取历史
+            </h3>
           </div>
           <div class="panel-body">
             <div v-if="!overview.history || overview.history.length === 0" class="empty-state">
@@ -178,7 +194,9 @@
                 :class="'history-' + item.status"
               >
                 <div class="history-badge">
-                  <el-icon v-if="item.status === 'success'" color="#10B981"><CircleCheck /></el-icon>
+                  <el-icon v-if="item.status === 'success'" color="#10B981"
+                    ><CircleCheck
+                  /></el-icon>
                   <el-icon v-else color="#EF4444"><CircleClose /></el-icon>
                 </div>
                 <div class="history-content">
@@ -200,7 +218,9 @@
         <!-- 数据趋势图 -->
         <div class="panel chart-panel">
           <div class="panel-header">
-            <h3><el-icon><TrendCharts /></el-icon> 数据趋势 (近7天)</h3>
+            <h3>
+              <el-icon><TrendCharts /></el-icon> 数据趋势 (近7天)
+            </h3>
           </div>
           <div class="panel-body">
             <div ref="trendChartRef" class="trend-chart"></div>
@@ -210,7 +230,9 @@
         <!-- 日志面板 -->
         <div class="panel log-panel">
           <div class="panel-header">
-            <h3><el-icon><Notebook /></el-icon> 运行日志</h3>
+            <h3>
+              <el-icon><Notebook /></el-icon> 运行日志
+            </h3>
             <el-button size="small" text @click="loadLogs" :loading="logsLoading">
               <el-icon><Refresh /></el-icon> 刷新
             </el-button>
@@ -239,577 +261,604 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import {
-  Document, ChatDotRound, User, Timer, Monitor,
-  Refresh, Download, Search, Loading, Sunny,
-  ChatLineRound, Clock, CircleCheck, CircleClose,
-  TrendCharts, Notebook, Opportunity
-} from '@element-plus/icons-vue'
-import * as echarts from 'echarts'
-import { getSpiderOverview, startCrawl, getSpiderStatus, getSpiderLogs } from '@/api/spider'
+  import { ref, reactive, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+  import { ElMessage } from 'element-plus'
+  import {
+    Document,
+    ChatDotRound,
+    User,
+    Timer,
+    Monitor,
+    Refresh,
+    Download,
+    Search,
+    Loading,
+    Sunny,
+    ChatLineRound,
+    Clock,
+    CircleCheck,
+    CircleClose,
+    TrendCharts,
+    Notebook,
+    Opportunity,
+  } from '@element-plus/icons-vue'
+  import * as echarts from 'echarts'
+  import { getSpiderOverview, startCrawl, getSpiderStatus, getSpiderLogs } from '@/api/spider'
 
-// 概览 data
-const overview = reactive({
-  articleCount: 0,
-  commentCount: 0,
-  userCount: 0,
-  latestArticleTime: '',
-  latestCommentTime: '',
-  isRunning: false,
-  currentTask: null,
-  progress: 0,
-  message: '',
-  dailyTrend: [],
-  commentTrend: [],
-  history: [],
-})
+  // 概览 data
+  const overview = reactive({
+    articleCount: 0,
+    commentCount: 0,
+    userCount: 0,
+    latestArticleTime: '',
+    latestCommentTime: '',
+    isRunning: false,
+    currentTask: null,
+    progress: 0,
+    message: '',
+    dailyTrend: [],
+    commentTrend: [],
+    history: [],
+  })
 
-// 操作表单
-const hotPageNum = ref(3)
-const searchKeyword = ref('')
-const searchPageNum = ref(3)
-const refreshing = ref(false)
+  // 操作表单
+  const hotPageNum = ref(3)
+  const searchKeyword = ref('')
+  const searchPageNum = ref(3)
+  const refreshing = ref(false)
 
-// 日志
-const logs = ref([])
-const logsLoading = ref(false)
-const logContainerRef = ref(null)
+  // 日志
+  const logs = ref([])
+  const logsLoading = ref(false)
+  const logContainerRef = ref(null)
 
-// 图表
-const trendChartRef = ref(null)
-let trendChart = null
+  // 图表
+  const trendChartRef = ref(null)
+  let trendChart = null
 
-const handleResize = () => {
-  trendChart?.resize()
-}
-
-const handleVisibilityChange = () => {
-  if (document.hidden) {
-    stopStatusPolling()
-    return
+  const handleResize = () => {
+    trendChart?.resize()
   }
-  if (overview.isRunning) {
-    startStatusPolling()
-  }
-}
 
-// 轮询定时器
-let statusTimer = null
-let pollErrorCount = 0
-
-// ===== 数据加载 =====
-async function loadOverview() {
-  try {
-    const res = await getSpiderOverview()
-    if (res.code === 200 && res.data) {
-      Object.assign(overview, res.data)
-      renderTrendChart()
+  const handleVisibilityChange = () => {
+    if (document.hidden) {
+      stopStatusPolling()
+      return
     }
-  } catch (e) {
-    console.error('加载概览失败:', e)
-  }
-}
-
-async function loadLogs() {
-  logsLoading.value = true
-  try {
-    const res = await getSpiderLogs(200)
-    if (res.code === 200 && res.data) {
-      logs.value = res.data.logs || []
-    }
-  } catch (e) {
-    console.error('加载日志失败:', e)
-  } finally {
-    logsLoading.value = false
-  }
-}
-
-async function refreshAll() {
-  refreshing.value = true
-  await Promise.all([loadOverview(), loadLogs()])
-  refreshing.value = false
-}
-
-// ===== 爬取操作 =====
-async function startCrawlAction(type) {
-  const params = { type }
-  if (type === 'hot') {
-    params.pageNum = hotPageNum.value
-  } else if (type === 'search') {
-    params.keyword = searchKeyword.value
-    params.pageNum = searchPageNum.value
-  }
-
-  try {
-    const res = await startCrawl(params)
-    if (res.code === 200) {
-      ElMessage.success(res.msg || '爬虫任务已启动')
-      overview.isRunning = true
+    if (overview.isRunning) {
       startStatusPolling()
-    } else {
-      ElMessage.warning(res.msg || '启动失败')
     }
-  } catch (e) {
-    ElMessage.error('请求失败: ' + (e.message || e))
   }
-}
 
-// ===== 状态轮询 =====
-function startStatusPolling() {
-  stopStatusPolling()
-  pollErrorCount = 0
-  statusTimer = setInterval(async () => {
+  // 轮询定时器
+  let statusTimer = null
+  let pollErrorCount = 0
+
+  // ===== 数据加载 =====
+  async function loadOverview() {
     try {
-      const res = await getSpiderStatus()
+      const res = await getSpiderOverview()
       if (res.code === 200 && res.data) {
-        overview.isRunning = res.data.isRunning
-        overview.currentTask = res.data.currentTask
-        overview.progress = res.data.progress
-        overview.message = res.data.message
+        Object.assign(overview, res.data)
+        renderTrendChart()
+      }
+    } catch (e) {
+      console.error('加载概览失败:', e)
+    }
+  }
 
-        if (!res.data.isRunning) {
+  async function loadLogs() {
+    logsLoading.value = true
+    try {
+      const res = await getSpiderLogs(200)
+      if (res.code === 200 && res.data) {
+        logs.value = res.data.logs || []
+      }
+    } catch (e) {
+      console.error('加载日志失败:', e)
+    } finally {
+      logsLoading.value = false
+    }
+  }
+
+  async function refreshAll() {
+    refreshing.value = true
+    await Promise.all([loadOverview(), loadLogs()])
+    refreshing.value = false
+  }
+
+  // ===== 爬取操作 =====
+  async function startCrawlAction(type) {
+    const params = { type }
+    if (type === 'hot') {
+      params.pageNum = hotPageNum.value
+    } else if (type === 'search') {
+      params.keyword = searchKeyword.value
+      params.pageNum = searchPageNum.value
+    }
+
+    try {
+      const res = await startCrawl(params)
+      if (res.code === 200) {
+        ElMessage.success(res.msg || '爬虫任务已启动')
+        overview.isRunning = true
+        startStatusPolling()
+      } else {
+        ElMessage.warning(res.msg || '启动失败')
+      }
+    } catch (e) {
+      ElMessage.error('请求失败: ' + (e.message || e))
+    }
+  }
+
+  // ===== 状态轮询 =====
+  function startStatusPolling() {
+    stopStatusPolling()
+    pollErrorCount = 0
+    statusTimer = setInterval(async () => {
+      try {
+        const res = await getSpiderStatus()
+        if (res.code === 200 && res.data) {
+          overview.isRunning = res.data.isRunning
+          overview.currentTask = res.data.currentTask
+          overview.progress = res.data.progress
+          overview.message = res.data.message
+
+          if (!res.data.isRunning) {
+            stopStatusPolling()
+            // 任务完成后自动刷新概览
+            await loadOverview()
+            ElMessage.success('爬取任务已完成')
+          }
+        }
+        pollErrorCount = 0
+      } catch (e) {
+        console.error('轮询状态失败:', e)
+        pollErrorCount += 1
+        if (pollErrorCount >= 3) {
           stopStatusPolling()
-          // 任务完成后自动刷新概览
-          await loadOverview()
-          ElMessage.success('爬取任务已完成')
+          overview.isRunning = false
+          overview.message = '状态获取失败，已停止轮询，请稍后刷新重试'
+          ElMessage.error('状态获取失败，请检查网络或稍后重试')
         }
       }
-      pollErrorCount = 0
-    } catch (e) {
-      console.error('轮询状态失败:', e)
-      pollErrorCount += 1
-      if (pollErrorCount >= 3) {
-        stopStatusPolling()
-        overview.isRunning = false
-        overview.message = '状态获取失败，已停止轮询，请稍后刷新重试'
-        ElMessage.error('状态获取失败，请检查网络或稍后重试')
-      }
+    }, 2000)
+  }
+
+  function stopStatusPolling() {
+    if (statusTimer) {
+      clearInterval(statusTimer)
+      statusTimer = null
     }
-  }, 2000)
-}
-
-function stopStatusPolling() {
-  if (statusTimer) {
-    clearInterval(statusTimer)
-    statusTimer = null
-  }
-}
-
-// ===== 图表渲染 =====
-function renderTrendChart() {
-  if (!trendChartRef.value) return
-
-  if (!trendChart) {
-    trendChart = echarts.init(trendChartRef.value)
   }
 
-  const articleDates = overview.dailyTrend.map(d => d.date)
-  const articleCounts = overview.dailyTrend.map(d => d.count)
-  const commentDates = overview.commentTrend.map(d => d.date)
-  const commentCounts = overview.commentTrend.map(d => d.count)
+  // ===== 图表渲染 =====
+  function renderTrendChart() {
+    if (!trendChartRef.value) return
 
-  // 合并日期轴
-  const allDates = [...new Set([...articleDates, ...commentDates])].sort()
+    if (!trendChart) {
+      trendChart = echarts.init(trendChartRef.value)
+    }
 
-  const articleMap = Object.fromEntries(overview.dailyTrend.map(d => [d.date, d.count]))
-  const commentMap = Object.fromEntries(overview.commentTrend.map(d => [d.date, d.count]))
+    const articleDates = overview.dailyTrend.map((d) => d.date)
+    const articleCounts = overview.dailyTrend.map((d) => d.count)
+    const commentDates = overview.commentTrend.map((d) => d.date)
+    const commentCounts = overview.commentTrend.map((d) => d.count)
 
-  const option = {
-    tooltip: {
-      trigger: 'axis',
-      backgroundColor: 'rgba(15, 23, 42, 0.9)',
-      borderColor: '#334155',
-      textStyle: { color: '#E2E8F0', fontSize: 12 },
-    },
-    legend: {
-      data: ['文章', '评论'],
-      textStyle: { color: '#94A3B8' },
-      top: 0,
-    },
-    grid: { top: 40, right: 20, bottom: 30, left: 50 },
-    xAxis: {
-      type: 'category',
-      data: allDates.map(d => d.slice(5)),  // MM-DD
-      axisLine: { lineStyle: { color: '#334155' } },
-      axisLabel: { color: '#94A3B8', fontSize: 11 },
-    },
-    yAxis: {
-      type: 'value',
-      splitLine: { lineStyle: { color: '#1E293B' } },
-      axisLabel: { color: '#94A3B8', fontSize: 11 },
-    },
-    series: [
-      {
-        name: '文章',
-        type: 'line',
-        smooth: true,
-        data: allDates.map(d => articleMap[d] || 0),
-        lineStyle: { color: '#6366F1', width: 2 },
-        itemStyle: { color: '#6366F1' },
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(99, 102, 241, 0.3)' },
-            { offset: 1, color: 'rgba(99, 102, 241, 0.02)' },
-          ]),
-        },
+    // 合并日期轴
+    const allDates = [...new Set([...articleDates, ...commentDates])].sort()
+
+    const articleMap = Object.fromEntries(overview.dailyTrend.map((d) => [d.date, d.count]))
+    const commentMap = Object.fromEntries(overview.commentTrend.map((d) => [d.date, d.count]))
+
+    const option = {
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+        borderColor: '#334155',
+        textStyle: { color: '#E2E8F0', fontSize: 12 },
       },
-      {
-        name: '评论',
-        type: 'line',
-        smooth: true,
-        data: allDates.map(d => commentMap[d] || 0),
-        lineStyle: { color: '#10B981', width: 2 },
-        itemStyle: { color: '#10B981' },
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(16, 185, 129, 0.3)' },
-            { offset: 1, color: 'rgba(16, 185, 129, 0.02)' },
-          ]),
-        },
+      legend: {
+        data: ['文章', '评论'],
+        textStyle: { color: '#94A3B8' },
+        top: 0,
       },
-    ],
+      grid: { top: 40, right: 20, bottom: 30, left: 50 },
+      xAxis: {
+        type: 'category',
+        data: allDates.map((d) => d.slice(5)), // MM-DD
+        axisLine: { lineStyle: { color: '#334155' } },
+        axisLabel: { color: '#94A3B8', fontSize: 11 },
+      },
+      yAxis: {
+        type: 'value',
+        splitLine: { lineStyle: { color: '#1E293B' } },
+        axisLabel: { color: '#94A3B8', fontSize: 11 },
+      },
+      series: [
+        {
+          name: '文章',
+          type: 'line',
+          smooth: true,
+          data: allDates.map((d) => articleMap[d] || 0),
+          lineStyle: { color: '#6366F1', width: 2 },
+          itemStyle: { color: '#6366F1' },
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: 'rgba(99, 102, 241, 0.3)' },
+              { offset: 1, color: 'rgba(99, 102, 241, 0.02)' },
+            ]),
+          },
+        },
+        {
+          name: '评论',
+          type: 'line',
+          smooth: true,
+          data: allDates.map((d) => commentMap[d] || 0),
+          lineStyle: { color: '#10B981', width: 2 },
+          itemStyle: { color: '#10B981' },
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: 'rgba(16, 185, 129, 0.3)' },
+              { offset: 1, color: 'rgba(16, 185, 129, 0.02)' },
+            ]),
+          },
+        },
+      ],
+    }
+
+    trendChart.setOption(option)
   }
 
-  trendChart.setOption(option)
-}
-
-// ===== 日志高亮 =====
-function getLogLevel(line) {
-  if (line.includes('ERROR') || line.includes('CRITICAL')) return 'log-error'
-  if (line.includes('WARNING')) return 'log-warn'
-  if (line.includes('INFO')) return 'log-info'
-  return 'log-debug'
-}
-
-// ===== 生命周期 =====
-onMounted(async () => {
-  await Promise.all([loadOverview(), loadLogs()])
-  if (overview.isRunning) {
-    startStatusPolling()
+  // ===== 日志高亮 =====
+  function getLogLevel(line) {
+    if (line.includes('ERROR') || line.includes('CRITICAL')) return 'log-error'
+    if (line.includes('WARNING')) return 'log-warn'
+    if (line.includes('INFO')) return 'log-info'
+    return 'log-debug'
   }
 
-  // 窗口 resize 时重绘图表
-  window.addEventListener('resize', handleResize)
-  document.addEventListener('visibilitychange', handleVisibilityChange)
-})
+  // ===== 生命周期 =====
+  onMounted(async () => {
+    await Promise.all([loadOverview(), loadLogs()])
+    if (overview.isRunning) {
+      startStatusPolling()
+    }
 
-onBeforeUnmount(() => {
-  stopStatusPolling()
-  trendChart?.dispose()
-  window.removeEventListener('resize', handleResize)
-  document.removeEventListener('visibilitychange', handleVisibilityChange)
-})
+    // 窗口 resize 时重绘图表
+    window.addEventListener('resize', handleResize)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+  })
+
+  onBeforeUnmount(() => {
+    stopStatusPolling()
+    trendChart?.dispose()
+    window.removeEventListener('resize', handleResize)
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+  })
 </script>
 
 <style lang="scss" scoped>
-.spider-page {
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-/* 页面头部 */
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.page-header h2 {
-  font-size: 22px;
-  font-weight: 700;
-  color: $text-primary;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-}
-
-.subtitle {
-  color: $text-secondary;
-  font-size: 13px;
-  margin: 4px 0 0 0;
-}
-
-/* 统计卡片 */
-.stats-row {
-  margin-bottom: 20px;
-}
-
-.stat-card {
-  background: $surface-color;
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  border: 1px solid $border-color;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.stat-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.card-articles .stat-icon { background: rgba(99, 102, 241, 0.1); color: #6366F1; }
-.card-comments .stat-icon { background: rgba(16, 185, 129, 0.1); color: #10B981; }
-.card-users .stat-icon { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
-.card-time .stat-icon { background: rgba(239, 68, 68, 0.1); color: #EF4444; }
-
-.stat-value {
-  font-size: 26px;
-  font-weight: 700;
-  color: #0F172A;
-  line-height: 1.2;
-}
-
-.stat-time-value {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.stat-label {
-  font-size: 13px;
-  color: #94A3B8;
-  margin-top: 2px;
-}
-
-/* 运行状态栏 */
-.running-bar {
-  background: linear-gradient(135deg, #EEF2FF, #E0E7FF);
-  border: 1px solid #C7D2FE;
-  border-radius: 12px;
-  padding: 16px 20px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.running-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.running-task {
-  font-weight: 600;
-  color: #4338CA;
-}
-
-.running-msg {
-  color: #6366F1;
-  font-size: 13px;
-}
-
-.running-progress {
-  flex: 1;
-  min-width: 200px;
-}
-
-.slide-fade-enter-active {
-  transition: all 0.3s ease;
-}
-.slide-fade-leave-active {
-  transition: all 0.2s ease;
-}
-.slide-fade-enter-from,
-.slide-fade-leave-to {
-  transform: translateY(-10px);
-  opacity: 0;
-}
-
-/* 面板通用 */
-.panel {
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid #E2E8F0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  margin-bottom: 20px;
-  overflow: hidden;
-}
-
-.panel-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid #F1F5F9;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.panel-header h3 {
-  font-size: 15px;
-  font-weight: 600;
-  color: #0F172A;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0;
-}
-
-.panel-body {
-  padding: 16px 20px;
-}
-
-/* 操作卡片 */
-.action-card {
-  padding: 16px;
-  border-radius: 10px;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
-  margin-bottom: 12px;
-  transition: border-color 0.2s;
-}
-
-.action-card:hover {
-  border-color: #CBD5E1;
-}
-
-.action-card:last-child {
-  margin-bottom: 0;
-}
-
-.action-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1E293B;
-  margin-bottom: 4px;
-}
-
-.action-desc {
-  font-size: 12px;
-  color: #94A3B8;
-  margin: 0 0 12px 0;
-}
-
-.action-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.control-label {
-  color: #64748B;
-  font-size: 13px;
-}
-
-/* 历史记录 */
-.history-list {
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.history-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 0;
-  border-bottom: 1px solid #F1F5F9;
-}
-
-.history-item:last-child {
-  border-bottom: none;
-}
-
-.history-badge {
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.history-action {
-  font-size: 13px;
-  font-weight: 500;
-  color: #1E293B;
-}
-
-.history-meta {
-  font-size: 12px;
-  color: #94A3B8;
-  margin-top: 2px;
-}
-
-/* 趋势图 */
-.trend-chart {
-  width: 100%;
-  height: 280px;
-}
-
-/* 日志面板 */
-.log-container {
-  max-height: 400px;
-  overflow-y: auto;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
-  font-size: 11.5px;
-  line-height: 1.6;
-  background: #0F172A;
-  border-radius: 8px;
-  padding: 12px 16px;
-}
-
-.log-line {
-  color: #CBD5E1;
-  word-break: break-all;
-  padding: 1px 0;
-}
-
-.log-error {
-  color: #F87171;
-}
-
-.log-warn {
-  color: #FBBF24;
-}
-
-.log-info {
-  color: #60A5FA;
-}
-
-.log-debug {
-  color: #64748B;
-}
-
-.empty-state {
-  padding: 20px 0;
-  text-align: center;
-}
-
-/* 响应式 */
-@media (max-width: 768px) {
-  .stats-row .el-col {
-    margin-bottom: 12px;
+  .spider-page {
+    max-width: 1400px;
+    margin: 0 auto;
   }
 
+  /* 页面头部 */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .page-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: $text-primary;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+  }
+
+  .subtitle {
+    color: $text-secondary;
+    font-size: 13px;
+    margin: 4px 0 0 0;
+  }
+
+  /* 统计卡片 */
+  .stats-row {
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: $surface-color;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    border: 1px solid $border-color;
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .card-articles .stat-icon {
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+  }
+  .card-comments .stat-icon {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+  }
+  .card-users .stat-icon {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+  }
+  .card-time .stat-icon {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+  }
+
+  .stat-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.2;
+  }
+
+  .stat-time-value {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-top: 2px;
+  }
+
+  /* 运行状态栏 */
   .running-bar {
-    flex-direction: column;
-    align-items: flex-start;
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+    border: 1px solid #c7d2fe;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .running-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .running-task {
+    font-weight: 600;
+    color: #4338ca;
+  }
+
+  .running-msg {
+    color: #6366f1;
+    font-size: 13px;
   }
 
   .running-progress {
-    width: 100%;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .slide-fade-enter-active {
+    transition: all 0.3s ease;
+  }
+  .slide-fade-leave-active {
+    transition: all 0.2s ease;
+  }
+  .slide-fade-enter-from,
+  .slide-fade-leave-to {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+
+  /* 面板通用 */
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .panel-header h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+  }
+
+  .panel-body {
+    padding: 16px 20px;
+  }
+
+  /* 操作卡片 */
+  .action-card {
+    padding: 16px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+
+  .action-card:hover {
+    border-color: #cbd5e1;
+  }
+
+  .action-card:last-child {
+    margin-bottom: 0;
+  }
+
+  .action-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 4px;
+  }
+
+  .action-desc {
+    font-size: 12px;
+    color: #94a3b8;
+    margin: 0 0 12px 0;
   }
 
   .action-controls {
-    flex-direction: column;
-    align-items: flex-start;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
   }
-}
+
+  .control-label {
+    color: #64748b;
+    font-size: 13px;
+  }
+
+  /* 历史记录 */
+  .history-list {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .history-item:last-child {
+    border-bottom: none;
+  }
+
+  .history-badge {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .history-action {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1e293b;
+  }
+
+  .history-meta {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 2px;
+  }
+
+  /* 趋势图 */
+  .trend-chart {
+    width: 100%;
+    height: 280px;
+  }
+
+  /* 日志面板 */
+  .log-container {
+    max-height: 400px;
+    overflow-y: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 11.5px;
+    line-height: 1.6;
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+
+  .log-line {
+    color: #cbd5e1;
+    word-break: break-all;
+    padding: 1px 0;
+  }
+
+  .log-error {
+    color: #f87171;
+  }
+
+  .log-warn {
+    color: #fbbf24;
+  }
+
+  .log-info {
+    color: #60a5fa;
+  }
+
+  .log-debug {
+    color: #64748b;
+  }
+
+  .empty-state {
+    padding: 20px 0;
+    text-align: center;
+  }
+
+  /* 响应式 */
+  @media (max-width: 768px) {
+    .stats-row .el-col {
+      margin-bottom: 12px;
+    }
+
+    .running-bar {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .running-progress {
+      width: 100%;
+    }
+
+    .action-controls {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
 </style>

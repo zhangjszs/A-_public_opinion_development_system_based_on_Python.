@@ -570,6 +570,11 @@ def handle_csrf_error(err):
         return error("CSRF 校验失败", code=400), 400
     return render_template("error.html", error_message="CSRF 校验失败"), 400
 
+@app.errorhandler(422)
+def unprocessable_entity(err):
+    if request.path.startswith("/api/") or request.path.startswith("/getAllData/"):
+        return error("请求参数无效", code=422), 422
+    return render_template("error.html", error_message="请求参数无效"), 422
 
 # ===== 通用路由捕获（仅拦截恶意请求）=====
 @app.route("/<path:path>")

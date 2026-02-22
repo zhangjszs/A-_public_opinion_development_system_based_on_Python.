@@ -158,7 +158,7 @@ class PropagationGraph:
         self.edges: List[PropagationEdge] = []
         self.adjacency: Dict[str, List[str]] = defaultdict(list)
         self.reverse_adjacency: Dict[str, List[str]] = defaultdict(list)
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
     def add_node(self, node: PropagationNode):
         """添加节点"""
@@ -625,7 +625,7 @@ class PropagationAnalysisService:
         self.tracer = PropagationTracer(self.graph)
         self.key_identifier = KeyNodeIdentifier(self.graph)
         self.speed_analyzer = PropagationSpeedAnalyzer(self.graph)
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
     def add_propagation(
         self,

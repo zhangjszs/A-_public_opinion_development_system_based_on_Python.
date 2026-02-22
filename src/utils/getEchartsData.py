@@ -1,5 +1,6 @@
 import logging
 import os
+import threading
 
 import jieba
 import matplotlib.pyplot as plt
@@ -23,7 +24,7 @@ def get_abs_path(rel_path):
 
 
 def getTypeList():
-    typeList = list(set([x[8] for x in getPublicData.getAllData()]))
+    typeList = list({x[8] for x in getPublicData.getAllData()})
     return typeList
 
 
@@ -180,8 +181,6 @@ def stopwordslist():
     return stopwords
 
 
-import threading
-
 _plt_lock = threading.Lock()
 
 
@@ -216,7 +215,7 @@ def getContentCloud():
     with _plt_lock:
         try:
             # 绘制图片
-            fig = plt.figure(1)
+            plt.figure(1)
             plt.imshow(wc)
             plt.axis("off")  # 不显示坐标轴
             plt.savefig(save_path, dpi=500)
@@ -257,7 +256,7 @@ def getCommentContentCloud():
     with _plt_lock:
         try:
             # 绘制图片
-            fig = plt.figure(1)
+            plt.figure(1)
             plt.imshow(wc)
             plt.axis("off")  # 不显示坐标轴
             plt.savefig(save_path, dpi=500)

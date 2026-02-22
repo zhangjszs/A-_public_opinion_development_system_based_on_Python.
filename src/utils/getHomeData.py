@@ -100,7 +100,7 @@ def getCreatedNumEchartsData():
         print(f"获取时间数据失败: {e}")
         # 降级到原始方法
         articleData = getPublicData.getAllData()
-        xData = list(set([x[7] for x in articleData]))
+        xData = list({x[7] for x in articleData})
         xData = sorted(
             xData,
             key=lambda x: datetime.strptime(x, "%Y-%m-%d").timestamp(),

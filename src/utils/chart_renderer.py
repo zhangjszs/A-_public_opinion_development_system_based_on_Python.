@@ -119,7 +119,7 @@ class ChartRenderer:
 
         counts = Counter(a.get("level", "info") for a in alerts)
         levels = ["danger", "warning", "info"]
-        values = [counts.get(l, 0) for l in levels]
+        values = [counts.get(lvl, 0) for lvl in levels]
         labels_cn = ["严重", "警告", "提示"]
         colors = ["#F44336", "#FF9800", "#2196F3"]
         fig, ax = plt.subplots(figsize=(5, 4))

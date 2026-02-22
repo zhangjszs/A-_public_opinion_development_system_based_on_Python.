@@ -55,7 +55,7 @@ class PasswordHasher:
 
         except Exception as e:
             logger.error(f"密码哈希失败: {e}")
-            raise Exception("密码哈希过程中发生错误")
+            raise Exception("密码哈希过程中发生错误") from e
 
     @staticmethod
     def verify_password(password: str, hashed_password: str) -> bool:

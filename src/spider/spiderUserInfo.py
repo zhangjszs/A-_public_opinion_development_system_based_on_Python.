@@ -142,7 +142,7 @@ class UserInfoSpider:
 
             # 处理 False 返回值，统一转换
             extracted_data = {
-                key: value[0] if value and value != False else ""
+                key: value[0] if value else ""
                 for key, value in extracted_data.items()
             }
 

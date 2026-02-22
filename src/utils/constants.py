@@ -10,7 +10,10 @@
 - 其他模块应从此处导入常量
 """
 
+import os
 from typing import Final
+
+from config.settings import Config
 
 # ========== 数据分布统计常量 ==========
 
@@ -93,12 +96,6 @@ TABLE_COMMENTS: Final[str] = "comments"
 TABLE_USER: Final[str] = "user"
 """用户数据表名"""
 
-
-# ========== 文件路径常量 ==========
-
-import os
-
-from config.settings import Config
 
 # ========== 文件路径常量 ==========
 

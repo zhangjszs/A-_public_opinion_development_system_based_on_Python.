@@ -3,7 +3,7 @@ from datetime import datetime
 
 from snownlp import SnowNLP
 
-from utils.getPublicData import *
+from utils.getPublicData import getAllCiPingTotal, getAllCommentsData, getAllData
 from utils.query import query_dataframe
 
 logger = logging.getLogger(__name__)

@@ -339,14 +339,6 @@ class CustomModelStrategy(SentimentStrategy):
             if model_dir not in sys.path:
                 sys.path.append(model_dir)
 
-            # 尝试导入以确保反序列化成功
-            try:
-                import model_utils
-            except ImportError:
-                logger.warning(
-                    "Failed to import model_utils, custom model loading might fail"
-                )
-
             if os.path.exists(self.model_path):
                 self._model = joblib.load(self.model_path)
         return self._model

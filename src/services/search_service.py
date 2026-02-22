@@ -99,7 +99,6 @@ class PinyinConverter:
             "道": "dao",
             "转": "zhuan",
             "发": "fa",
-            "点": "dian",
             "赞": "zan",
             "正": "zheng",
             "负": "fu",
@@ -115,7 +114,6 @@ class PinyinConverter:
             "深": "shen",
             "圳": "zhen",
             "杭": "hang",
-            "州": "zhou",
             "南": "nan",
             "东": "dong",
             "西": "xi",
@@ -224,7 +222,7 @@ class AdvancedSearchEngine:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
                     """
-                    INSERT OR REPLACE INTO search_index 
+                    INSERT OR REPLACE INTO search_index
                     (id, title, content, source_type, author, created_at, pinyin_title, pinyin_content)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -267,7 +265,7 @@ class AdvancedSearchEngine:
 
                     conn.execute(
                         """
-                        INSERT OR REPLACE INTO search_index 
+                        INSERT OR REPLACE INTO search_index
                         (id, title, content, source_type, author, created_at, pinyin_title, pinyin_content)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,

@@ -14,7 +14,7 @@ from typing import Any, Dict, Optional, Set
 logger = logging.getLogger(__name__)
 
 try:
-    from flask_socketio import SocketIO, emit, join_room, leave_room, rooms
+    from flask_socketio import SocketIO, emit, join_room, leave_room
 
     SOCKETIO_AVAILABLE = True
 except ImportError:

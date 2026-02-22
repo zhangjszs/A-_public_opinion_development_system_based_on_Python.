@@ -165,9 +165,9 @@ class OperationLogger:
     ) -> List[OperationLog]:
         result = self._logs
         if user_id:
-            result = [l for l in result if l.user_id == user_id]
+            result = [log_entry for log_entry in result if log_entry.user_id == user_id]
         if resource_id:
-            result = [l for l in result if l.resource_id == resource_id]
+            result = [log_entry for log_entry in result if log_entry.resource_id == resource_id]
         return result
 
     def clear(self):

@@ -175,7 +175,7 @@ def spider_hot_task(self, page_num: int = 3) -> Dict[str, Any]:
 
     except Exception as exc:
         logger.error(f"[任务{task_id}] 热门微博刷新失败: {exc}")
-        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
+        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1)) from exc
 
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
@@ -296,7 +296,7 @@ def spider_search_task(self, keyword: str, page_num: int = 3) -> Dict[str, Any]:
     except Exception as exc:
         logger.error(f"[任务{task_id}] 失败: {exc}")
         # 触发重试
-        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
+        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1)) from exc
 
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
@@ -336,7 +336,7 @@ def spider_comments_task(self, article_limit: int = 50) -> Dict[str, Any]:
         with open(article_csv_path, encoding="utf8") as readerFile:
             reader = csv.reader(readerFile)
             try:
-                header = next(reader)  # 跳过标题
+                next(reader)  # 跳过标题
             except StopIteration:
                 return {"status": "failed", "error": "CSV文件为空", "task_id": task_id}
 
@@ -424,7 +424,7 @@ def spider_comments_task(self, article_limit: int = 50) -> Dict[str, Any]:
 
     except Exception as exc:
         logger.error(f"[任务{task_id}] 评论爬虫失败: {exc}")
-        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
+        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1)) from exc
 
 
 def _build_task_response(result, task_id: str) -> dict:

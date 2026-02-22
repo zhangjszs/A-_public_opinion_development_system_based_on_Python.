@@ -109,7 +109,7 @@ def analyze_sentiment_batch(
 
     except Exception as exc:
         logger.error(f"[任务{task_id}] 批量分析失败: {exc}")
-        raise self.retry(exc=exc)
+        raise self.retry(exc=exc) from exc
 
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
@@ -164,7 +164,7 @@ def analyze_single_with_fallback(
             return result
         except Exception as e:
             logger.error(f"[任务{task_id}] 降级也失败: {e}")
-            raise self.retry(exc=exc)
+            raise self.retry(exc=exc) from exc
 
 
 @celery_app.task(bind=True, max_retries=1, default_retry_delay=300)

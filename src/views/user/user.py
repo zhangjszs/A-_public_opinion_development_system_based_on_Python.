@@ -12,7 +12,7 @@ from flask import Blueprint, redirect, render_template, request, session
 
 from services.auth_service import AuthService
 from utils.api_response import error, ok
-from utils.errorResponse import *
+from utils.errorResponse import errorResponse
 from utils.input_validator import sanitize_input, validate_password, validate_username
 from utils.jwt_handler import jwt_required
 from utils.log_sanitizer import SafeLogger

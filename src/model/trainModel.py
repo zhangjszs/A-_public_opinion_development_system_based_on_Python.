@@ -104,6 +104,7 @@ def evaluate_models(
         warnings.warn(
             f"⚠️ 最小类别样本数只有 {min_class}，已自动将 n_splits 设为 {n_splits}。",
             UserWarning,
+            stacklevel=2,
         )
 
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)

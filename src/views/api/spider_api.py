@@ -557,7 +557,6 @@ def _crawl_search(keyword, page_num=3):
         _spider_state["progress"] = int((page / page_num) * 80)
         _spider_state["message"] = f'正在搜索 "{keyword}" 第 {page}/{page_num} 页...'
 
-        url = "https://weibo.com/ajax/side/hotSearch"
         # 搜索 API
         search_url = "https://weibo.com/ajax/statuses/searchResult"
         params = {"q": keyword, "page": page, "count": 20}

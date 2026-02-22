@@ -22,7 +22,6 @@ try:
     from reportlab.pdfbase.ttfonts import TTFont
     from reportlab.platypus import (
         Image,
-        PageBreak,
         Paragraph,
         SimpleDocTemplate,
         Spacer,
@@ -510,7 +509,6 @@ class PPTReportGenerator:
         p.font.size = Pt(32)
         p.font.bold = True
 
-        list_width = Inches(6.0) if chart_bytes else Inches(12.333)
         for i, topic in enumerate(topics[:10]):
             left = (
                 Inches(0.5 + (i % 2) * 3.0)

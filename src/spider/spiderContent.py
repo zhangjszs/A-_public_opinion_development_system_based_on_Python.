@@ -191,7 +191,7 @@ def extract_pic_urls(article: Dict) -> str:
 
     # 方式1: pic_ids + pic_infos
     if "pic_infos" in article and article["pic_infos"]:
-        for pic_id, pic_info in article["pic_infos"].items():
+        for _pic_id, pic_info in article["pic_infos"].items():
             if "original" in pic_info:
                 pic_urls.append(pic_info["original"].get("url", ""))
             elif "large" in pic_info:

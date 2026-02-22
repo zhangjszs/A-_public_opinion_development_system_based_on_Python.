@@ -72,9 +72,6 @@ class BilibiliCollector(BasePlatformCollector):
         return Platform.BILIBILI
 
     def parse(self, raw: Dict) -> PlatformContent:
-        return cls._from_bilibili(raw)
-
-    def parse(self, raw: Dict) -> PlatformContent:
         return PlatformContent(
             platform=Platform.BILIBILI,
             content_id=raw.get("bvid", ""),
@@ -105,8 +102,8 @@ class PlatformCollectorFactory:
         if isinstance(platform, str):
             try:
                 platform = Platform(platform)
-            except ValueError:
-                raise ValueError(f"不支持的平台: {platform}")
+            except ValueError as err:
+                raise ValueError(f"不支持的平台: {platform}") from err
         collector_cls = cls._registry.get(platform)
         if collector_cls is None:
             raise ValueError(f"不支持的平台: {platform}")

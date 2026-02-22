@@ -281,7 +281,7 @@ class TextAugmenter:
 
             for label, count in label_counts.items():
                 if count < max_count:
-                    label_texts = [t for t, l in zip(texts, labels) if l == label]
+                    label_texts = [t for t, lbl in zip(texts, labels) if lbl == label]
                     needed = max_count - count
 
                     for _ in range(needed):

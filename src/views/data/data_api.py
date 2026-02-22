@@ -579,7 +579,7 @@ def get_yuqing_data():
             """)
 
             if not df.empty:
-                for idx, row in df.iterrows():
+                for _idx, row in df.iterrows():
                     trend["dates"].append(str(row["date"]))
                     total = int(row["total"])
                     # 模拟情感分布比例
@@ -670,7 +670,7 @@ def get_content_cloud_data():
 
         ciping_data = getAllCiPingTotal()[:50]
         total_count = sum([int(x[1]) for x in ciping_data]) if ciping_data else 1
-        for i, item in enumerate(ciping_data):
+        for _i, item in enumerate(ciping_data):
             if len(item) >= 2:
                 count = int(item[1])
                 word_stats.append(

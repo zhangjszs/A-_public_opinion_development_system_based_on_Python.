@@ -57,7 +57,7 @@ def generate_demo_data(article_id: str, count: int = 100):
         parent_idx = random.randint(0, max(0, i - 1))
         parent = nodes[parent_idx]
 
-        depth = parent["depth"] + 1 if depth < 5 else 5
+        depth = min(parent["depth"] + 1, 5)
 
         node = {
             "id": f"{article_id}_repost_{i}",

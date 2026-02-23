@@ -111,9 +111,9 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
-    background: $surface-color;
+    background: var(--el-bg-color);
     height: 64px;
-    border-bottom: 1px solid $border-color-light;
+    border-bottom: 1px solid var(--el-border-color-light);
     transition: all 0.3s ease;
   }
 
@@ -125,11 +125,11 @@
     .collapse-btn {
       font-size: 20px;
       cursor: pointer;
-      color: $text-secondary;
+      color: var(--el-text-color-regular);
       transition: color 0.2s;
 
       &:hover {
-        color: $primary-color;
+        color: var(--el-color-primary);
       }
     }
 
@@ -137,15 +137,15 @@
       font-size: 14px;
 
       .el-breadcrumb__inner {
-        color: $text-secondary;
+        color: var(--el-text-color-regular);
 
         &.is-link:hover {
-          color: $primary-color;
+          color: var(--el-color-primary);
         }
       }
 
       .el-breadcrumb__item:last-child .el-breadcrumb__inner {
-        color: $text-primary;
+        color: var(--el-text-color-primary);
         font-weight: 500;
       }
     }
@@ -165,23 +165,23 @@
       transition: background-color 0.2s;
 
       &:hover {
-        background-color: $background-color;
+        background-color: var(--el-bg-color-page);
       }
 
       .user-avatar {
-        background-color: $primary-light;
-        color: $primary-color;
+        background-color: var(--el-color-primary-light-9);
+        color: var(--el-color-primary);
         font-weight: 600;
       }
 
       .username {
         font-size: 14px;
-        color: $text-primary;
+        color: var(--el-text-color-primary);
         font-weight: 500;
       }
 
       .el-icon--right {
-        color: $text-secondary;
+        color: var(--el-text-color-regular);
       }
     }
   }

@@ -11,9 +11,9 @@
       :collapse="collapsed"
       :collapse-transition="false"
       class="sidebar-menu"
-      background-color="#0F172A"
-      text-color="#94A3B8"
-      active-text-color="#FFFFFF"
+      background-color="var(--el-bg-color)"
+      text-color="var(--el-text-color-regular)"
+      active-text-color="var(--el-color-primary)"
       router
     >
       <template v-for="route in menuRoutes" :key="route.path">
@@ -65,8 +65,8 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background-color: #0f172a; // Slate 900
-    border-right: 1px solid #1e293b; // Slate 800
+    background-color: var(--el-bg-color); 
+    border-right: 1px solid var(--el-border-color-light); 
   }
 
   .logo-container {
@@ -76,7 +76,7 @@
     justify-content: center;
     padding: 0 16px;
     overflow: hidden;
-    border-bottom: 1px solid #1e293b;
+    border-bottom: 1px solid var(--el-border-color-light);
 
     .logo {
       height: 32px;
@@ -87,8 +87,8 @@
     .title {
       margin-left: 12px;
       font-size: 16px;
-      font-weight: 600;
-      color: #f8fafc;
+      font-weight: 700;
+      color: var(--el-text-color-primary);
       white-space: nowrap;
       overflow: hidden;
       letter-spacing: 0.5px;
@@ -100,37 +100,49 @@
     overflow-y: auto;
     overflow-x: hidden;
     border-right: none;
-    padding-top: 8px;
+    padding-top: 12px;
 
     &::-webkit-scrollbar {
       width: 6px;
     }
 
     &::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--el-border-color);
       border-radius: 3px;
     }
 
     :deep(.el-menu-item) {
-      margin: 4px 8px;
-      height: 44px;
-      line-height: 44px;
-      border-radius: 6px;
+      margin: 4px 12px;
+      height: 48px;
+      line-height: 48px;
+      border-radius: 8px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
       &:hover {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        color: #f8fafc !important;
+        background-color: var(--el-color-primary-light-9) !important;
+        color: var(--el-color-primary) !important;
       }
 
       &.is-active {
-        background-color: $primary-color !important;
-        color: #ffffff !important;
-        font-weight: 500;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        background-color: var(--el-color-primary-light-9) !important;
+        color: var(--el-color-primary) !important;
+        font-weight: 600;
+        
+        &::before {
+          content: '';
+          position: absolute;
+          left: -12px;
+          top: 25%;
+          height: 50%;
+          width: 4px;
+          border-radius: 0 4px 4px 0;
+          background-color: var(--el-color-primary);
+        }
       }
 
       .el-icon {
         font-size: 18px;
+        margin-right: 12px;
       }
     }
   }

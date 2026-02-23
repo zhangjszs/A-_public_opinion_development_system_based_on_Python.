@@ -80,27 +80,27 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(90deg, #f5f5f5 25%, #eaeaea 50%, #f5f5f5 75%);
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 1.5s ease-in-out infinite;
   }
 
   .skeleton-title {
     width: 60%;
     height: 20px;
-    border-radius: 4px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    border-radius: 6px;
+    background: linear-gradient(90deg, #f5f5f5 25%, #eaeaea 50%, #f5f5f5 75%);
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 1.5s ease-in-out infinite;
   }
 
   .skeleton-text {
     width: 100%;
     height: 14px;
-    border-radius: 4px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    border-radius: 6px;
+    background: linear-gradient(90deg, #f5f5f5 25%, #eaeaea 50%, #f5f5f5 75%);
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 1.5s ease-in-out infinite;
 
     &:nth-child(2) {
       width: 80%;

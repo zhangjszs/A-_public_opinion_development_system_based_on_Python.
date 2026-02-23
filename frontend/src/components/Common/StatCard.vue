@@ -114,6 +114,7 @@
     text-overflow: ellipsis;
     font-family: 'SF Pro Display', $font-family-base; // Use display font if available
     letter-spacing: -0.5px;
+    font-variant-numeric: tabular-nums;
   }
 
   .stat-footer {

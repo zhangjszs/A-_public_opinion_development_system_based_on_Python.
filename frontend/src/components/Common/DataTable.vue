@@ -109,7 +109,7 @@
     },
     border: {
       type: Boolean,
-      default: true,
+      default: false, // Turn off by default for clean look
     },
     rowKey: {
       type: String,

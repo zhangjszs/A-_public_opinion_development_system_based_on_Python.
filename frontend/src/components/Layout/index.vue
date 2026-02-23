@@ -73,15 +73,15 @@
   .layout-container {
     height: 100vh;
     overflow: hidden;
-    background-color: $background-color;
+    background-color: var(--el-bg-color-page);
   }
 
   .sidebar {
-    background-color: #0f172a; // Slate 900
+    background-color: var(--el-bg-color);
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
     flex-shrink: 0;
-    border-right: 1px solid #1e293b; // Slate 800
+    border-right: 1px solid var(--el-border-color-light);
 
     &.is-collapsed {
       width: 64px !important;
@@ -91,7 +91,7 @@
   .header {
     padding: 0;
     background: $surface-color;
-    box-shadow: $box-shadow-sm;
+    border-bottom: 1px solid var(--el-border-color-light);
     height: 64px;
     line-height: 64px;
     flex-shrink: 0;
@@ -99,7 +99,7 @@
   }
 
   .main-content {
-    background: $background-color;
+    background: var(--el-bg-color-page);
     padding: 24px;
     overflow: auto;
     height: calc(100vh - 64px - 40px);
@@ -111,11 +111,11 @@
     }
 
     &::-webkit-scrollbar-thumb {
-      background: #cbd5e1; // Slate 300
+      background: var(--el-border-color);
       border-radius: 4px;
 
       &:hover {
-        background: #94a3b8; // Slate 400
+        background: var(--el-text-color-placeholder);
       }
     }
 

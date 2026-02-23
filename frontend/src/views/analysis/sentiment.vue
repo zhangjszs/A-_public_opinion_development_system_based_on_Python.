@@ -204,7 +204,7 @@
         type: 'pie',
         radius: ['40%', '70%'],
         itemStyle: {
-          borderRadius: 10,
+          borderRadius: 4,
           borderColor: '#fff',
           borderWidth: 2,
         },
@@ -221,26 +221,29 @@
   const trendChartOptions = computed(() => ({
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-      borderColor: '#E2E8F0',
-      textStyle: { color: '#1E293B' },
+      backgroundColor: '#ffffff',
+      borderColor: '#eaeaea',
+      textStyle: { color: '#171717' },
+      extraCssText: 'box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04); border-radius: 8px;',
     },
     grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '3%',
+      top: '10%',
+      left: '2%',
+      right: '2%',
+      bottom: '0%',
       containLabel: true,
     },
     xAxis: {
       type: 'category',
       data: trendData.value.dates || [],
-      axisLine: { lineStyle: { color: '#E2E8F0' } },
-      axisLabel: { color: '#64748B' },
+      axisLine: { lineStyle: { color: '#eaeaea' } },
+      axisLabel: { color: '#666666' },
+      axisTick: { show: false },
     },
     yAxis: {
       type: 'value',
-      splitLine: { lineStyle: { color: '#F1F5F9' } },
-      axisLabel: { color: '#64748B' },
+      splitLine: { lineStyle: { color: '#f5f5f5', type: 'dashed' } },
+      axisLabel: { color: '#666666' },
     },
     series: [
       {

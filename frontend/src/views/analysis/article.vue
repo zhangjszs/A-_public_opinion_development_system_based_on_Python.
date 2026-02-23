@@ -89,10 +89,10 @@
         <div class="card-header">
           <div class="header-title">文章列表</div>
           <div class="header-actions">
-            <el-button :icon="Download" @click="exportList" :disabled="listData.length === 0"
+            <el-button type="default" plain size="small" :icon="Download" @click="exportList" :disabled="listData.length === 0"
               >导出 CSV</el-button
             >
-            <el-button :icon="Refresh" @click="loadList">刷新</el-button>
+            <el-button type="default" plain size="small" :icon="Refresh" @click="loadList">刷新</el-button>
           </div>
         </div>
       </template>

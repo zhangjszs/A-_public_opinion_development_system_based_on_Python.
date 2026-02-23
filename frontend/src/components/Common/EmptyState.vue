@@ -51,21 +51,23 @@
   }
 
   .empty-icon {
-    margin-bottom: 16px;
+    margin-bottom: 24px;
+    opacity: 0.6;
   }
 
   .empty-title {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 500;
-    color: #606266;
+    color: var(--el-text-color-primary);
     margin-bottom: 8px;
   }
 
   .empty-description {
-    font-size: 14px;
-    color: #909399;
-    margin-bottom: 16px;
-    max-width: 300px;
+    font-size: 13px;
+    color: var(--el-text-color-secondary);
+    margin-bottom: 20px;
+    line-height: 1.5;
+    max-width: 250px;
   }
 
   .empty-action {

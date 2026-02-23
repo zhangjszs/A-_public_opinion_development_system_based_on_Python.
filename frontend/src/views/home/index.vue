@@ -54,25 +54,20 @@
       <!-- 时间线图表 -->
       <el-row v-if="widget.key === 'timeline' && widget.visible" :gutter="24" class="mb-4">
         <el-col :span="24">
-          <el-card class="chart-card">
+          <BaseCard class="chart-card">
             <template #header>
-              <div class="card-header">
-                <span class="header-title">文章发布时间分布</span>
-                <el-button type="primary" plain size="small" :icon="Refresh" @click="refreshData"
-                  >刷新数据</el-button
-                >
-              </div>
+              <span class="header-title">文章发布时间分布</span>
+              <el-button type="primary" plain size="small" :icon="Refresh" @click="refreshData">刷新数据</el-button>
             </template>
             <BaseChart ref="lineChartRef" :options="lineChartOptions" height="350px" />
-          </el-card>
+          </BaseCard>
         </el-col>
       </el-row>
 
       <!-- 图表区 -->
       <el-row v-if="widget.key === 'charts' && widget.visible" :gutter="24">
         <el-col :xs="24" :lg="8">
-          <el-card class="chart-card">
-            <template #header><span class="header-title">评论点赞量 Top 5</span></template>
+          <BaseCard class="chart-card" title="评论点赞量 Top 5">
             <div class="top-comments">
               <div v-for="(comment, index) in topComments" :key="index" class="comment-item">
                 <div class="comment-avatar">{{ comment.user.charAt(0) }}</div>
@@ -87,19 +82,17 @@
                 </div>
               </div>
             </div>
-          </el-card>
+          </BaseCard>
         </el-col>
         <el-col :xs="24" :lg="8">
-          <el-card class="chart-card">
-            <template #header><span class="header-title">文章类型占比</span></template>
+          <BaseCard class="chart-card" title="文章类型占比">
             <BaseChart ref="pieChartRef" :options="pieChartOptions" height="350px" />
-          </el-card>
+          </BaseCard>
         </el-col>
         <el-col :xs="24" :lg="8">
-          <el-card class="chart-card">
-            <template #header><span class="header-title">评论用户时间占比</span></template>
+          <BaseCard class="chart-card" title="评论用户时间占比">
             <BaseChart ref="timePieChartRef" :options="timePieChartOptions" height="350px" />
-          </el-card>
+          </BaseCard>
         </el-col>
       </el-row>
     </template>
@@ -137,6 +130,7 @@
   import { Refresh, StarFilled, Setting, Rank, Grid, FullScreen } from '@element-plus/icons-vue'
   import { ElMessage } from 'element-plus'
   import StatCard from '@/components/Common/StatCard.vue'
+  import BaseCard from '@/components/Common/BaseCard.vue'
   import BaseChart from '@/components/Charts/BaseChart.vue'
   import { getHomeStats, getTodayStats, refreshSpiderData } from '@/api/stats'
 
@@ -197,40 +191,29 @@
   const lineChartOptions = computed(() => ({
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-      borderColor: '#E2E8F0',
-      textStyle: {
-        color: '#1E293B',
-      },
+      backgroundColor: '#ffffff',
+      borderColor: '#eaeaea',
+      textStyle: { color: '#171717' },
+      extraCssText: 'box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04); border-radius: 8px;',
     },
     grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '3%',
+      top: '10%',
+      left: '2%',
+      right: '2%',
+      bottom: '0%',
       containLabel: true,
     },
     xAxis: {
       type: 'category',
       data: xData.value,
-      axisLine: {
-        lineStyle: {
-          color: '#E2E8F0',
-        },
-      },
-      axisLabel: {
-        color: '#64748B',
-      },
+      axisLine: { lineStyle: { color: '#eaeaea' } },
+      axisLabel: { color: '#666666' },
+      axisTick: { show: false },
     },
     yAxis: {
       type: 'value',
-      splitLine: {
-        lineStyle: {
-          color: '#F1F5F9',
-        },
-      },
-      axisLabel: {
-        color: '#64748B',
-      },
+      splitLine: { lineStyle: { color: '#f5f5f5', type: 'dashed' } },
+      axisLabel: { color: '#666666' },
     },
     series: [
       {
@@ -281,9 +264,9 @@
     series: [
       {
         type: 'pie',
-        radius: ['40%', '70%'],
+        radius: ['45%', '75%'],
         itemStyle: {
-          borderRadius: 10,
+          borderRadius: 4,
           borderColor: '#fff',
           borderWidth: 2,
         },
@@ -317,9 +300,9 @@
     series: [
       {
         type: 'pie',
-        radius: ['40%', '70%'],
+        radius: ['45%', '75%'],
         itemStyle: {
-          borderRadius: 10,
+          borderRadius: 4,
           borderColor: '#fff',
           borderWidth: 2,
         },
@@ -436,20 +419,7 @@
 
     .chart-card {
       height: 100%;
-      display: flex;
-      flex-direction: column;
-
-      .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .header-title {
-        font-size: 16px;
-        font-weight: 600;
-        color: $text-primary;
-      }
+      // el-card styles transferred to BaseCard, keeping custom overrides
     }
 
     .top-comments {

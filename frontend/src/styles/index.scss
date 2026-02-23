@@ -78,11 +78,11 @@ a {
 
 // Cards
 .el-card {
-  border: none !important;
+  border: 1px solid var(--el-border-color-light) !important;
   border-radius: $border-radius-large;
   background-color: $surface-color;
   box-shadow: $box-shadow-sm !important;
-  transition: $transition-base;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
   margin-bottom: $spacing-lg;
 
   &:hover {
@@ -92,10 +92,12 @@ a {
 
   &__header {
     padding: $spacing-md $spacing-lg;
-    border-bottom: 1px solid $border-color-light;
-    font-weight: $font-weight-bold;
-    font-size: $font-size-large;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+    font-weight: 600;
+    font-size: 15px;
+    /* slightly smaller, finer */
     color: $text-primary;
+    letter-spacing: -0.01em;
   }
 
   &__body {
@@ -125,48 +127,56 @@ a {
 
 // Tables
 .el-table {
-  --el-table-header-bg-color: #{$background-color};
+  --el-table-header-bg-color: #{$background-color-base};
   --el-table-border-color: #{$border-color-light};
-  --el-table-row-hover-bg-color: #{$primary-light};
+  --el-table-row-hover-bg-color: #{$background-color-base};
 
-  border-radius: $border-radius-large;
+  border-radius: $border-radius-base;
   overflow: hidden;
-  box-shadow: $box-shadow-sm;
+  box-shadow: none !important;
+  border: 1px solid var(--el-border-color-light);
 
   th.el-table__cell {
-    background-color: $background-color-base !important;
-    color: $text-regular;
-    font-weight: $font-weight-bold;
-    border-bottom: 1px solid $border-color;
+    background-color: var(--el-bg-color-page) !important;
+    color: $text-primary;
+    font-weight: 600;
+    border-bottom: 1px solid var(--el-border-color-light) !important;
     height: 48px;
+    font-size: 13px;
   }
 
   td.el-table__cell {
-    padding: 12px 0;
+    padding: 14px 0;
     color: $text-regular;
+    font-size: 14px;
+    border-bottom: 1px solid var(--el-border-color-lighter) !important;
   }
 
-  // Remove outer borders
+  // Remove outer borders and internal vertical borders completely
   &--border,
   .el-table--border th.el-table__cell,
-  .el-table__body-wrapper .el-table--border.is-scrolling-left ~ .el-table__fixed {
-    border-right: none;
+  .el-table__body-wrapper .el-table--border.is-scrolling-left~.el-table__fixed {
+    border-right: none !important;
   }
 }
 
 // Inputs
-.el-input__wrapper {
-  box-shadow: 0 0 0 1px $border-color inset !important;
-  border-radius: $border-radius-base;
-  padding: 8px 12px;
+.el-input__wrapper,
+.el-select__wrapper {
+  box-shadow: 0 0 0 1px var(--el-border-color) inset !important;
+  border-radius: $border-radius-small;
+  padding: 6px 12px;
+  background-color: transparent !important;
+  transition: box-shadow 0.2s ease;
 
   &:hover {
-    box-shadow: 0 0 0 1px $text-placeholder inset !important;
+    box-shadow: 0 0 0 1px var(--el-border-color-dark) inset !important;
   }
 
-  &.is-focus {
+  &.is-focus,
+  &.is-focused {
     box-shadow:
-      0 0 0 2px rgba($primary-color, 0.2) inset,
+      0 0 0 2px rgba($primary-color, 0.1) inset,
       0 0 0 1px $primary-color inset !important;
   }
 }
@@ -179,16 +189,20 @@ a {
   button,
   li {
     background: transparent !important;
-    border-radius: $border-radius-base;
+    border-radius: $border-radius-small;
+    font-size: 13px;
+    font-weight: 500;
 
     &:hover {
       color: $primary-color;
+      background-color: var(--el-color-primary-light-9) !important;
     }
 
     &.is-active {
-      background-color: $primary-light !important;
+      background-color: var(--el-color-primary-light-9) !important;
       color: $primary-color;
-      font-weight: bold;
+      font-weight: 600;
+      border: 1px solid rgba($primary-color, 0.2);
     }
   }
 }
@@ -201,12 +215,17 @@ a {
 // Transitions
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.25s ease-out, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.fade-enter-from,
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
 .fade-leave-to {
   opacity: 0;
+  transform: translateY(-10px);
 }
 
 .slide-fade-enter-active {

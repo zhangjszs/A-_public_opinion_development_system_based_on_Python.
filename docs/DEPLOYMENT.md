@@ -13,40 +13,45 @@
 - [生产部署](#生产部署)
 - [故障排除](#故障排除)
 
-## ⚡ 快速开始
+## ⚡ 快速开始 (本地开发)
 
-### 使用脚本一键部署（推荐）
+### 推荐环境 (Windows) 使用 `start.bat` 一键部署
 
-```bash
-# 克隆项目
-git clone https://github.com/zhangjszs/A-_public_opinion_development_system_based_on_Python.git
-cd A-_public_opinion_development_system_based_on_Python
+这是目前系统最推荐的无缝拉起体验方式（**无需配置 Redis 和 Celery**）。
 
-# 运行部署脚本
-chmod +x deploy.sh
-./deploy.sh
+```powershell
+# 1. 准备环境参数
+# 复制 .env.example 为 .env，并配置好内网/本地数据库的相关参数和密码
+cp .env.example .env
+
+# 2. 从项目根目录直接启动一键脚本
+.\start.bat
 ```
+这将在独立窗口分别拉起 Flask和Vite，当你开发完毕时，使用 `.\start.bat stop` 安全停止所有服务。
 
-### 手动部署
+### 手动部署 (跨平台 Linux/macOS)
 
 ```bash
 # 1. 环境准备
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
-# 或 venv\Scripts\activate  # Windows
 
 # 2. 安装依赖
 pip install -r requirements.txt
 
 # 3. 数据库初始化
-mysql -u root -p < 数据库/new.sql
+# 登录本地 mysql 并执行数据库导入指令
+mysql -u root -p < database/new.sql
+mysql -u root -p < database/user.sql
+# （其它 sql 详见下文 数据库配置 章节）
 
-# 4. 配置环境变量（推荐）
+# 4. 配置环境变量
 cp .env.example .env
 # 编辑 .env，至少配置：SECRET_KEY / JWT_SECRET_KEY / DB_*
 
-# 5. 启动应用
-python run.py
+# 5. 分别启动应用
+python run.py  # 后端
+# 在新终端中：cd frontend && npm i && npm run dev  # 前端
 ```
 
 ## 🔧 环境要求
@@ -112,10 +117,10 @@ CREATE DATABASE wb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 # 导入表结构
 USE wb;
-SOURCE 数据库/new.sql;
-SOURCE 数据库/user.sql;
-SOURCE 数据库/article.sql;
-SOURCE 数据库/comments.sql;
+SOURCE database/new.sql;
+SOURCE database/user.sql;
+SOURCE database/article.sql;
+SOURCE database/comments.sql;
 
 # 创建用户（可选）
 CREATE USER 'weibo_user'@'localhost' IDENTIFIED BY 'your_password';
@@ -240,20 +245,19 @@ python run.py
 
 ## 🏭 生产部署
 
-### 使用 Gunicorn
+> **注：** 本项目已精简了针对 Redis 和 Celery 的重型架构，所以生产部署相比以往变得非常简单。只要起好一个 WSGI Backend 和一个静态前端网页服务器即可。
+
+### 后端部署 (Gunicorn / uWSGI)
+
+**选项 A: Gunicorn (Linux 推荐)**
 
 ```bash
 # 安装 Gunicorn
 pip install gunicorn
 
-# 生产环境必须配置 SECRET_KEY（并建议单独配置 JWT_SECRET_KEY）
-# 启动应用
+# 启动应用 (-w 4 代表 4 个子进程并发)
+# 请确保生产环境的 .env 里已经修改了复杂的 SECRET_KEY 与数据库生产机密
 gunicorn -w 4 -b 0.0.0.0:5000 "src.app:app"
-
-# 参数说明
-# -w 4: 4个工作进程
-# -b: 绑定地址和端口
-# src.app:app: 模块名:应用实例名
 ```
 
 ### 前端 Nginx（SPA 路由回退）

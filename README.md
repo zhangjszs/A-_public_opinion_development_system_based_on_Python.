@@ -1,8 +1,10 @@
 # 微博舆情分析可视化系统
 
-基于 Python 的微博舆情分析系统，提供数据采集、情感分析、数据可视化等功能。
+基于 Python (Flask) + Vue (Vite) 的轻量级微博舆情分析系统，提供数据采集、基于情感词库的情感分析、数据可视化等综合仪表盘功能。
 
-## 项目结构
+>**💡 架构简化说明**：本项目已于近期移除对 Redis 和 Celery 的外部强制依赖，目前支持极简的本地单进程一键启动（无第三方中间件捆绑）。
+
+## 📁 核心项目结构
 
 ```
 基于python微博舆情分析可视化系统/
@@ -119,43 +121,47 @@
 └── .env.example                # 环境变量示例
 ```
 
-## 快速开始
+## 🚀 快速开始
 
 ### 环境要求
 
-- Python 3.8+
-- Node.js 16+
-- MySQL 5.7+ (可选)
+- **Python** 3.8 - 3.12 
+- **Node.js** 16+
+- **MySQL** 5.7+ (推荐，但也支持调整 SQLAlchemy 连接任何通用库)
 
-### 后端启动
+### 💻 Windows 一键启动 (推荐)
 
+如果你在 Windows 环境下，我们在根目录提供了一个非常简单的自动化脚本：
+
+```powershell
+# 1. 确保 MySQL 已运行，并且已经导入了根目录下 /database 中的 sql 数据表
+# 2. 确保在 `.env` 中按 `.env.example` 填好了数据库密码。
+
+# 3. 直接在项目根目录运行
+.\start.bat
+```
+`start.bat` 会自动为你同时拉起 Flask 后端（5000 端口）和 Vite 前端（3000 端口）。要停止服务，只需运行：`.\start.bat stop`。
+
+### 🛠️ 手动分步启动
+
+**1. 后端 (Flask)**
 ```bash
-# 1. 安装依赖
+# 激活环境并安装依赖
 pip install -r requirements.txt
+cp .env.example .env  # 记得配置数据库密码配置
 
-# 2. 配置环境变量
-cp .env.example .env
-# 编辑 .env 文件，配置数据库连接等
-
-# 3. 启动后端服务
+# 运行后端
 python run.py
+# 服务将运行在 http://127.0.0.1:5000
 ```
 
-后端服务地址: http://127.0.0.1:5000
-
-### 前端启动
-
+**2. 前端 (Vite/Vue)**
 ```bash
 cd frontend
-
-# 1. 安装依赖
 npm install
-
-# 2. 启动开发服务器
 npm run dev
+# 浏览器访问 http://localhost:3000
 ```
-
-前端服务地址: http://localhost:3000
 
 ## 主要功能
 
@@ -231,33 +237,13 @@ ruff check src/
 
 详见 [docs/CODING_STANDARDS.md](docs/CODING_STANDARDS.md)
 
-## 部署
+## 🏭 生产部署
 
-### 生产环境部署
+生产部署我们推荐使用 `Gunicorn` 或 `uWSGI` 挂载 Flask 后端，使用 `Nginx` 代理编译后的静态前端文件。
 
-```bash
-# 1. 环境检查
-python scripts/check_env.py
+详细细节请见专门的说明文件：[部署指南文档 docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
-# 2. 执行部署
-python scripts/deploy.py
-
-# 3. 使用 Gunicorn 启动
-pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:5000 "src.app:app"
-```
-
-### Docker 部署 (可选)
-
-```bash
-# 构建镜像
-docker build -t weibo-analysis .
-
-# 运行容器
-docker run -p 5000:5000 weibo-analysis
-```
-
-## 目录说明
+## 📁 目录说明
 
 ### 数据目录
 

@@ -87,7 +87,7 @@ Views → Celery Task Queue (Redis) → Worker → Services → Repositories
 ### Phase 3: 深度 DDD 重构 (已完成)
 - [x] 统一数据访问层：使用 SQLAlchemy 2.0 替换自定义 pymysql 连接池。
 - [x] 定义 `User`、`Article` 等领域实体。
-- [ ] 引入 `Domain Event` 解耦业务副作用（待实现）。
+- [x] 引入 `Domain Event` 解耦业务副作用（已接入 Spider 入库后缓存清理流程）。
 
 ### Phase 4: 微服务拆分 (长期目标)
 - [ ] 将 `Spider` 模块拆分为独立服务。

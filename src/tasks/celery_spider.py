@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 from config.settings import Config
+from services.domain_events import ArticlesUpsertedEvent, domain_event_bus
 from tasks.celery_config import celery_app
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,20 @@ def _upsert_articles_batch(rows: List[Tuple], batch_size: int = 200) -> int:
         conn.commit()
 
     return inserted
+
+
+def _notify_articles_upserted_event(
+    task_id: str, pages: int, crawled: int, imported: int
+) -> None:
+    """发布文章批量写入事件，解耦副作用。"""
+    domain_event_bus.publish(
+        ArticlesUpsertedEvent(
+            task_id=task_id,
+            pages=pages,
+            crawled=crawled,
+            imported=imported,
+        )
+    )
 
 
 @celery_app.task(bind=True, max_retries=2, default_retry_delay=60)
@@ -154,13 +169,12 @@ def spider_hot_task(self, page_num: int = 3) -> Dict[str, Any]:
         )
 
         imported = _upsert_articles_batch(rows)
-
-        try:
-            from utils.cache import clear_all_cache
-
-            clear_all_cache()
-        except Exception as cache_exc:
-            logger.warning(f"[任务{task_id}] 清理缓存失败: {cache_exc}")
+        _notify_articles_upserted_event(
+            task_id=task_id,
+            pages=page_num,
+            crawled=crawled,
+            imported=imported,
+        )
 
         result = {
             "status": "success",

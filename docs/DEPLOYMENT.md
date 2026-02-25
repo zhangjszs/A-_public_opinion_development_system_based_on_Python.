@@ -54,12 +54,15 @@ python run.py  # 后端
 # 在新终端中：cd frontend && npm i && npm run dev  # 前端
 ```
 
-### 容器化编排（Spider/NLP 独立服务）
+### 容器化编排（全栈）
 
-项目根目录提供 `docker-compose.yml`，用于拉起以下服务：
+项目根目录提供 `docker-compose.yml`，默认拉起以下服务：
+- `mysql`（业务数据库）
 - `redis`（任务队列/结果后端）
-- `spider-api`、`spider-worker`
-- `nlp-api`、`nlp-worker`
+- `web`（Flask 后端，端口 `5000`）
+- `frontend`（Nginx 前端，端口 `3000`）
+- `spider-api`、`spider-worker`（端口 `8090`）
+- `nlp-api`、`nlp-worker`（端口 `8091`）
 
 启动：
 ```bash
@@ -71,7 +74,12 @@ docker compose up -d --build
 docker compose down
 ```
 
-如果主 Flask 应用运行在宿主机，需要在 `.env` 中启用远程服务：
+仅启动 Spider/NLP 独立服务（宿主机 Flask 模式）：
+```bash
+docker compose up -d --build redis spider-api spider-worker nlp-api nlp-worker
+```
+
+宿主机 `.env` 需启用远程调度配置：
 ```bash
 SPIDER_SERVICE_ENABLED=True
 SPIDER_SERVICE_BASE_URL=http://localhost:8090

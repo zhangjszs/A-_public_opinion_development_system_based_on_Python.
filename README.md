@@ -163,19 +163,33 @@ npm run dev
 # 浏览器访问 http://localhost:3000
 ```
 
-### 🐳 微服务容器编排（Spider + NLP）
+### 🐳 全栈容器编排（前后端 + MySQL + Spider/NLP）
 
-项目根目录已提供 `docker-compose.yml`，可一键拉起 Redis、Spider API/Worker、NLP API/Worker：
+项目根目录已提供 `docker-compose.yml`，可一键拉起：
+- `mysql`（业务库）
+- `redis`（队列/结果后端）
+- `web`（Flask 后端，5000）
+- `frontend`（Nginx 托管前端，3000）
+- `spider-api`、`spider-worker`（8090）
+- `nlp-api`、`nlp-worker`（8091）
 
 ```bash
 docker compose up -d --build
 ```
 
 服务端口：
+- `3000`：前端
+- `5000`：后端 API
+- `3306`：MySQL
 - `8090`：Spider API
 - `8091`：NLP API
 
-若后端在宿主机运行，请在 `.env` 中开启并配置：
+如果只想启动 Spider/NLP 独立服务（主后端在宿主机运行）：
+```bash
+docker compose up -d --build redis spider-api spider-worker nlp-api nlp-worker
+```
+
+并在宿主机 `.env` 中开启并配置：
 - `SPIDER_SERVICE_ENABLED=True`
 - `SPIDER_SERVICE_BASE_URL=http://localhost:8090`
 - `NLP_SERVICE_ENABLED=True`

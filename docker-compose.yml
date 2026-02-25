@@ -1,6 +1,22 @@
-name: weibo-microservices
+name: weibo-fullstack
 
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: weibo-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-wb}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/new.sql:/docker-entrypoint-initdb.d/01-new.sql:ro
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     container_name: weibo-redis
@@ -9,6 +25,54 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+    container_name: weibo-backend
+    environment:
+      FLASK_ENV: ${FLASK_ENV:-development}
+      DEBUG: ${DEBUG:-False}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-me}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-jwt-secret-key-change-me}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      ADMIN_USERS: ${ADMIN_USERS:-admin}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      DB_NAME: ${MYSQL_DATABASE:-wb}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      SPIDER_SERVICE_ENABLED: "True"
+      SPIDER_SERVICE_BASE_URL: http://spider-api:8090
+      SPIDER_SERVICE_TIMEOUT: 15
+      SPIDER_SERVICE_TOKEN: ${SPIDER_SERVICE_TOKEN:-}
+      SPIDER_SERVICE_FALLBACK_LOCAL: "True"
+      NLP_SERVICE_ENABLED: "True"
+      NLP_SERVICE_BASE_URL: http://nlp-api:8091
+      NLP_SERVICE_TIMEOUT: 20
+      NLP_SERVICE_TOKEN: ${NLP_SERVICE_TOKEN:-}
+      NLP_SERVICE_FALLBACK_LOCAL: "True"
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mysql
+      - redis
+      - spider-api
+      - nlp-api
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: weibo-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - web
     restart: unless-stopped
 
   spider-api:
@@ -66,4 +130,5 @@ services:
     restart: unless-stopped
 
 volumes:
+  mysql_data:
   redis_data:

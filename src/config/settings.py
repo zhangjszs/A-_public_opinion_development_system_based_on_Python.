@@ -125,6 +125,16 @@ class Config:
         os.getenv("SPIDER_SERVICE_FALLBACK_LOCAL", "True").lower() == "true"
     )
 
+    NLP_SERVICE_ENABLED = os.getenv("NLP_SERVICE_ENABLED", "False").lower() == "true"
+    NLP_SERVICE_BASE_URL = os.getenv(
+        "NLP_SERVICE_BASE_URL", "http://localhost:8091"
+    ).rstrip("/")
+    NLP_SERVICE_TIMEOUT = int(os.getenv("NLP_SERVICE_TIMEOUT", 20))
+    NLP_SERVICE_TOKEN = os.getenv("NLP_SERVICE_TOKEN", "")
+    NLP_SERVICE_FALLBACK_LOCAL = (
+        os.getenv("NLP_SERVICE_FALLBACK_LOCAL", "True").lower() == "true"
+    )
+
     # Path Settings
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     LOG_DIR = os.path.join(BASE_DIR, "logs")

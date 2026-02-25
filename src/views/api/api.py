@@ -16,7 +16,13 @@ from services.article_service import ArticleService
 from services.audit_service import audit_log
 from services.auth_service import AuthService
 from services.comment_service import CommentService
-from services.sentiment_service import SentimentService
+from services.nlp_task_service import (
+    analyze_batch,
+    analyze_text,
+    submit_analyze_task,
+    submit_retrain_task,
+)
+from services.task_status_service import query_task_progress
 from utils.api_response import error, ok
 from utils.authz import admin_required, is_admin_user
 from utils.input_validator import sanitize_input, validate_password, validate_username
@@ -423,21 +429,19 @@ def analyze_sentiment():
 
         # 异步模式
         if is_async:
-            from tasks.celery_sentiment import analyze_single_with_fallback
-
-            task = analyze_single_with_fallback.delay(text, mode)
+            dispatch_result = submit_analyze_task(text=text, mode=mode)
             return ok(
                 {
-                    "task_id": task.id,
-                    "status": "PENDING",
-                    "check_url": f"/api/tasks/{task.id}/status",
+                    "task_id": dispatch_result["task_id"],
+                    "status": dispatch_result.get("status", "PENDING"),
+                    "check_url": f"/api/tasks/{dispatch_result['task_id']}/status",
                 },
                 msg="任务已提交",
                 code=202,
             ), 202
 
         # 同步模式
-        result = SentimentService.analyze(text, mode)
+        result = analyze_text(text=text, mode=mode)
 
         return ok(result), 200
 
@@ -468,7 +472,7 @@ def predict_batch():
         if len(texts) > 100:
             return error("单次最多预测100条文本", code=400), 400
 
-        results = SentimentService.analyze_batch(texts, mode)
+        results = analyze_batch(texts=texts, mode=mode)
 
         return ok({"total": len(results), "results": results}), 200
 
@@ -537,17 +541,15 @@ def retrain_model():
         data = request.json or {}
         optimize = data.get("optimize", False)
 
-        from tasks.celery_sentiment import retrain_model_task
+        dispatch_result = submit_retrain_task(optimize=bool(optimize))
 
-        task = retrain_model_task.delay(optimize=optimize)
-
-        logger.info(f"模型重训练任务已提交: task_id={task.id}")
+        logger.info("模型重训练任务已提交: task_id=%s", dispatch_result["task_id"])
 
         return ok(
             {
-                "task_id": task.id,
-                "status": "PENDING",
-                "check_url": f"/api/tasks/{task.id}/status",
+                "task_id": dispatch_result["task_id"],
+                "status": dispatch_result.get("status", "PENDING"),
+                "check_url": f"/api/tasks/{dispatch_result['task_id']}/status",
             },
             msg="模型重训练任务已提交",
             code=202,
@@ -644,9 +646,7 @@ def get_task_status(task_id):
     查询异步任务状态
     """
     try:
-        from services.spider_task_service import query_spider_task_progress
-
-        result = query_spider_task_progress(task_id)
+        result = query_task_progress(task_id)
 
         return ok(result), 200
 

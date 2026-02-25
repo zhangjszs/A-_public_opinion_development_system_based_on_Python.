@@ -9,7 +9,7 @@
 | **高耦合**: Views 层承担 Controller、Service、DAO 全部职责 | 高 | ✅ 已解决 | 引入 `repositories/` 层解耦数据访问，`services/` 层承接业务逻辑 |
 | **贫血模型**: `src/model` 仅用于数据分析，缺乏业务实体定义 | 高 | ✅ 已解决 | `services/` 层封装业务逻辑，定义 `User`、`Article` 等领域实体 |
 | **自定义 pymysql**: 使用自定义连接池，缺乏 ORM 支持 | 高 | ✅ 已解决 | 完全迁移至 SQLAlchemy 2.0，自定义 `DatabasePool` 已删除 |
-| **同步阻塞**: 爬虫、NLP 等长耗时任务直接阻塞 HTTP 请求 | 中 | ⚠️ 部分解决 | Celery + Redis 处理异步任务，但部分分析接口仍为同步 |
+| **同步阻塞**: 爬虫、NLP 等长耗时任务直接阻塞 HTTP 请求 | 中 | ✅ 已解决 | Spider/NLP 接口已支持统一任务编排，主路径通过任务状态接口异步追踪 |
 | **部署脆弱**: 缺乏容器化支持，依赖手动部署 | 中 | ✅ 已解决 | 添加 `Dockerfile` 和 `docker-compose.yml`，CI/CD 流水线已配置 |
 
 ### 1.2 风险列表（当前状态）
@@ -17,7 +17,7 @@
 | ------ | -------- | ---- |
 | 接口变更破坏前端 | 高 | 缺乏契约测试，后端改动容易导致前端白屏 |
 | 数据库性能瓶颈 | 中 | 缓存层尚未全面覆盖，复杂查询存在性能风险 |
-| 扩展性差 | 中 | NLP 计算密集型任务尚未独立拆分（见 Phase 4） |
+| 扩展性演进 | 低 | Spider/NLP 已完成服务化入口，后续可按流量拆分部署与独立扩缩容 |
 
 ---
 
@@ -57,7 +57,7 @@
 └─────────────────────────────────────────┘
 
 异步任务链路：
-Views → Spider Task Service（本地 Celery / 独立 Spider 服务）→ Queue (Redis) → Worker → Services → Repositories
+Views → Spider/NLP Task Service（本地 Celery / 独立服务）→ Queue (Redis) → Worker → Services → Repositories
 ```
 
 ### 2.2 当前技术栈
@@ -91,7 +91,7 @@ Views → Spider Task Service（本地 Celery / 独立 Spider 服务）→ Queue
 
 ### Phase 4: 微服务拆分 (长期目标)
 - [x] 将 `Spider` 模块拆分为独立服务（新增 `spider_service` HTTP + Worker 形态，主应用可通过配置切换远程调度）。
-- [ ] 将 `NLP Analysis` 拆分为计算密集型服务（Serverless）。
+- [x] 将 `NLP Analysis` 拆分为独立服务（新增 `nlp_service` HTTP + Worker 形态，主应用通过 `nlp_task_service` 与统一任务状态查询接入远程调度）。
 
 ---
 

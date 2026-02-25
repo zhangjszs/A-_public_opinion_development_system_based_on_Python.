@@ -7,25 +7,26 @@
 - 节点/边数量字段存在
 """
 
-import pytest
-import sys
 import os
+import sys
 from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from services.propagation_service import (
+    KeyNodeIdentifier,
+    KeyNodeInfo,
+    NodeType,
     PropagationAnalysisService,
+    PropagationEdge,
     PropagationGraph,
     PropagationNode,
-    PropagationEdge,
-    PropagationTracer,
-    KeyNodeIdentifier,
     PropagationSpeedAnalyzer,
-    NodeType,
-    KeyNodeInfo,
     PropagationStats,
+    PropagationTracer,
 )
 
 
@@ -507,7 +508,7 @@ class TestPropagationAnalysisService:
         
         # 添加数据后清空
         for i in range(10):
-            service.add_propagation(f"post_{i}", f"user_{i}", f"用户{i}", 
+            service.add_propagation(f"post_{i}", f"user_{i}", f"用户{i}",
                                    parent_id=None if i == 0 else f"post_{i-1}")
         
         service.clear()

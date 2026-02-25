@@ -3,7 +3,11 @@
 高级搜索服务单元测试
 """
 
+import shutil
 import sys
+import tempfile
+import time
+from pathlib import Path
 
 import pytest
 
@@ -45,12 +49,20 @@ class TestAdvancedSearchEngine:
     """高级搜索引擎测试"""
 
     @pytest.fixture
-    def engine(self, tmp_path):
+    def engine(self):
         """创建搜索引擎实例"""
         from services.search_service import AdvancedSearchEngine
 
-        db_path = str(tmp_path / "test_search.db")
-        return AdvancedSearchEngine(db_path)
+        temp_dir = Path(tempfile.mkdtemp(prefix="search_db_"))
+        db_path = str(temp_dir / "test_search.db")
+        yield AdvancedSearchEngine(db_path)
+
+        for _ in range(5):
+            try:
+                shutil.rmtree(temp_dir)
+                break
+            except PermissionError:
+                time.sleep(0.1)
 
     def test_init(self, engine):
         """测试初始化"""

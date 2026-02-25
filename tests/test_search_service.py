@@ -6,9 +6,9 @@ TDD: 高级搜索服务 - 全文检索、搜索建议、拼音搜索
 import pytest
 
 from services.search_service import (
+    AdvancedSearchEngine,
     PinyinConverter,
     SearchResult,
-    AdvancedSearchEngine,
     SearchSuggestion,
 )
 

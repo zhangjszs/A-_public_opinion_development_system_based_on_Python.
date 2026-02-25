@@ -9,22 +9,23 @@
 - 规则启用/禁用切换
 """
 
-import pytest
-import sys
 import os
+import sys
+
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from services.alert_service import (
-    AlertRuleEngine,
-    AlertRule,
-    AlertType,
+    Alert,
     AlertLevel,
+    AlertRule,
+    AlertRuleEngine,
+    AlertSuppression,
+    AlertType,
     ThresholdConfig,
     ThresholdOperator,
-    AlertSuppression,
     ThresholdValidator,
-    Alert,
 )
 
 

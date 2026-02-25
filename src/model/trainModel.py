@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from sklearn.base import clone
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -83,6 +84,73 @@ def build_pipeline(estimator):
     )
 
 
+def _is_parallel_permission_error(exc: OSError) -> bool:
+    return (
+        isinstance(exc, PermissionError)
+        or getattr(exc, "errno", None) == 13
+        or getattr(exc, "winerror", None) == 5
+    )
+
+
+def _run_cross_validate_with_fallback(
+    pipe: Pipeline,
+    X: pd.Series,
+    y: pd.Series,
+    skf: StratifiedKFold,
+    cv_metrics: dict[str, str],
+) -> dict[str, np.ndarray]:
+    def _build_safe_pipe(force_single_estimator_jobs: bool) -> Pipeline:
+        if not force_single_estimator_jobs:
+            return pipe
+
+        safe_pipe = clone(pipe)
+        classifier = safe_pipe.named_steps.get("clf")
+        if classifier is None:
+            return safe_pipe
+
+        classifier_params = classifier.get_params(deep=False)
+        if "n_jobs" in classifier_params:
+            safe_pipe.set_params(clf__n_jobs=1)
+
+        return safe_pipe
+
+    def _run(
+        n_jobs: int,
+        *,
+        force_single_estimator_jobs: bool = False,
+    ) -> dict[str, np.ndarray]:
+        safe_pipe = _build_safe_pipe(force_single_estimator_jobs)
+        return cross_validate(
+            safe_pipe,
+            X,
+            y,
+            cv=skf,
+            scoring=cv_metrics,
+            n_jobs=n_jobs,
+            return_train_score=False,
+        )
+
+    try:
+        return _run(-1)
+    except UnicodeEncodeError:
+        warnings.warn(
+            "检测到受限环境，交叉验证回退为单进程执行（n_jobs=1）。",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return _run(1, force_single_estimator_jobs=True)
+    except OSError as exc:
+        if not _is_parallel_permission_error(exc):
+            raise
+
+        warnings.warn(
+            "检测到受限环境，交叉验证回退为单进程执行（n_jobs=1）。",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return _run(1, force_single_estimator_jobs=True)
+
+
 # -------------------------------------------------------------------
 # 交叉验证 + 可视化
 # -------------------------------------------------------------------
@@ -120,15 +188,7 @@ def evaluate_models(
 
     for name, est in MODELS.items():
         pipe = build_pipeline(est)
-        cv_res = cross_validate(
-            pipe,
-            X,
-            y,
-            cv=skf,
-            scoring=cv_metrics,
-            n_jobs=-1,
-            return_train_score=False,
-        )
+        cv_res = _run_cross_validate_with_fallback(pipe, X, y, skf, cv_metrics)
         key = f"test_{scoring}"  # 自动加前缀
         results[name] = cv_res[key]
         print(

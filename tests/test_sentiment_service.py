@@ -8,18 +8,19 @@
 - 结果包含 sentiment/score 字段
 """
 
-import pytest
-import sys
 import os
-from unittest.mock import patch, MagicMock
+import sys
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from services.sentiment_service import (
-    SentimentService,
     SentimentResult,
-    SnowNLPStrategy,
     SentimentSchema,
+    SentimentService,
+    SnowNLPStrategy,
 )
 
 

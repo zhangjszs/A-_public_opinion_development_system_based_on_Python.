@@ -644,9 +644,9 @@ def get_task_status(task_id):
     查询异步任务状态
     """
     try:
-        from tasks.celery_spider import get_task_progress
+        from services.spider_task_service import query_spider_task_progress
 
-        result = get_task_progress(task_id)
+        result = query_spider_task_progress(task_id)
 
         return ok(result), 200
 

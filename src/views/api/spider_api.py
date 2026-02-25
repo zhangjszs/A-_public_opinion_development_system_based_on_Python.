@@ -13,6 +13,7 @@ from datetime import datetime
 from flask import Blueprint, request
 
 from config.settings import Config
+from services.spider_task_service import query_spider_task_progress, submit_spider_task
 from utils.api_response import error, ok
 from utils.authz import admin_required
 
@@ -75,37 +76,12 @@ def _extract_result_count(result: dict) -> int:
 def dispatch_spider_task(
     crawl_type: str, keyword: str = "", page_num: int = 3, article_limit: int = 50
 ):
-    from tasks.celery_spider import (
-        spider_comments_task,
-        spider_hot_task,
-        spider_search_task,
+    return submit_spider_task(
+        crawl_type=crawl_type,
+        keyword=keyword,
+        page_num=page_num,
+        article_limit=article_limit,
     )
-
-    crawl_type = (crawl_type or "hot").strip()
-    page_num = max(1, min(int(page_num), 10))
-    article_limit = max(1, min(int(article_limit), 100))
-
-    if crawl_type == "search":
-        if not keyword.strip():
-            raise ValueError("关键词搜索模式下 keyword 不能为空")
-        task = spider_search_task.delay(keyword.strip(), page_num)
-        task_label = f"关键词搜索: {keyword.strip()}"
-    elif crawl_type == "comments":
-        task = spider_comments_task.delay(article_limit)
-        task_label = "爬取评论"
-    else:
-        task = spider_hot_task.delay(page_num)
-        task_label = "刷新热门微博"
-        crawl_type = "hot"
-
-    return {
-        "task_id": task.id,
-        "task_label": task_label,
-        "crawl_type": crawl_type,
-        "keyword": keyword.strip(),
-        "page_num": page_num,
-        "article_limit": article_limit,
-    }
 
 
 def register_submitted_task(dispatch_result: dict) -> None:
@@ -123,10 +99,8 @@ def _refresh_task_state() -> None:
     if not task_id:
         return
 
-    from tasks.celery_spider import get_task_progress
-
     try:
-        result = get_task_progress(task_id)
+        result = query_spider_task_progress(task_id)
     except Exception as e:
         logger.warning(f"查询任务状态失败: task_id={task_id}, error={e}")
         return

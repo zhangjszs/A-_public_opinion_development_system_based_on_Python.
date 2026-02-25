@@ -57,7 +57,7 @@
 └─────────────────────────────────────────┘
 
 异步任务链路：
-Views → Celery Task Queue (Redis) → Worker → Services → Repositories
+Views → Spider Task Service（本地 Celery / 独立 Spider 服务）→ Queue (Redis) → Worker → Services → Repositories
 ```
 
 ### 2.2 当前技术栈
@@ -90,7 +90,7 @@ Views → Celery Task Queue (Redis) → Worker → Services → Repositories
 - [x] 引入 `Domain Event` 解耦业务副作用（已接入 Spider 入库后缓存清理流程）。
 
 ### Phase 4: 微服务拆分 (长期目标)
-- [ ] 将 `Spider` 模块拆分为独立服务。
+- [x] 将 `Spider` 模块拆分为独立服务（新增 `spider_service` HTTP + Worker 形态，主应用可通过配置切换远程调度）。
 - [ ] 将 `NLP Analysis` 拆分为计算密集型服务（Serverless）。
 
 ---

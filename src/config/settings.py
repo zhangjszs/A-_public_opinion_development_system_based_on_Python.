@@ -113,6 +113,17 @@ class Config:
         os.getenv("SPIDER_MAX_RETRIES", 3)
     )  # env var: SPIDER_MAX_RETRIES
     SPIDER_USE_PROXY = os.getenv("SPIDER_USE_PROXY", "True").lower() == "true"
+    SPIDER_SERVICE_ENABLED = (
+        os.getenv("SPIDER_SERVICE_ENABLED", "False").lower() == "true"
+    )
+    SPIDER_SERVICE_BASE_URL = os.getenv(
+        "SPIDER_SERVICE_BASE_URL", "http://localhost:8090"
+    ).rstrip("/")
+    SPIDER_SERVICE_TIMEOUT = int(os.getenv("SPIDER_SERVICE_TIMEOUT", 15))
+    SPIDER_SERVICE_TOKEN = os.getenv("SPIDER_SERVICE_TOKEN", "")
+    SPIDER_SERVICE_FALLBACK_LOCAL = (
+        os.getenv("SPIDER_SERVICE_FALLBACK_LOCAL", "True").lower() == "true"
+    )
 
     # Path Settings
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

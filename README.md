@@ -163,6 +163,29 @@ npm run dev
 # 浏览器访问 http://localhost:3000
 ```
 
+### 🐳 微服务容器编排（Spider + NLP）
+
+项目根目录已提供 `docker-compose.yml`，可一键拉起 Redis、Spider API/Worker、NLP API/Worker：
+
+```bash
+docker compose up -d --build
+```
+
+服务端口：
+- `8090`：Spider API
+- `8091`：NLP API
+
+若后端在宿主机运行，请在 `.env` 中开启并配置：
+- `SPIDER_SERVICE_ENABLED=True`
+- `SPIDER_SERVICE_BASE_URL=http://localhost:8090`
+- `NLP_SERVICE_ENABLED=True`
+- `NLP_SERVICE_BASE_URL=http://localhost:8091`
+
+停止容器：
+```bash
+docker compose down
+```
+
 ## 主要功能
 
 ### 数据采集

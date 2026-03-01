@@ -12,11 +12,95 @@ from flask import Blueprint, request
 
 from services.propagation_analyzer import PropagationAnalyzer
 from utils.api_response import error, ok
+from utils.query import querys
 from utils.rate_limiter import rate_limit
 
 logger = logging.getLogger(__name__)
 
 bp = Blueprint("propagation", __name__, url_prefix="/api/propagation")
+_REPOSTS_TABLE_MISSING = False
+
+
+def _parse_demo_mode(default: bool = False) -> bool:
+    raw = request.args.get("demo")
+    if raw is None:
+        return default
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _normalize_reposts(rows):
+    reposts = []
+    for idx, row in enumerate(rows):
+        reposts.append(
+            {
+                "id": row.get("id") or f"repost_{idx + 1}",
+                "user_id": row.get("user_id") or f"user_{idx + 1}",
+                "user_name": row.get("user_name") or "未知用户",
+                "content": row.get("content") or "",
+                "post_time": row.get("post_time"),
+                "repost_count": int(row.get("repost_count") or 0),
+                "comment_count": int(row.get("comment_count") or 0),
+                "like_count": int(row.get("like_count") or 0),
+                "depth": int(row.get("depth") or 0),
+                "parent_id": row.get("parent_id"),
+            }
+        )
+    return reposts
+
+
+def _load_reposts(article_id: str, count: int, demo_mode: bool):
+    """加载传播数据：优先真实数据，失败时回退演示数据。"""
+    global _REPOSTS_TABLE_MISSING
+
+    if demo_mode:
+        return generate_demo_data(article_id, count), "demo", True
+
+    if _REPOSTS_TABLE_MISSING:
+        return generate_demo_data(article_id, count), "demo_fallback", True
+
+    try:
+        rows = querys(
+            """SELECT id, user_id, article_id, content, created_at AS post_time,
+                      repost_count, comment_count, like_count, depth, parent_id
+               FROM reposts
+               WHERE article_id = %s
+               ORDER BY created_at ASC
+               LIMIT %s""",
+            [article_id, max(1, min(count, 500))],
+            "select",
+        )
+
+        if not rows:
+            logger.warning("传播数据未查询到真实内容，回退演示数据")
+            return generate_demo_data(article_id, count), "demo_fallback", True
+
+        user_ids = sorted({row.get("user_id") for row in rows if row.get("user_id")})
+        user_name_map = {}
+        if user_ids:
+            placeholders = ",".join(["%s"] * len(user_ids))
+            user_rows = querys(
+                f"SELECT id, username FROM user WHERE id IN ({placeholders})",
+                user_ids,
+                "select",
+            )
+            user_name_map = {str(u.get("id")): u.get("username") for u in user_rows}
+
+        normalized_rows = []
+        for row in rows:
+            copied = dict(row)
+            user_id = str(copied.get("user_id") or "")
+            copied["user_name"] = user_name_map.get(user_id) or f"用户{user_id or '未知'}"
+            normalized_rows.append(copied)
+
+        return _normalize_reposts(normalized_rows), "reposts_table", False
+    except Exception as exc:
+        error_text = str(exc)
+        if "doesn't exist" in error_text and "reposts" in error_text:
+            _REPOSTS_TABLE_MISSING = True
+            logger.info("reposts 表不存在，传播接口自动使用演示回退数据")
+        else:
+            logger.warning(f"加载真实传播数据失败，回退演示数据: {exc}")
+        return generate_demo_data(article_id, count), "demo_fallback", True
 
 
 def generate_demo_data(article_id: str, count: int = 100):
@@ -93,43 +177,24 @@ def analyze_propagation(article_id: str):
     try:
         analyzer = PropagationAnalyzer()
 
-        demo_mode = request.args.get("demo", "true").lower() == "true"
+        demo_mode = _parse_demo_mode(default=False)
         node_count = request.args.get("count", 100, type=int)
-
-        if demo_mode:
-            reposts = generate_demo_data(article_id, node_count)
-        else:
-            from database import db_session
-
-            sql = """
-                SELECT
-                    r.id,
-                    r.user_id,
-                    u.username as user_name,
-                    r.content,
-                    r.created_at as post_time,
-                    r.repost_count,
-                    r.comment_count,
-                    r.like_count,
-                    r.depth,
-                    r.parent_id
-                FROM reposts r
-                LEFT JOIN users u ON r.user_id = u.id
-                WHERE r.article_id = %s
-                ORDER BY r.created_at ASC
-            """
-            result = db_session.execute(sql, (article_id,))
-            reposts = [dict(row) for row in result]
-
-            if not reposts:
-                reposts = generate_demo_data(article_id, 50)
+        reposts, data_source, effective_demo_mode = _load_reposts(
+            article_id, node_count, demo_mode
+        )
 
         node_count = analyzer.build_from_reposts(reposts)
 
         summary = analyzer.get_summary()
 
         return ok(
-            {"article_id": article_id, "node_count": node_count, "summary": summary}
+            {
+                "article_id": article_id,
+                "node_count": node_count,
+                "summary": summary,
+                "demo_mode": effective_demo_mode,
+                "data_source": data_source,
+            }
         ), 200
 
     except Exception as e:
@@ -143,16 +208,16 @@ def get_propagation_graph(article_id: str):
     try:
         analyzer = PropagationAnalyzer()
 
-        demo_mode = request.args.get("demo", "true").lower() == "true"
+        demo_mode = _parse_demo_mode(default=False)
         node_count = request.args.get("count", 80, type=int)
-
-        if demo_mode:
-            reposts = generate_demo_data(article_id, node_count)
-        else:
-            reposts = generate_demo_data(article_id, 50)
+        reposts, data_source, effective_demo_mode = _load_reposts(
+            article_id, node_count, demo_mode
+        )
 
         analyzer.build_from_reposts(reposts)
         graph_data = analyzer.get_graph_data()
+        graph_data["demo_mode"] = effective_demo_mode
+        graph_data["data_source"] = data_source
 
         return ok(graph_data), 200
 
@@ -167,12 +232,11 @@ def get_kol_analysis(article_id: str):
     try:
         analyzer = PropagationAnalyzer()
 
-        demo_mode = request.args.get("demo", "true").lower() == "true"
-
-        if demo_mode:
-            reposts = generate_demo_data(article_id, 100)
-        else:
-            reposts = generate_demo_data(article_id, 50)
+        demo_mode = _parse_demo_mode(default=False)
+        node_count = request.args.get("count", 100, type=int)
+        reposts, data_source, effective_demo_mode = _load_reposts(
+            article_id, node_count, demo_mode
+        )
 
         analyzer.build_from_reposts(reposts)
 
@@ -185,6 +249,8 @@ def get_kol_analysis(article_id: str):
                 "kol_count": len(kol_nodes),
                 "kol_nodes": [n.to_dict() for n in kol_nodes],
                 "user_ranking": user_ranking,
+                "demo_mode": effective_demo_mode,
+                "data_source": data_source,
             }
         ), 200
 
@@ -200,8 +266,11 @@ def get_propagation_timeline(article_id: str):
         analyzer = PropagationAnalyzer()
 
         interval = request.args.get("interval", 60, type=int)
-
-        reposts = generate_demo_data(article_id, 100)
+        demo_mode = _parse_demo_mode(default=False)
+        node_count = request.args.get("count", 100, type=int)
+        reposts, data_source, effective_demo_mode = _load_reposts(
+            article_id, node_count, demo_mode
+        )
         analyzer.build_from_reposts(reposts)
 
         time_dist = analyzer.get_time_distribution(interval)
@@ -211,6 +280,8 @@ def get_propagation_timeline(article_id: str):
                 "article_id": article_id,
                 "interval_minutes": interval,
                 "timeline": time_dist,
+                "demo_mode": effective_demo_mode,
+                "data_source": data_source,
             }
         ), 200
 
@@ -224,17 +295,28 @@ def get_depth_distribution(article_id: str):
     """获取传播深度分布"""
     try:
         analyzer = PropagationAnalyzer()
-
-        reposts = generate_demo_data(article_id, 100)
+        demo_mode = _parse_demo_mode(default=False)
+        node_count = request.args.get("count", 100, type=int)
+        reposts, data_source, effective_demo_mode = _load_reposts(
+            article_id, node_count, demo_mode
+        )
         analyzer.build_from_reposts(reposts)
 
         depth_dist = analyzer.get_depth_distribution()
+        max_depth = 0
+        if depth_dist:
+            try:
+                max_depth = max(int(k) for k in depth_dist.keys())
+            except Exception:
+                max_depth = max(depth_dist.keys())
 
         return ok(
             {
                 "article_id": article_id,
                 "depth_distribution": depth_dist,
-                "max_depth": max(depth_dist.keys()) if depth_dist else 0,
+                "max_depth": max_depth,
+                "demo_mode": effective_demo_mode,
+                "data_source": data_source,
             }
         ), 200
 

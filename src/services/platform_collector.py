@@ -19,11 +19,11 @@ class BasePlatformCollector(ABC):
     @property
     @abstractmethod
     def platform(self) -> Platform:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def parse(self, raw: Dict) -> PlatformContent:
-        pass
+        raise NotImplementedError
 
     def collect(self, keyword: str, limit: int = 20) -> List[PlatformContent]:
         """采集数据（子类可覆盖实现真实爬取）"""

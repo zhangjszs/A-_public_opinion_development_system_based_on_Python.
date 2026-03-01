@@ -6,6 +6,8 @@
 import os
 import sys
 
+import pytest
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from utils.query import querys
@@ -62,14 +64,14 @@ def test_database():
                 )
 
         print("\n=== 测试完成 ===")
-        return True
+        assert True
 
     except Exception as e:
         print(f"数据库测试失败: {e}")
         import traceback
 
         traceback.print_exc()
-        return False
+        pytest.fail(f"数据库测试失败: {e}")
 
 
 if __name__ == "__main__":

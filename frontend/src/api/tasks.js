@@ -7,3 +7,11 @@ export function getTaskStatus(taskId) {
     loadingOptions: false,
   })
 }
+
+export function getStartupStatus() {
+  return request({
+    url: '/api/startup/status',
+    method: 'get',
+    loadingOptions: false,
+  })
+}

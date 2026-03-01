@@ -695,39 +695,7 @@ def refresh_data():
 def get_today_stats():
     """获取今日数据统计"""
     try:
-        # TODO: Move to ArticleService or StatsService
-        from datetime import date
-
-        from utils.query import querys
-
-        today = date.today().strftime("%Y-%m-%d")
-
-        # 今日文章数
-        today_articles = querys(
-            "SELECT count(*) as count FROM article WHERE created_at = %s",
-            [today],
-            type="select",
-        )[0]["count"]
-
-        # 今日评论数
-        today_comments = querys(
-            "SELECT count(*) as count FROM comments WHERE DATE(created_at) = %s",
-            [today],
-            type="select",
-        )[0]["count"]
-
-        # 最新更新时间
-        latest = querys("SELECT MAX(created_at) as latest FROM article", [], "select")[
-            0
-        ]["latest"]
-
-        return ok(
-            {
-                "today_articles": today_articles,
-                "today_comments": today_comments,
-                "latest_update": str(latest) if latest else None,
-            }
-        ), 200
+        return ok(article_service.get_today_stats()), 200
     except Exception as e:
         logger.error(f"获取今日统计失败: {e}")
         return error(str(e), code=500), 500

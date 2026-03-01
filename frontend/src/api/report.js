@@ -25,11 +25,16 @@ export function getReportTemplates() {
   })
 }
 
-export function getDemoData() {
+export function getReportData(params = {}) {
   return request({
-    url: '/api/report/demo-data',
+    url: '/api/report/data',
     method: 'get',
+    params,
   })
+}
+
+export function getDemoData() {
+  return getReportData({ demo: true })
 }
 
 export function downloadReport(filename) {

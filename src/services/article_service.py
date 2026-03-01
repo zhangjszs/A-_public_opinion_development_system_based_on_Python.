@@ -49,3 +49,32 @@ class ArticleService:
             "comments": comment_count,
             "users": user_count,
         }
+
+    def get_today_stats(self) -> Dict[str, Any]:
+        """获取今日新增统计与最新更新时间。"""
+        from datetime import date
+
+        from utils.query import querys
+
+        today = date.today().strftime("%Y-%m-%d")
+
+        article_rows = querys(
+            "SELECT count(*) as count FROM article WHERE DATE(created_at) = %s",
+            [today],
+            type="select",
+        )
+        comment_rows = querys(
+            "SELECT count(*) as count FROM comments WHERE DATE(created_at) = %s",
+            [today],
+            type="select",
+        )
+        latest = self.article_repo.get_latest_update_time()
+
+        today_articles = int(article_rows[0].get("count", 0)) if article_rows else 0
+        today_comments = int(comment_rows[0].get("count", 0)) if comment_rows else 0
+
+        return {
+            "today_articles": today_articles,
+            "today_comments": today_comments,
+            "latest_update": str(latest) if latest else None,
+        }

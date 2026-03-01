@@ -27,6 +27,11 @@ from flask_wtf.csrf import CSRFError, CSRFProtect
 # 导入统一配置模块
 from config.settings import Config
 from database import db_session
+from services.startup_service import (
+    ensure_demo_admin,
+    get_startup_status,
+    schedule_startup_warmup,
+)
 from services.websocket_service import websocket_service
 from utils.api_response import error, ok
 from utils.authz import admin_required
@@ -303,6 +308,17 @@ def health_details():
     except Exception as e:
         logger.error(f"健康详情检查失败: {e}")
         return error("健康详情检查失败", code=500), 500
+
+
+@app.route("/api/startup/status")
+@admin_required
+def startup_status():
+    """获取启动引导与预热状态（仅管理员）。"""
+    try:
+        return ok(get_startup_status()), 200
+    except Exception as e:
+        logger.error(f"获取启动状态失败: {e}")
+        return error("获取启动状态失败", code=500), 500
 
 
 @app.route("/api/session/check")
@@ -618,8 +634,31 @@ def initialize_app():
     # 创建必要目录
     create_app_directories()
 
+    # 开发环境演示管理员账号引导
+    admin_bootstrap = ensure_demo_admin()
+    if admin_bootstrap.get("action") == "created":
+        logger.info(
+            "已创建演示管理员账号: %s（请通过环境变量修改默认密码）",
+            admin_bootstrap.get("username"),
+        )
+    elif admin_bootstrap.get("action") == "reset_password":
+        logger.info(
+            "已重置演示管理员账号密码: %s",
+            admin_bootstrap.get("username"),
+        )
+    elif admin_bootstrap.get("action") == "error":
+        logger.warning(
+            "演示管理员账号引导失败: %s",
+            admin_bootstrap.get("error"),
+        )
+
     # 初始化 WebSocket 服务
     websocket_service.init_app(app)
+
+    # 异步预热核心接口缓存（pytest 环境下跳过，避免测试期后台线程干扰）
+    if not os.getenv("PYTEST_CURRENT_TEST"):
+        if schedule_startup_warmup(app):
+            logger.info("已启动核心接口预热线程")
 
     # 记录启动信息
     logger.info("=" * 50)

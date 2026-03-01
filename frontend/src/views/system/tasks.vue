@@ -88,6 +88,92 @@
       </el-col>
     </el-row>
 
+    <el-card class="mb-4">
+      <template #header>
+        <div class="card-header">
+          <span class="header-title">启动预热状态</span>
+          <div class="header-actions">
+            <el-tag :type="warmupTagType" effect="plain" round>
+              {{ warmupStatusText }}
+            </el-tag>
+            <el-button :icon="Refresh" @click="refreshStartup" :loading="startupLoading"
+              >刷新</el-button
+            >
+          </div>
+        </div>
+      </template>
+
+      <el-descriptions :column="2" border class="mb-4">
+        <el-descriptions-item label="管理员引导">
+          <el-tag :type="adminBootstrapType" effect="plain" round>
+            {{ adminBootstrapText }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="账号">
+          {{ startupStatus?.admin_bootstrap?.username || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="执行时间">
+          {{ formatDateTime(startupStatus?.admin_bootstrap?.timestamp) }}
+        </el-descriptions-item>
+        <el-descriptions-item label="预热耗时">
+          {{ formatDuration(startupWarmup?.duration_seconds) }}
+        </el-descriptions-item>
+      </el-descriptions>
+
+      <el-progress
+        :percentage="warmupProgress"
+        :status="warmupProgressStatus"
+        :stroke-width="8"
+        class="mb-4"
+      />
+
+      <div class="startup-meta mb-4">
+        <span>已完成 {{ startupWarmup?.paths_done || 0 }} / {{ startupWarmup?.paths_total || 0 }}</span>
+        <span v-if="startupWarmup?.started_at"
+          >开始时间：{{ formatDateTime(startupWarmup?.started_at) }}</span
+        >
+        <span v-if="startupWarmup?.finished_at"
+          >结束时间：{{ formatDateTime(startupWarmup?.finished_at) }}</span
+        >
+      </div>
+
+      <el-alert
+        v-if="startupWarmup?.error"
+        :title="`预热线程异常：${startupWarmup.error}`"
+        type="error"
+        :closable="false"
+        show-icon
+        class="mb-4"
+      />
+
+      <el-table :data="startupWarmupResults" style="width: 100%" max-height="260">
+        <el-table-column prop="path" label="预热接口" min-width="280" show-overflow-tooltip />
+        <el-table-column prop="status_code" label="状态码" width="110" align="center">
+          <template #default="{ row }">
+            <el-tag
+              :type="
+                row.status_code >= 200 && row.status_code < 400
+                  ? 'success'
+                  : row.status_code
+                    ? 'danger'
+                    : 'info'
+              "
+              effect="plain"
+              round
+            >
+              {{ row.status_code || '-' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="duration_seconds" label="耗时(s)" width="100" align="center" />
+        <el-table-column prop="error" label="错误信息" min-width="220" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ row.error || '-' }}
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+
     <el-card>
       <template #header>
         <div class="card-header">
@@ -145,25 +231,72 @@
 </template>
 
 <script setup>
-  import { computed, onMounted, ref } from 'vue'
+  import { computed, onMounted, onUnmounted, ref } from 'vue'
   import { ElMessage } from 'element-plus'
   import { Refresh, Search } from '@element-plus/icons-vue'
   import { getSpiderLogs, getSpiderOverview } from '@/api/spider'
-  import { getTaskStatus } from '@/api/tasks'
+  import { getStartupStatus, getTaskStatus } from '@/api/tasks'
 
   const spiderLoading = ref(false)
+  const startupLoading = ref(false)
   const logsLoading = ref(false)
   const taskLoading = ref(false)
 
   const spiderOverview = ref(null)
+  const startupStatus = ref(null)
   const logs = ref([])
   const logLines = ref(200)
 
   const taskId = ref('')
   const taskResult = ref(null)
   const recentTasks = ref([])
+  let startupPollTimer = null
 
   const spiderHistory = computed(() => spiderOverview.value?.history || [])
+  const startupWarmup = computed(() => startupStatus.value?.warmup || {})
+  const startupWarmupResults = computed(() => startupWarmup.value?.results || [])
+  const warmupProgress = computed(() => {
+    const total = Number(startupWarmup.value?.paths_total || 0)
+    const done = Number(startupWarmup.value?.paths_done || 0)
+    if (total <= 0) return 0
+    return Math.min(100, Math.round((done / total) * 100))
+  })
+  const warmupProgressStatus = computed(() => {
+    if (startupWarmup.value?.running) return undefined
+    if (startupWarmup.value?.error) return 'exception'
+    if (!startupWarmup.value?.enabled) return 'warning'
+    return 'success'
+  })
+  const warmupTagType = computed(() => {
+    if (startupWarmup.value?.running) return 'warning'
+    if (startupWarmup.value?.error) return 'danger'
+    if (!startupWarmup.value?.enabled) return 'info'
+    return 'success'
+  })
+  const warmupStatusText = computed(() => {
+    if (startupWarmup.value?.running) return '预热中'
+    if (startupWarmup.value?.error) return '预热异常'
+    if (!startupWarmup.value?.enabled) return '未启用'
+    return '已完成'
+  })
+  const adminBootstrapType = computed(() => {
+    const action = startupStatus.value?.admin_bootstrap?.action
+    if (action === 'created' || action === 'reset_password') return 'success'
+    if (action === 'exists' || action === 'skipped' || action === 'not_run') return 'info'
+    if (action === 'invalid_config') return 'warning'
+    if (action === 'error') return 'danger'
+    return 'info'
+  })
+  const adminBootstrapText = computed(() => {
+    const action = startupStatus.value?.admin_bootstrap?.action
+    if (action === 'created') return '已创建'
+    if (action === 'reset_password') return '已重置密码'
+    if (action === 'exists') return '已存在'
+    if (action === 'invalid_config') return '配置无效'
+    if (action === 'error') return '执行失败'
+    if (action === 'skipped') return '已跳过'
+    return '未执行'
+  })
 
   const refreshSpider = async () => {
     spiderLoading.value = true
@@ -191,6 +324,57 @@
     } finally {
       logsLoading.value = false
     }
+  }
+
+  const startStartupPolling = () => {
+    if (startupPollTimer) return
+    startupPollTimer = window.setInterval(() => {
+      refreshStartup()
+    }, 3000)
+  }
+
+  const stopStartupPolling = () => {
+    if (!startupPollTimer) return
+    window.clearInterval(startupPollTimer)
+    startupPollTimer = null
+  }
+
+  const syncStartupPolling = () => {
+    if (startupWarmup.value?.running) {
+      startStartupPolling()
+    } else {
+      stopStartupPolling()
+    }
+  }
+
+  const refreshStartup = async () => {
+    startupLoading.value = true
+    try {
+      const res = await getStartupStatus()
+      if (res.code === 200) {
+        startupStatus.value = res.data || {}
+        syncStartupPolling()
+      }
+    } catch (e) {
+      stopStartupPolling()
+      ElMessage.error('加载启动状态失败')
+    } finally {
+      startupLoading.value = false
+    }
+  }
+
+  const formatDateTime = (value) => {
+    if (!value) return '-'
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return '-'
+    return date.toLocaleString()
+  }
+
+  const formatDuration = (seconds) => {
+    if (seconds == null || Number.isNaN(Number(seconds))) return '-'
+    const value = Number(seconds)
+    if (value < 1) return `${Math.round(value * 1000)} ms`
+    return `${value.toFixed(3)} s`
   }
 
   const loadRecent = () => {
@@ -253,7 +437,11 @@
 
   onMounted(async () => {
     loadRecent()
-    await Promise.all([refreshSpider(), refreshLogs()])
+    await Promise.all([refreshSpider(), refreshLogs(), refreshStartup()])
+  })
+
+  onUnmounted(() => {
+    stopStartupPolling()
   })
 </script>
 
@@ -329,6 +517,14 @@
 
   .query-form {
     margin-bottom: 12px;
+  }
+
+  .startup-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    color: $text-secondary;
+    font-size: 13px;
   }
 
   .task-result {

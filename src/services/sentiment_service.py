@@ -101,7 +101,7 @@ class SentimentStrategy(ABC):
 
     @abstractmethod
     def analyze(self, text: str) -> SentimentResult:
-        pass
+        raise NotImplementedError
 
 
 class SnowNLPStrategy(SentimentStrategy):
@@ -343,45 +343,107 @@ class CustomModelStrategy(SentimentStrategy):
                 self._model = joblib.load(self.model_path)
         return self._model
 
-    def analyze(self, text: str) -> SentimentResult:
+    def _analyze_with_model(self, text: str) -> SentimentResult:
+        """
+        使用本地模型进行情感分析
+
+        Args:
+            text: 待分析文本
+
+        Returns:
+            SentimentResult: 情感分析结果
+        """
         model = self._load_model()
         if not model:
-            logger.warning("自定义模型未找到，降级使用 SnowNLP")
-            return SnowNLPStrategy().analyze(text)
+            raise RuntimeError("模型未加载成功")
 
+        # 长文本截断处理（模型通常有输入长度限制）
+        max_length = 512
+        if len(text) > max_length:
+            logger.debug(f"文本长度超过{max_length}，进行截断处理")
+            text = text[:max_length]
+
+        # 预测类别
+        prediction = model.predict([text])[0]
+
+        # 预测概率 (如果模型支持)
+        score = 0.5
+        if hasattr(model, "predict_proba"):
+            probs = model.predict_proba([text])[0]
+            score = float(max(probs))
+
+        # 映射标签
+        label_map = {0: "negative", 1: "neutral", 2: "positive"}
+        label = label_map.get(prediction, "neutral")
+
+        # 如果预测出来是字符串, 尝试转换
+        if isinstance(prediction, str):
+            if prediction in ["positive", "pos"]:
+                label = "positive"
+            elif prediction in ["negative", "neg"]:
+                label = "negative"
+            else:
+                label = "neutral"
+
+        return SentimentResult(
+            score=score,
+            label=label,
+            reasoning="基于自定义训练模型预测",
+            keywords=[],
+            source="custom_model",
+        )
+
+    def analyze(self, text: str) -> SentimentResult:
+        """
+        执行情感分析，带缓存和错误降级处理
+
+        Args:
+            text: 待分析文本
+
+        Returns:
+            SentimentResult: 情感分析结果
+        """
+        if not text or not text.strip():
+            return SentimentResult(0.5, "neutral", reasoning="空文本", source="custom_model")
+
+        # 1. 检查缓存
+        cache_key = get_cache_key(text, "custom_model")
+        if REDIS_AVAILABLE:
+            try:
+                cached = redis_client.get(cache_key)
+                if cached:
+                    data = json.loads(cached)
+                    return SentimentResult(
+                        score=data.get("score", 0.5),
+                        label=data.get("label", "neutral"),
+                        reasoning="缓存结果",
+                        keywords=data.get("keywords", []),
+                        cached=True,
+                        source="cache",
+                    )
+            except Exception as e:
+                logger.debug(f"缓存读取失败: {e}")
+
+        # 2. 调用模型分析
         try:
-            # 预测类别
-            prediction = model.predict([text])[0]
-            # 预测概率 (如果模型支持)
-            score = 0.5
-            if hasattr(model, "predict_proba"):
-                # 获取正类概率 (假设类别顺序 0:负, 1:中, 2:正)
-                probs = model.predict_proba([text])[0]
-                score = float(max(probs))
-
-            # 映射标签
-            label_map = {0: "negative", 1: "neutral", 2: "positive"}
-            label = label_map.get(prediction, "neutral")
-
-            # 如果预测出来是 int, 尝试转换
-            if isinstance(prediction, str):
-                if prediction in ["positive", "pos"]:
-                    label = "positive"
-                elif prediction in ["negative", "neg"]:
-                    label = "negative"
-                else:
-                    label = "neutral"
-
-            return SentimentResult(
-                score=score,
-                label=label,
-                reasoning="基于自定义训练模型预测",
-                keywords=[],
-                source="custom_model",
-            )
+            result = self._analyze_with_model(text)
         except Exception as e:
-            logger.error(f"自定义模型分析失败: {e}")
+            logger.error(f"模型分析失败，降级到SnowNLP: {e}")
             return SnowNLPStrategy().analyze(text)
+
+        # 3. 写入缓存
+        if REDIS_AVAILABLE:
+            try:
+                data = {
+                    "score": result.score,
+                    "label": result.label,
+                    "keywords": result.keywords,
+                }
+                redis_client.setex(cache_key, Config.LLM_CACHE_TTL, json.dumps(data))
+            except Exception as e:
+                logger.debug(f"缓存写入失败: {e}")
+
+        return result
 
 
 class SentimentService:
@@ -454,8 +516,15 @@ class SentimentService:
 
         cache_key = None
         if REDIS_AVAILABLE:
+            # 限制 key_data 长度，避免超长文本导致内存/性能问题
+            # 采样最多前100个字符的文本摘要用于生成缓存键
+            max_text_len = 100
+            max_samples = 50
+            truncated_texts = [
+                t[:max_text_len] for t in sample_texts[:max_samples]
+            ]
             key_data = (
-                f"sentiment:distribution:{mode}:{sample_size}:{'|'.join(sample_texts)}"
+                f"sentiment:distribution:{mode}:{sample_size}:{'|'.join(truncated_texts)}"
             )
             cache_key = hashlib.sha256(key_data.encode()).hexdigest()
             try:

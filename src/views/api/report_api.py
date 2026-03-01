@@ -7,17 +7,30 @@
 import logging
 import os
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import Blueprint, request, send_file
 
 from utils.api_response import error, ok
+from utils.query import querys
 from utils.rate_limiter import rate_limit
 from utils.report_generator import ReportConfig, report_generator
 
 logger = logging.getLogger(__name__)
 
 bp = Blueprint("report", __name__, url_prefix="/api/report")
+
+
+def _coerce_bool(value, default: bool = False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _parse_demo_mode(default: bool = False) -> bool:
+    return _coerce_bool(request.args.get("demo"), default)
 
 
 def get_demo_report_data():
@@ -78,6 +91,134 @@ def get_demo_report_data():
     }
 
 
+def _build_report_data(demo_mode: bool = False):
+    """构建报告数据：默认真实数据，失败时回退演示数据。"""
+    if demo_mode:
+        return get_demo_report_data(), "demo", True
+
+    try:
+        article_rows = querys("SELECT COUNT(*) AS count FROM article", type="select")
+        comment_rows = querys("SELECT COUNT(*) AS count FROM comments", type="select")
+
+        total_articles = (
+            int(article_rows[0].get("count", 0))
+            if article_rows and article_rows[0].get("count") is not None
+            else 0
+        )
+        total_comments = (
+            int(comment_rows[0].get("count", 0))
+            if comment_rows and comment_rows[0].get("count") is not None
+            else 0
+        )
+
+        positive_count = 0
+        neutral_count = 0
+        negative_count = 0
+
+        try:
+            from utils import getEchartsData
+
+            chart_two_data = getEchartsData.getYuQingCharDataTwo()
+            sentiment_items = chart_two_data[0] if chart_two_data else []
+            for item in sentiment_items:
+                if item.get("name") == "正面":
+                    positive_count = int(item.get("value", 0))
+                elif item.get("name") == "中性":
+                    neutral_count = int(item.get("value", 0))
+                elif item.get("name") == "负面":
+                    negative_count = int(item.get("value", 0))
+        except Exception as exc:
+            logger.warning(f"获取情感分布失败，使用估算值: {exc}")
+
+        if positive_count + neutral_count + negative_count == 0 and total_comments > 0:
+            positive_count = int(total_comments * 0.35)
+            neutral_count = int(total_comments * 0.45)
+            negative_count = max(
+                total_comments - positive_count - neutral_count,
+                0,
+            )
+
+        sentiment_total = positive_count + neutral_count + negative_count
+        if sentiment_total <= 0:
+            sentiment_total = max(total_comments, 1)
+
+        hot_topics = []
+        try:
+            from utils.getPublicData import getAllCiPingTotal
+
+            for item in getAllCiPingTotal()[:10]:
+                if len(item) >= 2:
+                    hot_topics.append(
+                        {
+                            "name": str(item[0]),
+                            "heat": int(item[1]),
+                        }
+                    )
+        except Exception as exc:
+            logger.warning(f"获取热门话题失败: {exc}")
+
+        alerts = []
+        try:
+            from services.alert_service import alert_engine
+
+            alert_history = alert_engine.get_alert_history(limit=5)
+            for alert in alert_history:
+                alerts.append(
+                    {
+                        "level": alert.get("level", "info"),
+                        "title": alert.get("title", "系统预警"),
+                        "message": alert.get("message", ""),
+                    }
+                )
+        except Exception as exc:
+            logger.warning(f"获取预警历史失败: {exc}")
+
+        trend_rows = querys(
+            """SELECT DATE(created_at) AS date, COUNT(*) AS count
+               FROM comments
+               WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 DAY)
+               GROUP BY DATE(created_at)
+               ORDER BY date""",
+            type="select",
+        )
+        trend_map = {
+            str(row.get("date")): int(row.get("count") or 0) for row in (trend_rows or [])
+        }
+        trend = []
+        for days_ago in range(6, -1, -1):
+            day = (datetime.now() - timedelta(days=days_ago)).strftime("%Y-%m-%d")
+            trend.append({"date": day, "count": trend_map.get(day, 0)})
+
+        positive_ratio = positive_count / sentiment_total
+        neutral_ratio = neutral_count / sentiment_total
+        negative_ratio = negative_count / sentiment_total
+        sentiment_index = (positive_count - negative_count) / sentiment_total
+
+        report_data = {
+            "summary": {
+                "total_articles": total_articles,
+                "total_comments": total_comments,
+                "positive_count": positive_count,
+                "neutral_count": neutral_count,
+                "negative_count": negative_count,
+            },
+            "sentiment_analysis": {
+                "正面情感占比": f"{positive_ratio * 100:.1f}%",
+                "中性情感占比": f"{neutral_ratio * 100:.1f}%",
+                "负面情感占比": f"{negative_ratio * 100:.1f}%",
+                "情感倾向指数": f"{sentiment_index:.2f}",
+                "情感波动趋势": "近7日趋势见附图",
+            },
+            "hot_topics": hot_topics,
+            "alerts": alerts,
+            "trend": trend,
+        }
+        return report_data, "real", False
+    except Exception as exc:
+        logger.warning(f"构建真实报告数据失败，回退演示数据: {exc}")
+        return get_demo_report_data(), "demo_fallback", True
+
+
 @bp.route("/generate", methods=["POST"])
 @rate_limit(max_requests=5, window_seconds=60)
 def generate_report():
@@ -94,7 +235,13 @@ def generate_report():
 
         format_type = data.get("format", "pdf").lower()
         title = data.get("title", "舆情分析报告")
-        report_data = data.get("data") or get_demo_report_data()
+        input_report_data = data.get("data")
+        request_demo_mode = _coerce_bool(data.get("demo_mode"), False)
+        report_data = input_report_data
+        if not report_data:
+            report_data, _source, _effective_demo_mode = _build_report_data(
+                request_demo_mode
+            )
 
         if format_type not in ["pdf", "ppt"]:
             return error("不支持的报告格式，请选择 pdf 或 ppt", code=400), 400
@@ -147,7 +294,13 @@ def generate_all_reports():
     try:
         data = request.json or {}
         title = data.get("title", "舆情分析报告")
-        report_data = data.get("data") or get_demo_report_data()
+        input_report_data = data.get("data")
+        request_demo_mode = _coerce_bool(data.get("demo_mode"), False)
+        report_data = input_report_data
+        if not report_data:
+            report_data, _source, _effective_demo_mode = _build_report_data(
+                request_demo_mode
+            )
 
         config = ReportConfig(
             title=title,
@@ -250,4 +403,17 @@ def get_templates():
 @bp.route("/demo-data", methods=["GET"])
 def get_demo_data():
     """获取演示数据"""
-    return ok(get_demo_report_data()), 200
+    report_data, data_source, effective_demo_mode = _build_report_data(True)
+    report_data["demo_mode"] = effective_demo_mode
+    report_data["data_source"] = data_source
+    return ok(report_data), 200
+
+
+@bp.route("/data", methods=["GET"])
+def get_report_data():
+    """获取报告数据（默认真实数据，可通过 demo=true 强制演示数据）"""
+    demo_mode = _parse_demo_mode(default=False)
+    report_data, data_source, effective_demo_mode = _build_report_data(demo_mode)
+    report_data["demo_mode"] = effective_demo_mode
+    report_data["data_source"] = data_source
+    return ok(report_data), 200

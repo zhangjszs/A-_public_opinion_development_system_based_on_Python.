@@ -44,11 +44,11 @@ class DuplicateFilter:
 
     def save(self) -> None:
         """保存状态"""
-        pass
+        return None
 
     def load(self) -> None:
         """加载状态"""
-        pass
+        return None
 
     def get_stats(self) -> dict:
         """获取统计信息"""

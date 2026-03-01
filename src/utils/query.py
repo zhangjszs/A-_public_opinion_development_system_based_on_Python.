@@ -34,6 +34,28 @@ db_session = scoped_session(sessionmaker(bind=engine))
 # ── 兼容旧调用的查询函数 ───────────────────────────────────────────────────
 
 
+def _build_named_params(sql: str, params: list) -> tuple[str, dict[str, Any]]:
+    """
+    将 `%s` 占位符转换为 SQLAlchemy 命名参数。
+
+    例如：
+        SELECT * FROM t WHERE a=%s AND b=%s
+    转换为：
+        SELECT * FROM t WHERE a=:p0 AND b=:p1
+    """
+    if not params:
+        return sql, {}
+
+    named_sql = sql
+    named_params: dict[str, Any] = {}
+    for idx, value in enumerate(params):
+        param_name = f"p{idx}"
+        named_sql = named_sql.replace("%s", f":{param_name}", 1)
+        named_params[param_name] = value
+
+    return named_sql, named_params
+
+
 def querys(sql: str, params: list | None = None, type: str = "no_select") -> Any:
     """
     执行 SQL 语句，兼容旧调用签名。
@@ -50,30 +72,31 @@ def querys(sql: str, params: list | None = None, type: str = "no_select") -> Any
         params = []
 
     start = time.time()
-    # 将 pymysql 风格的位置占位符 %s 替换为 SQLAlchemy 命名参数 :p0, :p1, ...
-    # 注意：此替换基于字符串匹配，不解析 SQL 语法。
-    # 若 SQL 字符串字面量中包含 %s（如 LIKE '%s%'），请改用 :param 风格直接传入。
-    named_params = {f"p{i}": v for i, v in enumerate(params)}
-    named_sql = sql
-    for i in range(len(params)):
-        named_sql = named_sql.replace("%s", f":p{i}", 1)
+    named_sql, named_params = _build_named_params(sql, params)
+    stmt = text(named_sql)
 
-    with engine.connect() as conn:
-        result = conn.execute(text(named_sql), named_params)
-        if type != "no_select":
+    query_type = (type or "").lower()
+    is_select = query_type == "select"
+
+    if is_select:
+        with engine.connect() as conn:
+            result = conn.execute(stmt, named_params)
             rows = [dict(row._mapping) for row in result]
-            logger.debug(
-                "查询完成: %d 条记录, 耗时 %.3fs", len(rows), time.time() - start
-            )
-            return rows
-        else:
-            conn.commit()
-            logger.debug(
-                "写操作完成: 影响 %d 行, 耗时 %.3fs",
-                result.rowcount,
-                time.time() - start,
-            )
-            return "数据库语句执行成功"
+        logger.debug(
+            "查询完成: %d 条记录, 耗时 %.3fs", len(rows), time.time() - start
+        )
+        return rows
+
+    # 非 select 类型统一按写操作处理（兼容 insert/update/delete/no_select）
+    with engine.begin() as conn:
+        result = conn.execute(stmt, named_params)
+
+    logger.debug(
+        "写操作完成: 影响 %d 行, 耗时 %.3fs",
+        result.rowcount,
+        time.time() - start,
+    )
+    return "数据库语句执行成功"
 
 
 def query_dataframe(sql: str, params: list | None = None) -> pd.DataFrame:
@@ -89,14 +112,8 @@ def query_dataframe(sql: str, params: list | None = None) -> pd.DataFrame:
     """
     start = time.time()
     try:
-        if params:
-            named_params = {f"p{i}": v for i, v in enumerate(params)}
-            named_sql = sql
-            for i in range(len(params)):
-                named_sql = named_sql.replace("%s", f":p{i}", 1)
-            df = pd.read_sql(text(named_sql), engine, params=named_params)
-        else:
-            df = pd.read_sql(sql, engine)
+        named_sql, named_params = _build_named_params(sql, params or [])
+        df = pd.read_sql(text(named_sql), engine, params=named_params)
         logger.debug(
             "DataFrame 查询完成: %d 行, 耗时 %.3fs", len(df), time.time() - start
         )

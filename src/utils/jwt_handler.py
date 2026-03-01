@@ -7,7 +7,7 @@ JWT Token 处理模块
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 import jwt
@@ -38,11 +38,12 @@ def create_token(user_id: int, username: str, expires_hours: int = None) -> str:
     if expires_hours is None:
         expires_hours = JWT_EXPIRATION_HOURS
 
+    now = datetime.now(timezone.utc)
     payload = {
         "user_id": user_id,
         "username": username,
-        "iat": datetime.utcnow(),  # 签发时间
-        "exp": datetime.utcnow() + timedelta(hours=expires_hours),  # 过期时间
+        "iat": now,  # 签发时间
+        "exp": now + timedelta(hours=expires_hours),  # 过期时间
     }
 
     token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)

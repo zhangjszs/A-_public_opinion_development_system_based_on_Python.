@@ -6,6 +6,7 @@
 
 import logging
 import time
+from typing import Any, Dict, List
 
 from celery import Celery
 from celery.signals import task_failure, task_prerun, task_success
@@ -92,7 +93,7 @@ def task_success_handler(sender=None, result=None, **kwargs):
 
         increment_counter("celery_task_success", labels={"task": task_name})
     except ImportError:
-        pass
+        logger.debug("utils.metrics 不可用，跳过 celery_task_success 指标上报")
 
 
 @task_failure.connect
@@ -110,14 +111,171 @@ def task_failure_handler(sender=None, task_id=None, exception=None, **kwargs):
             labels={"task": task_name, "error": type(exception).__name__},
         )
     except ImportError:
-        pass
+        logger.debug("utils.metrics 不可用，跳过 celery_task_failure 指标上报")
+
+
+def health_check() -> Dict[str, Any]:
+    """
+    执行Celery系统健康检查
+
+    检查Broker连接、Worker状态、后端存储状态，返回综合健康报告
+
+    Returns:
+        Dict: 包含健康状态、检查项详情和问题报告的字典
+    """
+    from celery.exceptions import OperationalError
+
+    health_status = {
+        "status": "healthy",
+        "timestamp": time.time(),
+        "checks": {},
+        "issues": []
+    }
+
+    # 1. 检查Broker连接
+    try:
+        with celery_app.connection() as conn:
+            conn.ensure_connection(max_retries=1, timeout=5)
+            health_status["checks"]["broker"] = {
+                "status": "ok",
+                "type": celery_app.conf.broker_url.split("://")[0] if celery_app.conf.broker_url else "unknown"
+            }
+    except OperationalError as e:
+        health_status["checks"]["broker"] = {"status": "error", "error": str(e)}
+        health_status["issues"].append(f"Broker连接失败: {e}")
+        health_status["status"] = "unhealthy"
+    except Exception as e:
+        health_status["checks"]["broker"] = {"status": "error", "error": str(e)}
+        health_status["issues"].append(f"Broker检查异常: {e}")
+
+    # 2. 检查后端的存储
+    try:
+        result_backend = celery_app.conf.result_backend
+        if result_backend:
+            # 尝试一个简单的后端操作
+            health_status["checks"]["backend"] = {
+                "status": "ok",
+                "type": result_backend.split("://")[0] if "://" in result_backend else result_backend
+            }
+        else:
+            health_status["checks"]["backend"] = {"status": "warning", "message": "未配置结果后端"}
+    except Exception as e:
+        health_status["checks"]["backend"] = {"status": "error", "error": str(e)}
+        health_status["issues"].append(f"后端检查异常: {e}")
+
+    # 3. 检查Worker状态（如果启用了检查）
+    try:
+        inspect = celery_app.control.inspect(timeout=5)
+        active_workers = inspect.active()
+        if active_workers:
+            worker_count = len(active_workers)
+            health_status["checks"]["workers"] = {
+                "status": "ok",
+                "count": worker_count,
+                "active_tasks": sum(len(tasks) for tasks in active_workers.values())
+            }
+        else:
+            health_status["checks"]["workers"] = {
+                "status": "warning",
+                "message": "未检测到活跃Worker（可能Worker未启动或无法连接）"
+            }
+    except Exception as e:
+        health_status["checks"]["workers"] = {"status": "error", "error": str(e)}
+        health_status["issues"].append(f"Worker检查异常: {e}")
+
+    # 最终状态判断
+    if health_status["issues"]:
+        critical_errors = sum(1 for check in health_status["checks"].values()
+                            if check.get("status") == "error")
+        if critical_errors >= 2:
+            health_status["status"] = "critical"
+        else:
+            health_status["status"] = "degraded"
+
+    return health_status
+
+
+def _create_task_queues() -> List[Dict[str, Any]]:
+    """
+    创建带优先级的任务队列配置
+
+    配置多优先级队列、Exchange创建、队列参数设置（支持优先级）、默认队列设置
+
+    Returns:
+        List[Dict]: 队列配置列表
+    """
+    from kombu import Exchange
+
+    queues = []
+
+    # 定义Exchange
+    default_exchange = Exchange("default", type="direct")
+    spider_exchange = Exchange("spider", type="direct")
+    sentiment_exchange = Exchange("sentiment", type="direct")
+    priority_exchange = Exchange("priority", type="direct")
+
+    # 默认队列
+    queues.append({
+        "name": "default",
+        "exchange": default_exchange,
+        "routing_key": "default",
+        "queue_arguments": {},
+        "description": "默认任务队列"
+    })
+
+    # 爬虫任务队列
+    queues.append({
+        "name": "spider",
+        "exchange": spider_exchange,
+        "routing_key": "spider",
+        "queue_arguments": {
+            "x-max-priority": 10,  # 支持10级优先级
+        },
+        "description": "爬虫任务专用队列"
+    })
+
+    # 情感分析任务队列
+    queues.append({
+        "name": "sentiment",
+        "exchange": sentiment_exchange,
+        "routing_key": "sentiment",
+        "queue_arguments": {
+            "x-max-priority": 10,
+        },
+        "description": "情感分析任务专用队列"
+    })
+
+    # 高优先级队列（用于紧急任务）
+    queues.append({
+        "name": "priority_high",
+        "exchange": priority_exchange,
+        "routing_key": "priority.high",
+        "queue_arguments": {
+            "x-max-priority": 20,
+            "x-message-ttl": 3600000,  # 消息1小时过期
+        },
+        "description": "高优先级任务队列"
+    })
+
+    # 低优先级队列（用于后台任务）
+    queues.append({
+        "name": "priority_low",
+        "exchange": priority_exchange,
+        "routing_key": "priority.low",
+        "queue_arguments": {
+            "x-max-priority": 5,
+        },
+        "description": "低优先级任务队列"
+    })
+
+    return queues
 
 
 # 健康检查任务（可选）
 @celery_app.task(name="tasks.health_check")
 def health_check_task():
     """系统健康检查任务"""
-    return {"status": "healthy", "celery": "running", "timestamp": time.time()}
+    return health_check()
 
 
 if __name__ == "__main__":

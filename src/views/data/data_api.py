@@ -9,6 +9,7 @@ import hashlib
 import logging
 import threading
 from datetime import datetime, timedelta
+from urllib.parse import unquote
 
 from flask import Blueprint, request
 
@@ -65,6 +66,54 @@ def set_cached_data(cache_key, data, timeout):
     memory_cache.set(cache_key, data, timeout)
 
 
+def _normalize_hot_word(raw_hot_word):
+    """规范化热词参数，兼容 URL 编码与空白字符。"""
+    if not raw_hot_word:
+        return ""
+    return unquote(str(raw_hot_word)).strip()
+
+
+def _extract_hour_from_value(time_value):
+    """从时间字符串中提取小时，解析失败返回 None。"""
+    if not time_value:
+        return None
+
+    time_str = str(time_value).strip()
+    candidate = time_str.split(" ")[-1] if " " in time_str else time_str
+
+    for fmt in ("%H:%M:%S", "%H:%M"):
+        try:
+            return datetime.strptime(candidate, fmt).hour
+        except ValueError:
+            continue
+
+    return None
+
+
+def _normalize_region_name(name, province_map):
+    """规范化地区名称，尽量映射为地图可识别的省级名称。"""
+    if not name:
+        return ""
+
+    if name in province_map.values():
+        return name
+
+    if name in province_map:
+        return province_map[name]
+
+    suffixes = ("省", "市", "自治区", "特别行政区", "壮族自治区", "回族自治区", "维吾尔自治区")
+    base_name = name
+    for suffix in suffixes:
+        if name.endswith(suffix):
+            base_name = name[: -len(suffix)]
+            break
+
+    if base_name in province_map:
+        return province_map[base_name]
+
+    return name
+
+
 @db.route("/getHomeData", methods=["GET"])
 def get_home_data():
     """
@@ -115,15 +164,7 @@ def get_table_data():
     Params:
         hotWord: 搜索关键词
     """
-    hot_word = request.args.get("hotWord", "")
-    # 处理 URL 编码的中文
-    if hot_word:
-        try:
-            # 如果已经是正常中文，不需要处理
-            hot_word.encode("ascii")
-        except UnicodeEncodeError:
-            # 包含非 ASCII 字符，已经是正常中文
-            pass
+    hot_word = _normalize_hot_word(request.args.get("hotWord", ""))
     logger.info(f"收到请求，hotWord='{hot_word}'")
     cache_key = get_cache_key("table_data", hot_word)
     cached_data = get_cached_data(cache_key, CACHE_TIMEOUT["table"])
@@ -280,27 +321,12 @@ def get_comment_data():
         for comment in comments:
             try:
                 if len(comment) > 1 and comment[1]:
-                    time_str = str(comment[1]).strip()
-                    # 尝试解析各种格式的时间
-                    for fmt in (
-                        "%Y-%m-%d %H:%M:%S",
-                        "%Y-%m-%d %H:%M",
-                        "%H:%M:%S",
-                        "%H:%M",
-                    ):
-                        try:
-                            dt = datetime.strptime(
-                                time_str.split(" ")[-1]
-                                if " " in time_str
-                                else time_str,
-                                fmt.split(" ")[-1],
-                            )
-                            hour_counts[dt.hour] += 1
-                            break
-                        except ValueError:
-                            continue
-            except Exception:
-                pass
+                    hour = _extract_hour_from_value(comment[1])
+                    if hour is not None:
+                        hour_counts[hour] += 1
+            except Exception as parse_err:
+                logger.debug(f"评论时间解析失败: {parse_err}")
+                continue
 
         time_distribution = {
             "hours": [f"{h}:00" for h in range(24)],
@@ -438,20 +464,7 @@ def get_ip_data():
         if geo_one_data:
             for item in geo_one_data:
                 name = item.get("name", "")
-                # 尝试匹配全名
-                full_name = province_map.get(name, name)
-                # 如果已经是全名（如包含'省'、'市'等），或者没找到映射，就用原名
-                # 这里简单处理：如果原名匹配到key，就用value；否则尝试反向匹配或直接使用
-
-                # 再次确认：如果name已经在value中，直接使用
-                if name in province_map.values():
-                    full_name = name
-                # 如果name在key中，用value
-                elif name in province_map:
-                    full_name = province_map[name]
-                # 处理 '广西省' -> '广西壮族自治区' 这种特殊情况
-                elif name + "省" in province_map:  # 很少见，但以防万一
-                    pass
+                full_name = _normalize_region_name(name, province_map)
 
                 map_data.append({"name": full_name, "value": item.get("value", 0)})
 

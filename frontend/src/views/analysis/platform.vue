@@ -177,6 +177,7 @@
   } from '@/api/platform'
 
   const activePlatform = ref('weibo')
+  const demoMode = import.meta.env.VITE_DEMO_MODE === 'true'
   const platforms = ref([
     { id: 'weibo', name: '微博', icon: '📱', enabled: true, label: '微博' },
     { id: 'wechat', name: '微信公众号', icon: '💬', enabled: true, label: '微信公众号' },
@@ -295,7 +296,7 @@
       const res = await getPlatformData(activePlatform.value, {
         page: currentPage.value,
         page_size: pageSize.value,
-        demo: true,
+        demo: demoMode,
       })
 
       if (res.code === 200) {

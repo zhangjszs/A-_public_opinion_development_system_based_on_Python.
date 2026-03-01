@@ -34,6 +34,15 @@
               </el-radio-group>
             </el-form-item>
 
+            <el-form-item label="数据来源">
+              <el-switch
+                v-model="useDemoData"
+                active-text="演示数据"
+                inactive-text="真实数据"
+                inline-prompt
+              />
+            </el-form-item>
+
             <el-form-item label="报告内容">
               <el-checkbox-group v-model="reportForm.sections">
                 <el-checkbox label="summary">数据概览</el-checkbox>
@@ -59,7 +68,10 @@
       <el-col :xs="24" :lg="8">
         <el-card class="preview-card">
           <template #header>
-            <span>数据预览</span>
+            <div class="card-header">
+              <span>数据预览</span>
+              <el-tag size="small" type="info">{{ dataSourceText }}</el-tag>
+            </div>
           </template>
 
           <div class="preview-content" v-loading="loadingDemo">
@@ -150,14 +162,14 @@
 </template>
 
 <script setup>
-  import { ref, onMounted, watch } from 'vue'
+  import { ref, computed, onMounted, watch } from 'vue'
   import { ElMessage } from 'element-plus'
   import { Document } from '@element-plus/icons-vue'
   import {
     generateReport,
     generateAllReports,
     getReportTemplates,
-    getDemoData,
+    getReportData,
     downloadReport,
     previewReport,
   } from '@/api/report'
@@ -165,6 +177,7 @@
   const generating = ref(false)
   const generatingAll = ref(false)
   const loadingDemo = ref(false)
+  const useDemoData = ref(import.meta.env.VITE_DEMO_MODE === 'true')
 
   const reportForm = ref({
     title: '舆情分析报告',
@@ -187,6 +200,13 @@
   )
   const demoData = ref({})
   const historyList = ref([])
+  const dataSourceText = computed(() => {
+    const source = demoData.value?.data_source
+    if (source === 'real') return '真实数据'
+    if (source === 'demo') return '演示数据'
+    if (source === 'demo_fallback') return '真实数据不可用，已回退演示数据'
+    return useDemoData.value ? '演示数据' : '真实数据'
+  })
 
   const formatTime = (timeStr) => {
     if (!timeStr) return ''
@@ -204,15 +224,15 @@
     }
   }
 
-  const fetchDemoData = async () => {
+  const fetchReportData = async () => {
     loadingDemo.value = true
     try {
-      const res = await getDemoData()
+      const res = await getReportData({ demo: useDemoData.value })
       if (res.code === 200) {
         demoData.value = res.data
       }
     } catch (error) {
-      console.error('获取演示数据失败:', error)
+      console.error('获取报告数据失败:', error)
     } finally {
       loadingDemo.value = false
     }
@@ -226,6 +246,7 @@
         format: reportForm.value.format,
         template: reportForm.value.template,
         sections: reportForm.value.sections,
+        demo_mode: useDemoData.value,
         data: demoData.value,
       })
 
@@ -247,6 +268,7 @@
     try {
       const res = await generateAllReports({
         title: reportForm.value.title,
+        demo_mode: useDemoData.value,
         data: demoData.value,
       })
 
@@ -290,7 +312,11 @@
 
   onMounted(() => {
     fetchTemplates()
-    fetchDemoData()
+    fetchReportData()
+  })
+
+  watch(useDemoData, () => {
+    fetchReportData()
   })
 </script>
 

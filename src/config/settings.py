@@ -14,6 +14,13 @@ def _parse_csv_env(name: str) -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
+def _parse_bool_env(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _get_secret_key() -> str | None:
     value = os.getenv("SECRET_KEY")
     if value:
@@ -153,6 +160,20 @@ class Config:
     # Logging
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+    # Demo / Bootstrap
+    DEMO_ADMIN_USERNAME = os.getenv("DEMO_ADMIN_USERNAME", "admin")
+    DEMO_ADMIN_PASSWORD = os.getenv("DEMO_ADMIN_PASSWORD", "Admin123!")
+    AUTO_CREATE_DEMO_ADMIN = _parse_bool_env(
+        "AUTO_CREATE_DEMO_ADMIN", default=IS_DEVELOPMENT
+    )
+    DEMO_ADMIN_RESET_PASSWORD = _parse_bool_env(
+        "DEMO_ADMIN_RESET_PASSWORD", default=IS_DEVELOPMENT
+    )
+    ENABLE_STARTUP_WARMUP = _parse_bool_env(
+        "ENABLE_STARTUP_WARMUP", default=IS_DEVELOPMENT
+    )
+    STARTUP_WARMUP_DELAY = float(os.getenv("STARTUP_WARMUP_DELAY", "0.5"))
 
     @classmethod
     def validate(cls) -> None:

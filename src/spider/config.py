@@ -33,6 +33,89 @@ except ImportError:
     USE_UNIFIED_CONFIG = False
     Config = None
 
+# ========== 自定义异常类 ==========
+
+class SpiderException(Exception):
+    """爬虫基础异常类"""
+    def __init__(self, message: str, error_code: str = "SPIDER_ERROR", details: dict = None):
+        super().__init__(message)
+        self.message = message
+        self.error_code = error_code
+        self.details = details or {}
+
+    def __str__(self):
+        return f"[{self.error_code}] {self.message}"
+
+    def to_dict(self) -> dict:
+        return {
+            "error_code": self.error_code,
+            "message": self.message,
+            "details": self.details
+        }
+
+
+class CookieExpiredException(SpiderException):
+    """Cookie过期异常"""
+    def __init__(self, message: str = "Cookie已过期或无效", details: dict = None):
+        super().__init__(
+            message=message,
+            error_code="COOKIE_EXPIRED",
+            details=details
+        )
+
+
+class RateLimitException(SpiderException):
+    """请求频率限制异常"""
+    def __init__(self, message: str = "请求频率过高", retry_after: int = 60, details: dict = None):
+        super().__init__(
+            message=message,
+            error_code="RATE_LIMIT",
+            details={"retry_after": retry_after, **(details or {})}
+        )
+        self.retry_after = retry_after
+
+
+class SpiderConfigException(SpiderException):
+    """爬虫配置异常"""
+    def __init__(self, message: str = "配置错误", details: dict = None):
+        super().__init__(
+            message=message,
+            error_code="CONFIG_ERROR",
+            details=details
+        )
+
+
+class ProxyException(SpiderException):
+    """代理异常"""
+    def __init__(self, message: str = "代理错误", proxy: str = None, details: dict = None):
+        super().__init__(
+            message=message,
+            error_code="PROXY_ERROR",
+            details={"proxy": proxy, **(details or {})}
+        )
+        self.proxy = proxy
+
+
+class NetworkException(SpiderException):
+    """网络连接异常"""
+    def __init__(self, message: str = "网络连接失败", details: dict = None):
+        super().__init__(
+            message=message,
+            error_code="NETWORK_ERROR",
+            details=details
+        )
+
+
+class ParseException(SpiderException):
+    """数据解析异常"""
+    def __init__(self, message: str = "数据解析失败", raw_data: str = None, details: dict = None):
+        super().__init__(
+            message=message,
+            error_code="PARSE_ERROR",
+            details={"raw_data": raw_data[:500] if raw_data else None, **(details or {})}
+        )
+
+
 # 配置日志记录器
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -377,18 +460,32 @@ class SpiderConfigManager:
                     logger.warning(
                         ">>> 请检查 spider/config.py 中的 Cookie 是否过期！ <<<"
                     )
-                    raise Exception("403 Forbidden - Cookie失效或反爬触发")
+                    raise CookieExpiredException(
+                        message="403 Forbidden - Cookie失效或反爬触发",
+                        details={"status_code": 403, "url": url[:100]}
+                    )
                 elif response.status_code == 302:
                     logger.warning("请求被重定向(302): 可能Cookie失效导致跳转登录页")
                     logger.warning(
                         ">>> 请检查 spider/config.py 中的 Cookie 是否过期！ <<<"
                     )
-                    raise Exception("302 Found - 可能需要更新Cookie")
+                    raise CookieExpiredException(
+                        message="302 Found - 可能需要更新Cookie",
+                        details={"status_code": 302, "url": url[:100]}
+                    )
                 elif response.status_code == 429:
                     logger.warning("请求频率过高(429): 需要降低请求频率")
-                    raise Exception("429 Too Many Requests - 请求过于频繁")
+                    raise RateLimitException(
+                        message="429 Too Many Requests - 请求过于频繁",
+                        retry_after=self.RETRY_DELAY * 5,
+                        details={"status_code": 429, "url": url[:100]}
+                    )
                 else:
-                    raise Exception(f"HTTP {response.status_code}")
+                    raise SpiderException(
+                        message=f"HTTP {response.status_code}",
+                        error_code=f"HTTP_{response.status_code}",
+                        details={"status_code": response.status_code, "url": url[:100]}
+                    )
 
             except Exception as e:
                 last_exception = e

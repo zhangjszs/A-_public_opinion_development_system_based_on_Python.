@@ -112,7 +112,8 @@ def list_favorites():
         # Get favorites with article details
         items = querys(
             """SELECT f.id, f.article_id, f.created_at AS favorited_at,
-                      a.content, a.source, a.created_at, a.likeNum, a.commentNum, a.forwardNum
+                      a.content, a.authorName AS source, a.created_at,
+                      a.likeNum, a.commentsLen AS commentNum, a.reposts_count AS forwardNum
                FROM user_favorites f
                LEFT JOIN article a ON f.article_id = a.id
                WHERE f.user_id = %s

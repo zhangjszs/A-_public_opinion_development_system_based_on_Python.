@@ -11,24 +11,98 @@ from datetime import datetime, timedelta
 from flask import Blueprint, request
 
 from utils.api_response import error, ok
+from utils.query import querys
 from utils.rate_limiter import rate_limit
 
 logger = logging.getLogger(__name__)
 
 bp = Blueprint("platform", __name__, url_prefix="/api/platform")
 
+PLATFORM_META = {
+    "weibo": {"name": "微博", "icon": "📱"},
+    "wechat": {"name": "微信公众号", "icon": "💬"},
+    "douyin": {"name": "抖音", "icon": "🎵"},
+    "zhihu": {"name": "知乎", "icon": "💡"},
+    "bilibili": {"name": "B站", "icon": "📺"},
+}
+
+
+def _parse_demo_mode(default: bool = False) -> bool:
+    raw = request.args.get("demo")
+    if raw is None:
+        return default
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _normalize_datetime(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return str(value)
+
+
+def _load_platform_data(platform: str, count: int, demo_mode: bool):
+    """加载平台数据：优先真实数据，失败时回退演示数据。"""
+    if demo_mode:
+        return generate_demo_data(platform, count), "demo", True
+
+    try:
+        rows = querys(
+            """SELECT id, authorName, isVip, content, likeNum, commentsLen, reposts_count,
+                      created_at, region
+               FROM article
+               ORDER BY created_at DESC
+               LIMIT %s""",
+            [max(1, min(count, 500))],
+            "select",
+        )
+
+        if not rows:
+            logger.warning("平台数据未查询到真实内容，回退演示数据")
+            return generate_demo_data(platform, count), "demo_fallback", True
+
+        platform_info = PLATFORM_META.get(platform, PLATFORM_META["weibo"])
+        data = []
+
+        for idx, row in enumerate(rows):
+            like_count = int(row.get("likeNum") or 0)
+            comment_count = int(row.get("commentsLen") or 0)
+            repost_count = int(row.get("reposts_count") or 0)
+            engagement = like_count + comment_count + repost_count
+
+            data.append(
+                {
+                    "platform": platform,
+                    "platform_name": platform_info["name"],
+                    "platform_icon": platform_info["icon"],
+                    "content_id": str(row.get("id") or f"{platform}_{idx + 1}"),
+                    "author_id": f"author_{idx + 1}",
+                    "author_name": row.get("authorName") or "未知用户",
+                    "author_verified": bool(row.get("isVip")),
+                    "author_followers": max(100, engagement * 5),
+                    "content": row.get("content") or "",
+                    "like_count": like_count,
+                    "comment_count": comment_count,
+                    "repost_count": repost_count,
+                    "view_count": max(1000, engagement * 20),
+                    "published_at": _normalize_datetime(row.get("created_at")),
+                    "sentiment": "neutral",
+                    "sentiment_score": 0.5,
+                    "keywords": [],
+                    "location": row.get("region"),
+                }
+            )
+
+        return data, "article_table", False
+    except Exception as exc:
+        logger.warning(f"加载真实平台数据失败，回退演示数据: {exc}")
+        return generate_demo_data(platform, count), "demo_fallback", True
+
 
 def generate_demo_data(platform: str, count: int = 20):
     """生成演示数据"""
-    platforms = {
-        "weibo": {"name": "微博", "icon": "📱"},
-        "wechat": {"name": "微信公众号", "icon": "💬"},
-        "douyin": {"name": "抖音", "icon": "🎵"},
-        "zhihu": {"name": "知乎", "icon": "💡"},
-        "bilibili": {"name": "B站", "icon": "📺"},
-    }
-
-    platform_info = platforms.get(platform, platforms["weibo"])
+    platform_info = PLATFORM_META.get(platform, PLATFORM_META["weibo"])
 
     topics = [
         "人工智能",
@@ -113,12 +187,10 @@ def get_platform_data(platform: str):
     page_size = request.args.get("page_size", 20, type=int)
     page_size = min(page_size, 100)
 
-    demo_mode = request.args.get("demo", "true").lower() == "true"
-
-    if demo_mode:
-        all_data = generate_demo_data(platform, 50)
-    else:
-        all_data = generate_demo_data(platform, 20)
+    demo_mode = _parse_demo_mode(default=False)
+    all_data, data_source, effective_demo_mode = _load_platform_data(
+        platform, 50, demo_mode
+    )
 
     start = (page - 1) * page_size
     end = start + page_size
@@ -127,6 +199,8 @@ def get_platform_data(platform: str):
     return ok(
         {
             "platform": platform,
+            "demo_mode": effective_demo_mode,
+            "data_source": data_source,
             "data": page_data,
             "pagination": {
                 "page": page,
@@ -144,15 +218,18 @@ def get_all_platforms_data():
     """获取所有平台汇总数据"""
     platforms = request.args.get("platforms", "weibo,wechat,douyin,zhihu").split(",")
     page_size = request.args.get("page_size", 10, type=int)
-    demo_mode = request.args.get("demo", "true").lower() == "true"
+    demo_mode = _parse_demo_mode(default=False)
 
     results = {}
+    data_source_map = {}
+    effective_demo_mode = False
 
     for platform in platforms:
-        if demo_mode:
-            data = generate_demo_data(platform, page_size)
-        else:
-            data = generate_demo_data(platform, page_size)
+        data, source, current_demo_mode = _load_platform_data(
+            platform, page_size, demo_mode
+        )
+        data_source_map[platform] = source
+        effective_demo_mode = effective_demo_mode or current_demo_mode
 
         results[platform] = {
             "count": len(data),
@@ -164,6 +241,8 @@ def get_all_platforms_data():
 
     return ok(
         {
+            "demo_mode": effective_demo_mode,
+            "data_source": data_source_map,
             "platforms": results,
             "summary": {
                 "total_content": sum(r["count"] for r in results.values()),

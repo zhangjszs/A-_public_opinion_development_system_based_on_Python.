@@ -42,9 +42,11 @@ class CommentRepository(BaseRepository):
 
         result: List[Dict[str, Any]] = []
         for c in rows:
+            comment_id = f"{c.articleId}_{c.created_at}"
             result.append(
                 {
-                    "id": c.id,
+                    "id": comment_id,
+                    "articleId": c.articleId,
                     "rootId": c.rootId,
                     "content": c.content,
                     "likeNum": c.likeNum,

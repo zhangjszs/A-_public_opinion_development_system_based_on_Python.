@@ -185,7 +185,9 @@
   import { analyzePropagation, getPropagationGraph } from '@/api/propagation'
 
   const loading = ref(false)
-  const articleId = ref('demo_article_001')
+  const demoMode = import.meta.env.VITE_DEMO_MODE === 'true'
+  const defaultArticleId = import.meta.env.VITE_DEFAULT_ARTICLE_ID || ''
+  const articleId = ref(defaultArticleId || (demoMode ? 'demo_article_001' : ''))
   const summary = ref({})
   const graphData = ref({ nodes: [], edges: [] })
   const kolNodes = ref([])
@@ -259,8 +261,8 @@
 
     try {
       const [analyzeRes, graphRes] = await Promise.all([
-        analyzePropagation(articleId.value, { demo: true, count: 100 }),
-        getPropagationGraph(articleId.value, { demo: true, count: 80 }),
+        analyzePropagation(articleId.value, { demo: demoMode, count: 100 }),
+        getPropagationGraph(articleId.value, { demo: demoMode, count: 80 }),
       ])
 
       if (analyzeRes.code === 200) {
@@ -363,7 +365,9 @@
   }
 
   onMounted(() => {
-    loadPropagation()
+    if (articleId.value) {
+      loadPropagation()
+    }
   })
 </script>
 

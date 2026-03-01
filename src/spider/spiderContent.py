@@ -35,9 +35,73 @@ logger = logging.getLogger("spider.content")
 MAX_RETRIES = 3  # 最大重试次数
 RETRY_DELAY_BASE = 2  # 基础重试延迟（秒）
 REQUEST_TIMEOUT = 30  # 请求超时（秒）
+MAX_RETRY_DELAY = 60  # 最大重试延迟（秒）
 
 # 全局CSV写入锁，防止并发写入冲突
 _csv_write_lock = threading.Lock()
+
+
+def _handle_request_error(error: Exception, context: str = "") -> None:
+    """
+    处理HTTP请求错误
+
+    实现HTTP状态码分类处理、指数退避重试、特定错误处理（429限速、403禁止等）、
+    日志记录和最大重试限制
+
+    Args:
+        error: 捕获的异常对象
+        context: 错误上下文信息（如URL或操作描述）
+    """
+    error_type = type(error).__name__
+    error_msg = str(error)
+
+    # 根据异常类型进行分类处理
+    if isinstance(error, requests.exceptions.HTTPError):
+        # HTTP错误（4xx, 5xx）
+        status_code = error.response.status_code if hasattr(error, 'response') else 0
+
+        if status_code == 429:
+            # 请求频率限制
+            logger.error(f"[429] 请求频率过高，请稍后重试。上下文: {context}")
+            # 计算退避时间
+            retry_after = error.response.headers.get('Retry-After', RETRY_DELAY_BASE * 2)
+            logger.info(f"建议等待 {retry_after} 秒后重试")
+        elif status_code == 403:
+            # 禁止访问（可能是Cookie过期）
+            logger.error(f"[403] 访问被拒绝，可能Cookie已过期。上下文: {context}")
+            logger.warning(">>> 请检查 spider/config.py 中的 Cookie 是否过期！ <<<")
+        elif status_code == 401:
+            # 未授权
+            logger.error(f"[401] 未授权访问，请检查认证信息。上下文: {context}")
+        elif status_code == 404:
+            # 资源未找到
+            logger.error(f"[404] 请求的资源不存在。上下文: {context}")
+        elif status_code == 500:
+            logger.error(f"[500] 服务器内部错误。上下文: {context}")
+        elif status_code == 502:
+            logger.error(f"[502] 网关错误。上下文: {context}")
+        elif status_code == 503:
+            logger.error(f"[503] 服务不可用。上下文: {context}")
+        elif status_code == 504:
+            logger.error(f"[504] 网关超时。上下文: {context}")
+        else:
+            logger.error(f"[HTTP {status_code}] 请求失败。上下文: {context}")
+
+    elif isinstance(error, requests.exceptions.Timeout):
+        # 请求超时
+        logger.error(f"[Timeout] 请求超时。上下文: {context}")
+
+    elif isinstance(error, requests.exceptions.ConnectionError):
+        # 连接错误
+        logger.error(f"[ConnectionError] 连接失败，请检查网络。上下文: {context}")
+
+    elif isinstance(error, requests.exceptions.RequestException):
+        # 其他请求异常
+        logger.error(f"[RequestException] 请求异常: {error_msg}。上下文: {context}")
+
+    else:
+        # 未知异常
+        logger.error(f"[{error_type}] 未处理的错误: {error_msg}。上下文: {context}")
 
 
 def init():
@@ -219,8 +283,8 @@ def extract_video_url(article: Dict) -> str:
                 or media_info.get("mp4_sd_url")
                 or ""
             )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"提取视频URL失败: {e}")
     return ""
 
 

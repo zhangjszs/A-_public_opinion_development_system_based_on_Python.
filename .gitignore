@@ -180,6 +180,9 @@ frontend/dist/
 .env
 .env.local
 .env.*.local
+frontend/.env
+frontend/.env.local
+frontend/.env.*
 
 # Project specific - Cache files
 cache/
@@ -190,6 +193,9 @@ src/cache/
 # Project specific - Data files (keep structure, ignore content)
 # Note: Keep data/ directory but ignore large data files
 data/*.csv
+data/*.db
+data/*.sqlite
+data/*.sqlite3
 !data/.gitkeep
 
 # Project specific - Logs

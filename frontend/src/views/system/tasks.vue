@@ -1,21 +1,35 @@
 <template>
   <div class="tasks-page">
-    <el-row :gutter="20" class="mb-4">
-      <el-col :xs="24" :lg="12">
+    <el-row
+      :gutter="20"
+      class="mb-4"
+    >
+      <el-col
+        :xs="24"
+        :lg="12"
+      >
         <el-card>
           <template #header>
             <div class="card-header">
               <span class="header-title">爬虫任务</span>
               <div class="header-actions">
-                <el-button :icon="Refresh" @click="refreshSpider" :loading="spiderLoading"
-                  >刷新</el-button
+                <el-button
+                  :icon="Refresh"
+                  :loading="spiderLoading"
+                  @click="refreshSpider"
                 >
+                  刷新
+                </el-button>
               </div>
             </div>
           </template>
 
           <div class="status-row">
-            <el-tag :type="spiderOverview?.isRunning ? 'warning' : 'success'" effect="plain" round>
+            <el-tag
+              :type="spiderOverview?.isRunning ? 'warning' : 'success'"
+              effect="plain"
+              round
+            >
               {{ spiderOverview?.isRunning ? '运行中' : '空闲' }}
             </el-tag>
             <span class="status-text">{{ spiderOverview?.currentTask || '—' }}</span>
@@ -29,10 +43,28 @@
             class="mb-4"
           />
 
-          <el-table :data="spiderHistory" style="width: 100%" height="360">
-            <el-table-column prop="time" label="时间" width="180" />
-            <el-table-column prop="action" label="动作" min-width="160" show-overflow-tooltip />
-            <el-table-column prop="status" label="状态" width="120" align="center">
+          <el-table
+            :data="spiderHistory"
+            style="width: 100%"
+            height="360"
+          >
+            <el-table-column
+              prop="time"
+              label="时间"
+              width="180"
+            />
+            <el-table-column
+              prop="action"
+              label="动作"
+              min-width="160"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              prop="status"
+              label="状态"
+              width="120"
+              align="center"
+            >
               <template #default="{ row }">
                 <el-tag
                   :type="row.status === 'success' ? 'success' : 'danger'"
@@ -43,13 +75,26 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="count" label="条数" width="90" align="center" />
-            <el-table-column prop="detail" label="详情" min-width="160" show-overflow-tooltip />
+            <el-table-column
+              prop="count"
+              label="条数"
+              width="90"
+              align="center"
+            />
+            <el-table-column
+              prop="detail"
+              label="详情"
+              min-width="160"
+              show-overflow-tooltip
+            />
           </el-table>
         </el-card>
       </el-col>
 
-      <el-col :xs="24" :lg="12">
+      <el-col
+        :xs="24"
+        :lg="12"
+      >
         <el-card>
           <template #header>
             <div class="card-header">
@@ -62,16 +107,26 @@
                   size="small"
                   style="width: 120px"
                 />
-                <el-button :icon="Refresh" @click="refreshLogs" :loading="logsLoading"
-                  >刷新</el-button
+                <el-button
+                  :icon="Refresh"
+                  :loading="logsLoading"
+                  @click="refreshLogs"
                 >
+                  刷新
+                </el-button>
               </div>
             </div>
           </template>
 
           <div class="log-container">
-            <div v-if="logs.length === 0" class="empty">
-              <el-empty description="暂无日志" :image-size="60" />
+            <div
+              v-if="logs.length === 0"
+              class="empty"
+            >
+              <el-empty
+                description="暂无日志"
+                :image-size="60"
+              />
             </div>
             <div v-else>
               <div
@@ -93,19 +148,35 @@
         <div class="card-header">
           <span class="header-title">启动预热状态</span>
           <div class="header-actions">
-            <el-tag :type="warmupTagType" effect="plain" round>
+            <el-tag
+              :type="warmupTagType"
+              effect="plain"
+              round
+            >
               {{ warmupStatusText }}
             </el-tag>
-            <el-button :icon="Refresh" @click="refreshStartup" :loading="startupLoading"
-              >刷新</el-button
+            <el-button
+              :icon="Refresh"
+              :loading="startupLoading"
+              @click="refreshStartup"
             >
+              刷新
+            </el-button>
           </div>
         </div>
       </template>
 
-      <el-descriptions :column="2" border class="mb-4">
+      <el-descriptions
+        :column="2"
+        border
+        class="mb-4"
+      >
         <el-descriptions-item label="管理员引导">
-          <el-tag :type="adminBootstrapType" effect="plain" round>
+          <el-tag
+            :type="adminBootstrapType"
+            effect="plain"
+            round
+          >
             {{ adminBootstrapText }}
           </el-tag>
         </el-descriptions-item>
@@ -129,12 +200,8 @@
 
       <div class="startup-meta mb-4">
         <span>已完成 {{ startupWarmup?.paths_done || 0 }} / {{ startupWarmup?.paths_total || 0 }}</span>
-        <span v-if="startupWarmup?.started_at"
-          >开始时间：{{ formatDateTime(startupWarmup?.started_at) }}</span
-        >
-        <span v-if="startupWarmup?.finished_at"
-          >结束时间：{{ formatDateTime(startupWarmup?.finished_at) }}</span
-        >
+        <span v-if="startupWarmup?.started_at">开始时间：{{ formatDateTime(startupWarmup?.started_at) }}</span>
+        <span v-if="startupWarmup?.finished_at">结束时间：{{ formatDateTime(startupWarmup?.finished_at) }}</span>
       </div>
 
       <el-alert
@@ -146,9 +213,23 @@
         class="mb-4"
       />
 
-      <el-table :data="startupWarmupResults" style="width: 100%" max-height="260">
-        <el-table-column prop="path" label="预热接口" min-width="280" show-overflow-tooltip />
-        <el-table-column prop="status_code" label="状态码" width="110" align="center">
+      <el-table
+        :data="startupWarmupResults"
+        style="width: 100%"
+        max-height="260"
+      >
+        <el-table-column
+          prop="path"
+          label="预热接口"
+          min-width="280"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="status_code"
+          label="状态码"
+          width="110"
+          align="center"
+        >
           <template #default="{ row }">
             <el-tag
               :type="
@@ -165,8 +246,18 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="duration_seconds" label="耗时(s)" width="100" align="center" />
-        <el-table-column prop="error" label="错误信息" min-width="220" show-overflow-tooltip>
+        <el-table-column
+          prop="duration_seconds"
+          label="耗时(s)"
+          width="100"
+          align="center"
+        />
+        <el-table-column
+          prop="error"
+          label="错误信息"
+          min-width="220"
+          show-overflow-tooltip
+        >
           <template #default="{ row }">
             {{ row.error || '-' }}
           </template>
@@ -181,46 +272,81 @@
         </div>
       </template>
 
-      <el-form :inline="true" @submit.prevent class="query-form">
+      <el-form
+        :inline="true"
+        class="query-form"
+        @submit.prevent
+      >
         <el-form-item label="Task ID">
-          <el-input v-model="taskId" placeholder="输入 task_id" clearable style="width: 420px" />
+          <el-input
+            v-model="taskId"
+            placeholder="输入 task_id"
+            clearable
+            style="width: 420px"
+          />
         </el-form-item>
         <el-form-item>
           <el-button
             type="primary"
             :icon="Search"
             :disabled="!taskId.trim()"
-            @click="queryTask"
             :loading="taskLoading"
-            >查询</el-button
+            @click="queryTask"
           >
-          <el-button :disabled="recentTasks.length === 0" @click="clearRecent">清空记录</el-button>
+            查询
+          </el-button>
+          <el-button
+            :disabled="recentTasks.length === 0"
+            @click="clearRecent"
+          >
+            清空记录
+          </el-button>
         </el-form-item>
       </el-form>
 
-      <div v-if="taskResult" class="task-result">
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="状态">{{ taskResult.state || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="进度">{{
-            taskResult.progress != null ? taskResult.progress + '%' : '-'
-          }}</el-descriptions-item>
-          <el-descriptions-item label="消息" :span="2">{{
-            taskResult.message || '-'
-          }}</el-descriptions-item>
+      <div
+        v-if="taskResult"
+        class="task-result"
+      >
+        <el-descriptions
+          :column="2"
+          border
+        >
+          <el-descriptions-item label="状态">
+            {{ taskResult.state || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="进度">
+            {{
+              taskResult.progress != null ? taskResult.progress + '%' : '-'
+            }}
+          </el-descriptions-item>
+          <el-descriptions-item
+            label="消息"
+            :span="2"
+          >
+            {{
+              taskResult.message || '-'
+            }}
+          </el-descriptions-item>
         </el-descriptions>
       </div>
 
-      <div v-if="recentTasks.length > 0" class="recent">
-        <div class="recent-title">最近查询</div>
+      <div
+        v-if="recentTasks.length > 0"
+        class="recent"
+      >
+        <div class="recent-title">
+          最近查询
+        </div>
         <el-space wrap>
           <el-tag
             v-for="id in recentTasks"
             :key="id"
             closable
             effect="plain"
+            class="recent-tag"
             @close="removeRecent(id)"
             @click="selectRecent(id)"
-            class="recent-tag"
           >
             {{ id }}
           </el-tag>

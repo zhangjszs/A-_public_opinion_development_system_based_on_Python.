@@ -1,9 +1,16 @@
 <template>
   <div class="sidebar-container">
     <div class="logo-container">
-      <img src="@/assets/images/logo.png" alt="Logo" class="logo" />
+      <img
+        src="@/assets/images/logo.png"
+        alt="Logo"
+        class="logo"
+      >
       <transition name="fade">
-        <span v-if="!collapsed" class="title">微博舆情分析</span>
+        <span
+          v-if="!collapsed"
+          class="title"
+        >微博舆情分析</span>
       </transition>
     </div>
     <el-menu
@@ -16,10 +23,15 @@
       active-text-color="var(--el-color-primary)"
       router
     >
-      <template v-for="route in menuRoutes" :key="route.path">
+      <template
+        v-for="route in menuRoutes"
+        :key="route.path"
+      >
         <el-menu-item :index="route.path">
           <el-icon><component :is="route.meta.icon" /></el-icon>
-          <template #title>{{ route.meta.title }}</template>
+          <template #title>
+            {{ route.meta.title }}
+          </template>
         </el-menu-item>
       </template>
     </el-menu>

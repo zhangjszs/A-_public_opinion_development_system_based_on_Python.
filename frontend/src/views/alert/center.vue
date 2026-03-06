@@ -1,54 +1,89 @@
 <template>
   <div class="alert-center-container">
-    <el-row :gutter="24" class="mb-4">
-      <el-col :xs="24" :sm="8" :md="6">
+    <el-row
+      :gutter="24"
+      class="mb-4"
+    >
+      <el-col
+        :xs="24"
+        :sm="8"
+        :md="6"
+      >
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon info">
               <el-icon><Bell /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ stats.total_alerts || 0 }}</div>
-              <div class="stat-label">总预警数</div>
+              <div class="stat-value">
+                {{ stats.total_alerts || 0 }}
+              </div>
+              <div class="stat-label">
+                总预警数
+              </div>
             </div>
           </div>
         </el-card>
       </el-col>
-      <el-col :xs="24" :sm="8" :md="6">
+      <el-col
+        :xs="24"
+        :sm="8"
+        :md="6"
+      >
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon warning">
               <el-icon><Warning /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ stats.unread_count || 0 }}</div>
-              <div class="stat-label">未读预警</div>
+              <div class="stat-value">
+                {{ stats.unread_count || 0 }}
+              </div>
+              <div class="stat-label">
+                未读预警
+              </div>
             </div>
           </div>
         </el-card>
       </el-col>
-      <el-col :xs="24" :sm="8" :md="6">
+      <el-col
+        :xs="24"
+        :sm="8"
+        :md="6"
+      >
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon danger">
               <el-icon><CircleCloseFilled /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ stats.level_distribution?.danger || 0 }}</div>
-              <div class="stat-label">高危预警</div>
+              <div class="stat-value">
+                {{ stats.level_distribution?.danger || 0 }}
+              </div>
+              <div class="stat-label">
+                高危预警
+              </div>
             </div>
           </div>
         </el-card>
       </el-col>
-      <el-col :xs="24" :sm="8" :md="6">
+      <el-col
+        :xs="24"
+        :sm="8"
+        :md="6"
+      >
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon success">
               <el-icon><Setting /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ stats.active_rules || 0 }}</div>
-              <div class="stat-label">活跃规则</div>
+              <div class="stat-value">
+                {{ stats.active_rules || 0 }}
+              </div>
+              <div class="stat-label">
+                活跃规则
+              </div>
             </div>
           </div>
         </el-card>
@@ -56,7 +91,10 @@
     </el-row>
 
     <el-row :gutter="24">
-      <el-col :xs="24" :lg="16">
+      <el-col
+        :xs="24"
+        :lg="16"
+      >
         <el-card class="history-card">
           <template #header>
             <div class="card-header">
@@ -69,17 +107,32 @@
                   size="small"
                   style="width: 120px"
                 >
-                  <el-option label="全部" value="" />
-                  <el-option label="信息" value="info" />
-                  <el-option label="警告" value="warning" />
-                  <el-option label="危险" value="danger" />
-                  <el-option label="严重" value="critical" />
+                  <el-option
+                    label="全部"
+                    value=""
+                  />
+                  <el-option
+                    label="信息"
+                    value="info"
+                  />
+                  <el-option
+                    label="警告"
+                    value="warning"
+                  />
+                  <el-option
+                    label="危险"
+                    value="danger"
+                  />
+                  <el-option
+                    label="严重"
+                    value="critical"
+                  />
                 </el-select>
                 <el-button
                   type="primary"
                   size="small"
-                  @click="handleMarkAllRead"
                   :disabled="stats.unread_count === 0"
+                  @click="handleMarkAllRead"
                 >
                   全部已读
                 </el-button>
@@ -87,42 +140,104 @@
             </div>
           </template>
 
-          <el-table :data="alerts" style="width: 100%" v-loading="loading">
-            <el-table-column width="60" align="center">
+          <el-table
+            v-loading="loading"
+            :data="alerts"
+            style="width: 100%"
+          >
+            <el-table-column
+              width="60"
+              align="center"
+            >
               <template #default="{ row }">
-                <el-icon :class="getLevelClass(row.level)" size="20">
+                <el-icon
+                  :class="getLevelClass(row.level)"
+                  size="20"
+                >
                   <component :is="getLevelIcon(row.level)" />
                 </el-icon>
               </template>
             </el-table-column>
-            <el-table-column prop="title" label="标题" min-width="150" />
-            <el-table-column prop="message" label="内容" min-width="250" show-overflow-tooltip />
-            <el-table-column prop="level" label="级别" width="100" align="center">
+            <el-table-column
+              prop="title"
+              label="标题"
+              min-width="150"
+            />
+            <el-table-column
+              prop="message"
+              label="内容"
+              min-width="250"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              prop="level"
+              label="级别"
+              width="100"
+              align="center"
+            >
               <template #default="{ row }">
-                <el-tag :type="getLevelTagType(row.level)" size="small">
+                <el-tag
+                  :type="getLevelTagType(row.level)"
+                  size="small"
+                >
                   {{ getLevelLabel(row.level) }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="alert_type" label="类型" width="120" align="center">
+            <el-table-column
+              prop="alert_type"
+              label="类型"
+              width="120"
+              align="center"
+            >
               <template #default="{ row }">
                 {{ getTypeLabel(row.alert_type) }}
               </template>
             </el-table-column>
-            <el-table-column prop="created_at" label="时间" width="180" align="center">
+            <el-table-column
+              prop="created_at"
+              label="时间"
+              width="180"
+              align="center"
+            >
               <template #default="{ row }">
                 {{ formatTime(row.created_at) }}
               </template>
             </el-table-column>
-            <el-table-column label="状态" width="80" align="center">
+            <el-table-column
+              label="状态"
+              width="80"
+              align="center"
+            >
               <template #default="{ row }">
-                <el-tag v-if="!row.is_read" type="danger" size="small">未读</el-tag>
-                <el-tag v-else type="info" size="small">已读</el-tag>
+                <el-tag
+                  v-if="!row.is_read"
+                  type="danger"
+                  size="small"
+                >
+                  未读
+                </el-tag>
+                <el-tag
+                  v-else
+                  type="info"
+                  size="small"
+                >
+                  已读
+                </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="100" align="center">
+            <el-table-column
+              label="操作"
+              width="100"
+              align="center"
+            >
               <template #default="{ row }">
-                <el-button type="primary" link size="small" @click="showAlertDetail(row)">
+                <el-button
+                  type="primary"
+                  link
+                  size="small"
+                  @click="showAlertDetail(row)"
+                >
                   详情
                 </el-button>
               </template>
@@ -141,25 +256,43 @@
         </el-card>
       </el-col>
 
-      <el-col :xs="24" :lg="8">
+      <el-col
+        :xs="24"
+        :lg="8"
+      >
         <el-card class="rules-card">
           <template #header>
             <div class="card-header">
               <span>预警规则</span>
-              <el-button type="primary" size="small" @click="showRuleDialog = true">
+              <el-button
+                type="primary"
+                size="small"
+                @click="showRuleDialog = true"
+              >
                 新增规则
               </el-button>
             </div>
           </template>
 
           <div class="rules-list">
-            <div v-for="rule in rules" :key="rule.id" class="rule-item">
+            <div
+              v-for="rule in rules"
+              :key="rule.id"
+              class="rule-item"
+            >
               <div class="rule-info">
-                <div class="rule-name">{{ rule.name }}</div>
-                <div class="rule-type">{{ getTypeLabel(rule.alert_type) }}</div>
+                <div class="rule-name">
+                  {{ rule.name }}
+                </div>
+                <div class="rule-type">
+                  {{ getTypeLabel(rule.alert_type) }}
+                </div>
               </div>
               <div class="rule-actions">
-                <el-switch v-model="rule.enabled" @change="handleToggleRule(rule)" />
+                <el-switch
+                  v-model="rule.enabled"
+                  @change="handleToggleRule(rule)"
+                />
               </div>
             </div>
           </div>
@@ -169,19 +302,42 @@
           <template #header>
             <span>测试预警</span>
           </template>
-          <el-form :model="testForm" label-position="top">
+          <el-form
+            :model="testForm"
+            label-position="top"
+          >
             <el-form-item label="预警级别">
-              <el-select v-model="testForm.level" style="width: 100%">
-                <el-option label="信息" value="info" />
-                <el-option label="警告" value="warning" />
-                <el-option label="危险" value="danger" />
+              <el-select
+                v-model="testForm.level"
+                style="width: 100%"
+              >
+                <el-option
+                  label="信息"
+                  value="info"
+                />
+                <el-option
+                  label="警告"
+                  value="warning"
+                />
+                <el-option
+                  label="危险"
+                  value="danger"
+                />
               </el-select>
             </el-form-item>
             <el-form-item label="消息内容">
-              <el-input v-model="testForm.message" type="textarea" :rows="2" />
+              <el-input
+                v-model="testForm.message"
+                type="textarea"
+                :rows="2"
+              />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="handleTestAlert" :loading="testing">
+              <el-button
+                type="primary"
+                :loading="testing"
+                @click="handleTestAlert"
+              >
                 发送测试预警
               </el-button>
             </el-form-item>
@@ -190,60 +346,140 @@
       </el-col>
     </el-row>
 
-    <el-dialog v-model="showDetailDialog" title="预警详情" width="500px">
-      <el-descriptions :column="1" border v-if="selectedAlert">
-        <el-descriptions-item label="预警标题">{{ selectedAlert.title }}</el-descriptions-item>
+    <el-dialog
+      v-model="showDetailDialog"
+      title="预警详情"
+      width="500px"
+    >
+      <el-descriptions
+        v-if="selectedAlert"
+        :column="1"
+        border
+      >
+        <el-descriptions-item label="预警标题">
+          {{ selectedAlert.title }}
+        </el-descriptions-item>
         <el-descriptions-item label="预警级别">
           <el-tag :type="getLevelTagType(selectedAlert.level)">
             {{ getLevelLabel(selectedAlert.level) }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="预警类型">{{
-          getTypeLabel(selectedAlert.alert_type)
-        }}</el-descriptions-item>
-        <el-descriptions-item label="预警内容">{{ selectedAlert.message }}</el-descriptions-item>
-        <el-descriptions-item label="触发时间">{{
-          formatTime(selectedAlert.created_at)
-        }}</el-descriptions-item>
-        <el-descriptions-item label="附加数据" v-if="selectedAlert.data">
+        <el-descriptions-item label="预警类型">
+          {{
+            getTypeLabel(selectedAlert.alert_type)
+          }}
+        </el-descriptions-item>
+        <el-descriptions-item label="预警内容">
+          {{ selectedAlert.message }}
+        </el-descriptions-item>
+        <el-descriptions-item label="触发时间">
+          {{
+            formatTime(selectedAlert.created_at)
+          }}
+        </el-descriptions-item>
+        <el-descriptions-item
+          v-if="selectedAlert.data"
+          label="附加数据"
+        >
           <pre class="data-json">{{ JSON.stringify(selectedAlert.data, null, 2) }}</pre>
         </el-descriptions-item>
       </el-descriptions>
     </el-dialog>
 
-    <el-dialog v-model="showRuleDialog" title="新增预警规则" width="500px">
-      <el-form :model="ruleForm" label-position="top">
+    <el-dialog
+      v-model="showRuleDialog"
+      title="新增预警规则"
+      width="500px"
+    >
+      <el-form
+        :model="ruleForm"
+        label-position="top"
+      >
         <el-form-item label="规则ID">
-          <el-input v-model="ruleForm.id" placeholder="唯一标识符" />
+          <el-input
+            v-model="ruleForm.id"
+            placeholder="唯一标识符"
+          />
         </el-form-item>
         <el-form-item label="规则名称">
-          <el-input v-model="ruleForm.name" placeholder="规则显示名称" />
+          <el-input
+            v-model="ruleForm.name"
+            placeholder="规则显示名称"
+          />
         </el-form-item>
         <el-form-item label="预警类型">
-          <el-select v-model="ruleForm.alert_type" style="width: 100%">
-            <el-option label="讨论量激增" value="volume_spike" />
-            <el-option label="负面舆情激增" value="negative_surge" />
-            <el-option label="情感突变" value="sentiment_shift" />
-            <el-option label="热点话题" value="hot_topic" />
-            <el-option label="关键词匹配" value="keyword_match" />
-            <el-option label="自定义" value="custom" />
+          <el-select
+            v-model="ruleForm.alert_type"
+            style="width: 100%"
+          >
+            <el-option
+              label="讨论量激增"
+              value="volume_spike"
+            />
+            <el-option
+              label="负面舆情激增"
+              value="negative_surge"
+            />
+            <el-option
+              label="情感突变"
+              value="sentiment_shift"
+            />
+            <el-option
+              label="热点话题"
+              value="hot_topic"
+            />
+            <el-option
+              label="关键词匹配"
+              value="keyword_match"
+            />
+            <el-option
+              label="自定义"
+              value="custom"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="预警级别">
-          <el-select v-model="ruleForm.level" style="width: 100%">
-            <el-option label="信息" value="info" />
-            <el-option label="警告" value="warning" />
-            <el-option label="危险" value="danger" />
-            <el-option label="严重" value="critical" />
+          <el-select
+            v-model="ruleForm.level"
+            style="width: 100%"
+          >
+            <el-option
+              label="信息"
+              value="info"
+            />
+            <el-option
+              label="警告"
+              value="warning"
+            />
+            <el-option
+              label="危险"
+              value="danger"
+            />
+            <el-option
+              label="严重"
+              value="critical"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="冷却时间(分钟)">
-          <el-input-number v-model="ruleForm.cooldown_minutes" :min="1" :max="1440" />
+          <el-input-number
+            v-model="ruleForm.cooldown_minutes"
+            :min="1"
+            :max="1440"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showRuleDialog = false">取消</el-button>
-        <el-button type="primary" @click="handleCreateRule" :loading="creating">创建</el-button>
+        <el-button @click="showRuleDialog = false">
+          取消
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="creating"
+          @click="handleCreateRule"
+        >
+          创建
+        </el-button>
       </template>
     </el-dialog>
   </div>

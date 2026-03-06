@@ -5,7 +5,9 @@
         <el-icon><QuestionFilled /></el-icon>
         帮助中心
       </h2>
-      <p class="subtitle">了解系统功能，快速上手微博舆情分析</p>
+      <p class="subtitle">
+        了解系统功能，快速上手微博舆情分析
+      </p>
     </div>
 
     <!-- 功能卡片概览 -->
@@ -20,7 +22,9 @@
           class="feature-icon"
           :style="{ backgroundColor: feature.color + '15', color: feature.color }"
         >
-          <el-icon :size="28"><component :is="feature.icon" /></el-icon>
+          <el-icon :size="28">
+            <component :is="feature.icon" />
+          </el-icon>
         </div>
         <h3>{{ feature.title }}</h3>
         <p>{{ feature.desc }}</p>
@@ -32,9 +36,19 @@
       <template #header>
         <span class="section-title">💡 常见问题</span>
       </template>
-      <el-collapse v-model="activeFaq" accordion>
-        <el-collapse-item v-for="(faq, i) in faqs" :key="i" :title="faq.q" :name="i">
-          <p class="faq-answer">{{ faq.a }}</p>
+      <el-collapse
+        v-model="activeFaq"
+        accordion
+      >
+        <el-collapse-item
+          v-for="(faq, i) in faqs"
+          :key="i"
+          :title="faq.q"
+          :name="i"
+        >
+          <p class="faq-answer">
+            {{ faq.a }}
+          </p>
         </el-collapse-item>
       </el-collapse>
     </el-card>

@@ -14,16 +14,27 @@
         <Expand v-else />
       </el-icon>
       <el-breadcrumb separator="/">
-        <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-        <el-breadcrumb-item v-if="currentRoute.path !== '/'">{{
-          currentRoute.meta?.title || ''
-        }}</el-breadcrumb-item>
+        <el-breadcrumb-item :to="{ path: '/' }">
+          首页
+        </el-breadcrumb-item>
+        <el-breadcrumb-item v-if="currentRoute.path !== '/'">
+          {{
+            currentRoute.meta?.title || ''
+          }}
+        </el-breadcrumb-item>
       </el-breadcrumb>
     </div>
     <div class="header-right">
-      <el-dropdown trigger="click" @command="handleCommand">
+      <el-dropdown
+        trigger="click"
+        @command="handleCommand"
+      >
         <span class="user-info">
-          <el-avatar :size="32" :src="userInfo.avatar" class="user-avatar">
+          <el-avatar
+            :size="32"
+            :src="userInfo.avatar"
+            class="user-avatar"
+          >
             {{ username.charAt(0).toUpperCase() }}
           </el-avatar>
           <span class="username">{{ username }}</span>
@@ -47,7 +58,10 @@
               <el-icon><component :is="isDark ? 'Sunny' : 'Moon'" /></el-icon>
               {{ isDark ? '切换亮色模式' : '切换暗黑模式' }}
             </el-dropdown-item>
-            <el-dropdown-item divided command="logout">
+            <el-dropdown-item
+              divided
+              command="logout"
+            >
               <el-icon><SwitchButton /></el-icon>
               退出登录
             </el-dropdown-item>

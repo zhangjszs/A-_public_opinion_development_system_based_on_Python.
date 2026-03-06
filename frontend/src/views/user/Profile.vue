@@ -2,23 +2,49 @@
   <div class="profile-page">
     <!-- 顶部资料卡片 -->
     <div class="profile-card">
-      <div class="profile-card-bg"></div>
+      <div class="profile-card-bg" />
       <div class="profile-card-content">
-        <div class="avatar" :style="{ backgroundColor: profileData.avatar_color || '#2563EB' }">
+        <div
+          class="avatar"
+          :style="{ backgroundColor: profileData.avatar_color || '#2563EB' }"
+        >
           {{ avatarLetter }}
         </div>
         <div class="profile-info">
-          <h2 class="display-name">{{ displayName }}</h2>
-          <p class="username">@{{ profileData.username }}</p>
-          <p v-if="profileData.bio" class="bio">{{ profileData.bio }}</p>
+          <h2 class="display-name">
+            {{ displayName }}
+          </h2>
+          <p class="username">
+            @{{ profileData.username }}
+          </p>
+          <p
+            v-if="profileData.bio"
+            class="bio"
+          >
+            {{ profileData.bio }}
+          </p>
           <div class="meta-tags">
-            <el-tag v-if="profileData.is_admin" type="danger" size="small" effect="dark">
+            <el-tag
+              v-if="profileData.is_admin"
+              type="danger"
+              size="small"
+              effect="dark"
+            >
               <el-icon><Star /></el-icon> 管理员
             </el-tag>
-            <el-tag type="info" size="small" effect="plain">
+            <el-tag
+              type="info"
+              size="small"
+              effect="plain"
+            >
               <el-icon><Calendar /></el-icon> {{ profileData.create_time || '未知' }} 加入
             </el-tag>
-            <el-tag v-if="profileData.email" type="info" size="small" effect="plain">
+            <el-tag
+              v-if="profileData.email"
+              type="info"
+              size="small"
+              effect="plain"
+            >
               <el-icon><Message /></el-icon> {{ profileData.email }}
             </el-tag>
           </div>
@@ -29,7 +55,10 @@
     <!-- Tab区域 -->
     <el-card class="settings-card">
       <el-tabs v-model="activeTab">
-        <el-tab-pane label="编辑资料" name="profile">
+        <el-tab-pane
+          label="编辑资料"
+          name="profile"
+        >
           <el-form
             ref="profileFormRef"
             :model="profileForm"
@@ -37,7 +66,10 @@
             label-position="top"
             class="settings-form"
           >
-            <el-form-item label="昵称" prop="nickname">
+            <el-form-item
+              label="昵称"
+              prop="nickname"
+            >
               <el-input
                 v-model="profileForm.nickname"
                 placeholder="设置你的昵称"
@@ -46,11 +78,21 @@
               />
             </el-form-item>
 
-            <el-form-item label="邮箱" prop="email">
-              <el-input v-model="profileForm.email" placeholder="your@email.com" maxlength="100" />
+            <el-form-item
+              label="邮箱"
+              prop="email"
+            >
+              <el-input
+                v-model="profileForm.email"
+                placeholder="your@email.com"
+                maxlength="100"
+              />
             </el-form-item>
 
-            <el-form-item label="个人简介" prop="bio">
+            <el-form-item
+              label="个人简介"
+              prop="bio"
+            >
               <el-input
                 v-model="profileForm.bio"
                 type="textarea"
@@ -71,20 +113,29 @@
                   :style="{ backgroundColor: color }"
                   @click="profileForm.avatar_color = color"
                 >
-                  <el-icon v-if="profileForm.avatar_color === color"><Check /></el-icon>
+                  <el-icon v-if="profileForm.avatar_color === color">
+                    <Check />
+                  </el-icon>
                 </div>
               </div>
             </el-form-item>
 
             <el-form-item>
-              <el-button type="primary" :loading="profileSaving" @click="saveProfile">
+              <el-button
+                type="primary"
+                :loading="profileSaving"
+                @click="saveProfile"
+              >
                 保存修改
               </el-button>
             </el-form-item>
           </el-form>
         </el-tab-pane>
 
-        <el-tab-pane label="修改密码" name="password">
+        <el-tab-pane
+          label="修改密码"
+          name="password"
+        >
           <el-form
             ref="passwordFormRef"
             :model="passwordForm"
@@ -92,7 +143,10 @@
             label-position="top"
             class="settings-form"
           >
-            <el-form-item label="当前密码" prop="oldPassword">
+            <el-form-item
+              label="当前密码"
+              prop="oldPassword"
+            >
               <el-input
                 v-model="passwordForm.oldPassword"
                 type="password"
@@ -101,7 +155,10 @@
               />
             </el-form-item>
 
-            <el-form-item label="新密码" prop="newPassword">
+            <el-form-item
+              label="新密码"
+              prop="newPassword"
+            >
               <el-input
                 v-model="passwordForm.newPassword"
                 type="password"
@@ -110,7 +167,10 @@
               />
             </el-form-item>
 
-            <el-form-item label="确认新密码" prop="confirmPassword">
+            <el-form-item
+              label="确认新密码"
+              prop="confirmPassword"
+            >
               <el-input
                 v-model="passwordForm.confirmPassword"
                 type="password"
@@ -120,7 +180,11 @@
             </el-form-item>
 
             <el-form-item>
-              <el-button type="primary" :loading="passwordSaving" @click="savePassword">
+              <el-button
+                type="primary"
+                :loading="passwordSaving"
+                @click="savePassword"
+              >
                 修改密码
               </el-button>
             </el-form-item>

@@ -1,12 +1,33 @@
 <template>
-  <div class="skeleton-wrapper" :style="wrapperStyle">
-    <template v-for="(row, rowIndex) in rows" :key="rowIndex">
+  <div
+    class="skeleton-wrapper"
+    :style="wrapperStyle"
+  >
+    <template
+      v-for="(row, rowIndex) in rows"
+      :key="rowIndex"
+    >
       <div class="skeleton-row">
-        <template v-for="(item, itemIndex) in row" :key="itemIndex">
-          <div class="skeleton-item" :style="getItemStyle(item)">
-            <div v-if="item.avatar" class="skeleton-avatar"></div>
-            <div v-if="item.title" class="skeleton-title"></div>
-            <div v-if="item.text" class="skeleton-text"></div>
+        <template
+          v-for="(item, itemIndex) in row"
+          :key="itemIndex"
+        >
+          <div
+            class="skeleton-item"
+            :style="getItemStyle(item)"
+          >
+            <div
+              v-if="item.avatar"
+              class="skeleton-avatar"
+            />
+            <div
+              v-if="item.title"
+              class="skeleton-title"
+            />
+            <div
+              v-if="item.text"
+              class="skeleton-text"
+            />
           </div>
         </template>
       </div>

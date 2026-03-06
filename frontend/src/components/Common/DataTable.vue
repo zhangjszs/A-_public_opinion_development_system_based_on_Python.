@@ -1,6 +1,9 @@
 <template>
   <div class="data-table">
-    <div class="table-header" v-if="searchable || exportable || refreshable">
+    <div
+      v-if="searchable || exportable || refreshable"
+      class="table-header"
+    >
       <div class="header-left">
         <el-input
           v-if="searchable"
@@ -8,16 +11,27 @@
           :placeholder="searchPlaceholder"
           prefix-icon="Search"
           clearable
+          style="width: 240px"
           @clear="handleSearch"
           @keyup.enter="handleSearch"
-          style="width: 240px"
         />
       </div>
       <div class="header-right">
-        <el-button v-if="exportable" type="primary" :icon="Download" @click="handleExport">
+        <el-button
+          v-if="exportable"
+          type="primary"
+          :icon="Download"
+          @click="handleExport"
+        >
           导出
         </el-button>
-        <el-button v-if="refreshable" :icon="Refresh" @click="handleRefresh"> 刷新 </el-button>
+        <el-button
+          v-if="refreshable"
+          :icon="Refresh"
+          @click="handleRefresh"
+        >
+          刷新
+        </el-button>
       </div>
     </div>
 
@@ -28,27 +42,52 @@
       :border="border"
       :row-key="rowKey"
       :default-sort="defaultSort"
+      v-bind="$attrs"
       @sort-change="handleSortChange"
       @selection-change="handleSelectionChange"
-      v-bind="$attrs"
     >
-      <el-table-column v-if="selection" type="selection" width="55" />
-      <template v-for="column in columns" :key="column.prop">
+      <el-table-column
+        v-if="selection"
+        type="selection"
+        width="55"
+      />
+      <template
+        v-for="column in columns"
+        :key="column.prop"
+      >
         <el-table-column v-bind="column">
-          <template #default="{ row }" v-if="column.slots">
-            <slot :name="column.slots.default" :row="row" :column="column" />
+          <template
+            v-if="column.slots"
+            #default="{ row }"
+          >
+            <slot
+              :name="column.slots.default"
+              :row="row"
+              :column="column"
+            />
           </template>
         </el-table-column>
       </template>
 
-      <el-table-column v-if="$slots.operation" label="操作" :width="operationWidth" fixed="right">
+      <el-table-column
+        v-if="$slots.operation"
+        label="操作"
+        :width="operationWidth"
+        fixed="right"
+      >
         <template #default="{ row }">
-          <slot name="operation" :row="row" />
+          <slot
+            name="operation"
+            :row="row"
+          />
         </template>
       </el-table-column>
     </el-table>
 
-    <div class="pagination-wrapper" v-if="pagination">
+    <div
+      v-if="pagination"
+      class="pagination-wrapper"
+    >
       <el-pagination
         v-model:current-page="currentPage"
         v-model:page-size="pageSize"

@@ -3,7 +3,11 @@
     <div class="register-box">
       <div class="register-header">
         <div class="logo-wrapper">
-          <img src="@/assets/images/logo.png" alt="Logo" class="logo" />
+          <img
+            src="@/assets/images/logo.png"
+            alt="Logo"
+            class="logo"
+          >
         </div>
         <h1>创建账户</h1>
         <p>加入微博舆情分析系统</p>
@@ -49,7 +53,12 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" :loading="loading" class="register-btn" @click="handleRegister">
+          <el-button
+            type="primary"
+            :loading="loading"
+            class="register-btn"
+            @click="handleRegister"
+          >
             {{ loading ? '注册中...' : '立即注册' }}
           </el-button>
         </el-form-item>
@@ -57,7 +66,9 @@
 
       <div class="register-footer">
         <span>已有账号？</span>
-        <router-link to="/login">立即登录</router-link>
+        <router-link to="/login">
+          立即登录
+        </router-link>
       </div>
     </div>
   </div>

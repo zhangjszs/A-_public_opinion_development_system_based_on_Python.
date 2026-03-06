@@ -1,6 +1,9 @@
 <template>
   <el-config-provider :locale="locale">
-    <el-container class="layout-container" :class="{ 'mobile-mode': isMobile }">
+    <el-container
+      class="layout-container"
+      :class="{ 'mobile-mode': isMobile }"
+    >
       <el-aside
         v-if="!isMobile"
         :width="isCollapsed ? '64px' : '240px'"
@@ -10,13 +13,26 @@
         <Sidebar :collapsed="isCollapsed" />
       </el-aside>
       <el-container>
-        <el-header class="header" :class="{ 'mobile-header': isMobile }">
-          <Header @toggle="toggleSidebar" :is-mobile="isMobile" @toggleMobile="toggleMobileMenu" />
+        <el-header
+          class="header"
+          :class="{ 'mobile-header': isMobile }"
+        >
+          <Header
+            :is-mobile="isMobile"
+            @toggle="toggleSidebar"
+            @toggle-mobile="toggleMobileMenu"
+          />
         </el-header>
         <TabBar v-if="!isMobile" />
-        <el-main class="main-content" :class="{ 'mobile-content': isMobile }">
+        <el-main
+          class="main-content"
+          :class="{ 'mobile-content': isMobile }"
+        >
           <router-view v-slot="{ Component }">
-            <transition name="fade" mode="out-in">
+            <transition
+              name="fade"
+              mode="out-in"
+            >
               <keep-alive :include="tabsStore.cachedViews">
                 <component :is="Component" />
               </keep-alive>

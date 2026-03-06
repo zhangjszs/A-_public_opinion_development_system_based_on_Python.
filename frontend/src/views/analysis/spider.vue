@@ -7,56 +7,106 @@
           <el-icon><Monitor /></el-icon>
           爬虫管理中心
         </h2>
-        <p class="subtitle">管理微博数据爬取任务，查看运行状态与日志</p>
+        <p class="subtitle">
+          管理微博数据爬取任务，查看运行状态与日志
+        </p>
       </div>
       <div class="header-actions">
-        <el-button :icon="Refresh" circle @click="refreshAll" :loading="refreshing" />
+        <el-button
+          :icon="Refresh"
+          circle
+          :loading="refreshing"
+          @click="refreshAll"
+        />
       </div>
     </div>
 
     <!-- 统计卡片 -->
-    <el-row :gutter="20" class="stats-row">
-      <el-col :xs="24" :sm="12" :md="6">
+    <el-row
+      :gutter="20"
+      class="stats-row"
+    >
+      <el-col
+        :xs="24"
+        :sm="12"
+        :md="6"
+      >
         <div class="stat-card card-articles">
           <div class="stat-icon">
-            <el-icon :size="28"><Document /></el-icon>
+            <el-icon :size="28">
+              <Document />
+            </el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ overview.articleCount || 0 }}</div>
-            <div class="stat-label">文章总数</div>
+            <div class="stat-value">
+              {{ overview.articleCount || 0 }}
+            </div>
+            <div class="stat-label">
+              文章总数
+            </div>
           </div>
         </div>
       </el-col>
-      <el-col :xs="24" :sm="12" :md="6">
+      <el-col
+        :xs="24"
+        :sm="12"
+        :md="6"
+      >
         <div class="stat-card card-comments">
           <div class="stat-icon">
-            <el-icon :size="28"><ChatDotRound /></el-icon>
+            <el-icon :size="28">
+              <ChatDotRound />
+            </el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ overview.commentCount || 0 }}</div>
-            <div class="stat-label">评论总数</div>
+            <div class="stat-value">
+              {{ overview.commentCount || 0 }}
+            </div>
+            <div class="stat-label">
+              评论总数
+            </div>
           </div>
         </div>
       </el-col>
-      <el-col :xs="24" :sm="12" :md="6">
+      <el-col
+        :xs="24"
+        :sm="12"
+        :md="6"
+      >
         <div class="stat-card card-users">
           <div class="stat-icon">
-            <el-icon :size="28"><User /></el-icon>
+            <el-icon :size="28">
+              <User />
+            </el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ overview.userCount || 0 }}</div>
-            <div class="stat-label">用户总数</div>
+            <div class="stat-value">
+              {{ overview.userCount || 0 }}
+            </div>
+            <div class="stat-label">
+              用户总数
+            </div>
           </div>
         </div>
       </el-col>
-      <el-col :xs="24" :sm="12" :md="6">
+      <el-col
+        :xs="24"
+        :sm="12"
+        :md="6"
+      >
         <div class="stat-card card-time">
           <div class="stat-icon">
-            <el-icon :size="28"><Timer /></el-icon>
+            <el-icon :size="28">
+              <Timer />
+            </el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value stat-time-value">{{ overview.latestArticleTime || '暂无' }}</div>
-            <div class="stat-label">最近采集</div>
+            <div class="stat-value stat-time-value">
+              {{ overview.latestArticleTime || '暂无' }}
+            </div>
+            <div class="stat-label">
+              最近采集
+            </div>
           </div>
         </div>
       </el-col>
@@ -64,9 +114,14 @@
 
     <!-- 运行状态栏 -->
     <transition name="slide-fade">
-      <div v-if="overview.isRunning" class="running-bar">
+      <div
+        v-if="overview.isRunning"
+        class="running-bar"
+      >
         <div class="running-info">
-          <el-icon class="is-loading"><Loading /></el-icon>
+          <el-icon class="is-loading">
+            <Loading />
+          </el-icon>
           <span class="running-task">{{ overview.currentTask || '运行中' }}</span>
           <span class="running-msg">{{ overview.message }}</span>
         </div>
@@ -80,9 +135,15 @@
     </transition>
 
     <!-- 操作面板 + 日志 -->
-    <el-row :gutter="20" class="main-row">
+    <el-row
+      :gutter="20"
+      class="main-row"
+    >
       <!-- 左侧：操作面板 -->
-      <el-col :xs="24" :lg="10">
+      <el-col
+        :xs="24"
+        :lg="10"
+      >
         <div class="panel operation-panel">
           <div class="panel-header">
             <h3>
@@ -93,10 +154,17 @@
             <!-- 刷新热门 -->
             <div class="action-card">
               <div class="action-header">
-                <el-icon :size="20" color="#F59E0B"><Sunny /></el-icon>
+                <el-icon
+                  :size="20"
+                  color="#F59E0B"
+                >
+                  <Sunny />
+                </el-icon>
                 <span>刷新热门微博</span>
               </div>
-              <p class="action-desc">获取微博热门时间线最新内容</p>
+              <p class="action-desc">
+                获取微博热门时间线最新内容
+              </p>
               <div class="action-controls">
                 <el-input-number
                   v-model="hotPageNum"
@@ -109,9 +177,9 @@
                 <el-button
                   type="warning"
                   :loading="overview.isRunning"
-                  @click="startCrawlAction('hot')"
                   :icon="Download"
                   size="small"
+                  @click="startCrawlAction('hot')"
                 >
                   开始爬取
                 </el-button>
@@ -121,10 +189,17 @@
             <!-- 关键词搜索 -->
             <div class="action-card">
               <div class="action-header">
-                <el-icon :size="20" color="#6366F1"><Search /></el-icon>
+                <el-icon
+                  :size="20"
+                  color="#6366F1"
+                >
+                  <Search />
+                </el-icon>
                 <span>关键词搜索爬取</span>
               </div>
-              <p class="action-desc">按关键词搜索并爬取微博内容</p>
+              <p class="action-desc">
+                按关键词搜索并爬取微博内容
+              </p>
               <div class="action-controls">
                 <el-input
                   v-model="searchKeyword"
@@ -144,9 +219,9 @@
                   type="primary"
                   :loading="overview.isRunning"
                   :disabled="!searchKeyword.trim()"
-                  @click="startCrawlAction('search')"
                   :icon="Search"
                   size="small"
+                  @click="startCrawlAction('search')"
                 >
                   搜索
                 </el-button>
@@ -156,17 +231,24 @@
             <!-- 评论爬取 -->
             <div class="action-card">
               <div class="action-header">
-                <el-icon :size="20" color="#10B981"><ChatLineRound /></el-icon>
+                <el-icon
+                  :size="20"
+                  color="#10B981"
+                >
+                  <ChatLineRound />
+                </el-icon>
                 <span>爬取评论数据</span>
               </div>
-              <p class="action-desc">获取最近文章的评论内容</p>
+              <p class="action-desc">
+                获取最近文章的评论内容
+              </p>
               <div class="action-controls">
                 <el-button
                   type="success"
                   :loading="overview.isRunning"
-                  @click="startCrawlAction('comments')"
                   :icon="Download"
                   size="small"
+                  @click="startCrawlAction('comments')"
                 >
                   开始爬取
                 </el-button>
@@ -183,10 +265,19 @@
             </h3>
           </div>
           <div class="panel-body">
-            <div v-if="!overview.history || overview.history.length === 0" class="empty-state">
-              <el-empty description="暂无爬取记录" :image-size="60" />
+            <div
+              v-if="!overview.history || overview.history.length === 0"
+              class="empty-state"
+            >
+              <el-empty
+                description="暂无爬取记录"
+                :image-size="60"
+              />
             </div>
-            <div v-else class="history-list">
+            <div
+              v-else
+              class="history-list"
+            >
               <div
                 v-for="(item, index) in overview.history"
                 :key="index"
@@ -194,13 +285,23 @@
                 :class="'history-' + item.status"
               >
                 <div class="history-badge">
-                  <el-icon v-if="item.status === 'success'" color="#10B981"
-                    ><CircleCheck
-                  /></el-icon>
-                  <el-icon v-else color="#EF4444"><CircleClose /></el-icon>
+                  <el-icon
+                    v-if="item.status === 'success'"
+                    color="#10B981"
+                  >
+                    <CircleCheck />
+                  </el-icon>
+                  <el-icon
+                    v-else
+                    color="#EF4444"
+                  >
+                    <CircleClose />
+                  </el-icon>
                 </div>
                 <div class="history-content">
-                  <div class="history-action">{{ item.action }}</div>
+                  <div class="history-action">
+                    {{ item.action }}
+                  </div>
                   <div class="history-meta">
                     <span>{{ item.time }}</span>
                     <span v-if="item.count"> · {{ item.count }} 条数据</span>
@@ -214,7 +315,10 @@
       </el-col>
 
       <!-- 右侧：数据趋势 + 日志 -->
-      <el-col :xs="24" :lg="14">
+      <el-col
+        :xs="24"
+        :lg="14"
+      >
         <!-- 数据趋势图 -->
         <div class="panel chart-panel">
           <div class="panel-header">
@@ -223,7 +327,10 @@
             </h3>
           </div>
           <div class="panel-body">
-            <div ref="trendChartRef" class="trend-chart"></div>
+            <div
+              ref="trendChartRef"
+              class="trend-chart"
+            />
           </div>
         </div>
 
@@ -233,14 +340,28 @@
             <h3>
               <el-icon><Notebook /></el-icon> 运行日志
             </h3>
-            <el-button size="small" text @click="loadLogs" :loading="logsLoading">
+            <el-button
+              size="small"
+              text
+              :loading="logsLoading"
+              @click="loadLogs"
+            >
               <el-icon><Refresh /></el-icon> 刷新
             </el-button>
           </div>
           <div class="panel-body">
-            <div ref="logContainerRef" class="log-container">
-              <div v-if="logs.length === 0" class="empty-state">
-                <el-empty description="暂无日志" :image-size="60" />
+            <div
+              ref="logContainerRef"
+              class="log-container"
+            >
+              <div
+                v-if="logs.length === 0"
+                class="empty-state"
+              >
+                <el-empty
+                  description="暂无日志"
+                  :image-size="60"
+                />
               </div>
               <div v-else>
                 <div

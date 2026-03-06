@@ -1,9 +1,15 @@
 <template>
   <div class="platform-monitor-container">
-    <el-row :gutter="24" class="mb-4">
+    <el-row
+      :gutter="24"
+      class="mb-4"
+    >
       <el-col :span="24">
         <el-card class="platform-tabs-card">
-          <el-tabs v-model="activePlatform" @tab-change="handlePlatformChange">
+          <el-tabs
+            v-model="activePlatform"
+            @tab-change="handlePlatformChange"
+          >
             <el-tab-pane
               v-for="platform in platforms"
               :key="platform.id"
@@ -14,7 +20,11 @@
                 <span class="platform-tab">
                   <span class="platform-icon">{{ platform.icon }}</span>
                   <span>{{ platform.name }}</span>
-                  <el-tag v-if="platform.enabled" type="success" size="small">启用</el-tag>
+                  <el-tag
+                    v-if="platform.enabled"
+                    type="success"
+                    size="small"
+                  >启用</el-tag>
                 </span>
               </template>
             </el-tab-pane>
@@ -23,19 +33,35 @@
       </el-col>
     </el-row>
 
-    <el-row :gutter="24" class="mb-4">
-      <el-col :xs="12" :sm="6" :md="4" v-for="stat in currentStats" :key="stat.label">
+    <el-row
+      :gutter="24"
+      class="mb-4"
+    >
+      <el-col
+        v-for="stat in currentStats"
+        :key="stat.label"
+        :xs="12"
+        :sm="6"
+        :md="4"
+      >
         <el-card class="stat-card">
           <div class="stat-content">
-            <div class="stat-value">{{ stat.value }}</div>
-            <div class="stat-label">{{ stat.label }}</div>
+            <div class="stat-value">
+              {{ stat.value }}
+            </div>
+            <div class="stat-label">
+              {{ stat.label }}
+            </div>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
     <el-row :gutter="24">
-      <el-col :xs="24" :lg="16">
+      <el-col
+        :xs="24"
+        :lg="16"
+      >
         <el-card class="content-card">
           <template #header>
             <div class="card-header">
@@ -56,25 +82,42 @@
                   style="width: 100px"
                   clearable
                 >
-                  <el-option label="正面" value="positive" />
-                  <el-option label="中性" value="neutral" />
-                  <el-option label="负面" value="negative" />
+                  <el-option
+                    label="正面"
+                    value="positive"
+                  />
+                  <el-option
+                    label="中性"
+                    value="neutral"
+                  />
+                  <el-option
+                    label="负面"
+                    value="negative"
+                  />
                 </el-select>
               </div>
             </div>
           </template>
 
           <div class="content-list">
-            <div v-for="item in filteredContent" :key="item.content_id" class="content-item">
+            <div
+              v-for="item in filteredContent"
+              :key="item.content_id"
+              class="content-item"
+            >
               <div class="content-header">
                 <div class="author-info">
-                  <el-avatar :size="36" :icon="User" />
+                  <el-avatar
+                    :size="36"
+                    :icon="User"
+                  />
                   <div class="author-detail">
                     <span class="author-name">
                       {{ item.author_name }}
-                      <el-icon v-if="item.author_verified" class="verified-icon"
-                        ><CircleCheckFilled
-                      /></el-icon>
+                      <el-icon
+                        v-if="item.author_verified"
+                        class="verified-icon"
+                      ><CircleCheckFilled /></el-icon>
                     </span>
                     <span class="author-followers">{{ item.author_followers }} 粉丝</span>
                   </div>
@@ -105,12 +148,19 @@
                   <el-icon><Share /></el-icon>
                   {{ formatNumber(item.repost_count) }}
                 </span>
-                <el-tag :type="getSentimentType(item.sentiment)" size="small" class="sentiment-tag">
+                <el-tag
+                  :type="getSentimentType(item.sentiment)"
+                  size="small"
+                  class="sentiment-tag"
+                >
                   {{ getSentimentLabel(item.sentiment) }}
                 </el-tag>
               </div>
 
-              <div class="content-tags" v-if="item.keywords?.length">
+              <div
+                v-if="item.keywords?.length"
+                class="content-tags"
+              >
                 <el-tag
                   v-for="kw in item.keywords.slice(0, 3)"
                   :key="kw"
@@ -122,7 +172,10 @@
               </div>
             </div>
 
-            <el-empty v-if="filteredContent.length === 0" description="暂无数据" />
+            <el-empty
+              v-if="filteredContent.length === 0"
+              description="暂无数据"
+            />
           </div>
 
           <div class="pagination-container">
@@ -137,19 +190,30 @@
         </el-card>
       </el-col>
 
-      <el-col :xs="24" :lg="8">
+      <el-col
+        :xs="24"
+        :lg="8"
+      >
         <el-card class="chart-card">
           <template #header>
             <span>各平台数据对比</span>
           </template>
-          <BaseChart ref="compareChartRef" :options="compareChartOptions" height="300px" />
+          <BaseChart
+            ref="compareChartRef"
+            :options="compareChartOptions"
+            height="300px"
+          />
         </el-card>
 
         <el-card class="trend-card mt-4">
           <template #header>
             <span>情感分布</span>
           </template>
-          <BaseChart ref="sentimentChartRef" :options="sentimentChartOptions" height="250px" />
+          <BaseChart
+            ref="sentimentChartRef"
+            :options="sentimentChartOptions"
+            height="250px"
+          />
         </el-card>
       </el-col>
     </el-row>

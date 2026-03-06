@@ -1,9 +1,22 @@
 <template>
-  <div class="action-bar" :class="{ 'is-sticky': sticky }">
+  <div
+    class="action-bar"
+    :class="{ 'is-sticky': sticky }"
+  >
     <div class="action-bar__left">
       <slot name="left">
-        <h3 v-if="title" class="action-bar__title">{{ title }}</h3>
-        <p v-if="description" class="action-bar__description">{{ description }}</p>
+        <h3
+          v-if="title"
+          class="action-bar__title"
+        >
+          {{ title }}
+        </h3>
+        <p
+          v-if="description"
+          class="action-bar__description"
+        >
+          {{ description }}
+        </p>
       </slot>
     </div>
     <div class="action-bar__right">

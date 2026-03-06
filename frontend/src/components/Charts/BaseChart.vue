@@ -1,5 +1,9 @@
 <template>
-  <div ref="chartRef" class="base-chart" :style="{ height: height, width: width }"></div>
+  <div
+    ref="chartRef"
+    class="base-chart"
+    :style="{ height: height, width: width }"
+  />
 </template>
 
 <script setup>

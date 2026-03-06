@@ -1,15 +1,23 @@
 <template>
-  <div v-if="loading" class="page-loading">
+  <div
+    v-if="loading"
+    class="page-loading"
+  >
     <div class="loading-container">
       <div class="loading-spinner">
-        <div class="spinner-ring"></div>
-        <div class="spinner-ring"></div>
-        <div class="spinner-ring"></div>
+        <div class="spinner-ring" />
+        <div class="spinner-ring" />
+        <div class="spinner-ring" />
       </div>
-      <p class="loading-text">{{ text }}</p>
+      <p class="loading-text">
+        {{ text }}
+      </p>
     </div>
   </div>
-  <div v-else class="page-content">
+  <div
+    v-else
+    class="page-content"
+  >
     <slot />
   </div>
 </template>

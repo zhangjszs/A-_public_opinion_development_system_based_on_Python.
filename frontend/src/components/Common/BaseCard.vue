@@ -1,17 +1,24 @@
 <template>
-  <el-card class="base-card" :shadow="shadow" :body-style="bodyStyle">
-    <template #header v-if="title || $slots.header">
+  <el-card
+    class="base-card"
+    :shadow="shadow"
+    :body-style="bodyStyle"
+  >
+    <template
+      v-if="title || $slots.header"
+      #header
+    >
       <div class="base-card-header">
         <slot name="header">
           <div class="base-card-title">
             <span class="title-text">{{ title }}</span>
-            <slot name="extra"></slot>
+            <slot name="extra" />
           </div>
         </slot>
       </div>
     </template>
     <div class="base-card-body">
-      <slot></slot>
+      <slot />
     </div>
   </el-card>
 </template>

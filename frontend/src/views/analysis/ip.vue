@@ -1,7 +1,10 @@
 <template>
   <div class="ip-analysis-container">
     <el-row :gutter="20">
-      <el-col :xs="24" :lg="16">
+      <el-col
+        :xs="24"
+        :lg="16"
+      >
         <el-card class="chart-card">
           <template #header>
             <span>IP地理位置分布</span>
@@ -15,7 +18,10 @@
         </el-card>
       </el-col>
 
-      <el-col :xs="24" :lg="8">
+      <el-col
+        :xs="24"
+        :lg="8"
+      >
         <el-card class="chart-card">
           <template #header>
             <span>Top 10 地区分布</span>
@@ -37,19 +43,58 @@
             <div class="card-header">
               <span>IP分析详细数据</span>
               <div class="actions">
-                <el-tag v-if="selectedRegion" closable effect="plain" @close="clearRegion">
+                <el-tag
+                  v-if="selectedRegion"
+                  closable
+                  effect="plain"
+                  @close="clearRegion"
+                >
                   地区：{{ selectedRegion }}
                 </el-tag>
-                <el-button type="primary" @click="loadData">刷新数据</el-button>
+                <el-button
+                  type="primary"
+                  @click="loadData"
+                >
+                  刷新数据
+                </el-button>
               </div>
             </div>
           </template>
-          <el-table :data="displayIpList" :loading="loading" stripe border style="width: 100%">
-            <el-table-column prop="ip" label="IP地址" width="180" />
-            <el-table-column prop="location" label="地理位置" width="200" />
-            <el-table-column prop="count" label="出现次数" width="120" align="center" sortable />
-            <el-table-column prop="lastTime" label="最后活跃时间" width="200" />
-            <el-table-column prop="user" label="相关用户" min-width="200" show-overflow-tooltip />
+          <el-table
+            :data="displayIpList"
+            :loading="loading"
+            stripe
+            border
+            style="width: 100%"
+          >
+            <el-table-column
+              prop="ip"
+              label="IP地址"
+              width="180"
+            />
+            <el-table-column
+              prop="location"
+              label="地理位置"
+              width="200"
+            />
+            <el-table-column
+              prop="count"
+              label="出现次数"
+              width="120"
+              align="center"
+              sortable
+            />
+            <el-table-column
+              prop="lastTime"
+              label="最后活跃时间"
+              width="200"
+            />
+            <el-table-column
+              prop="user"
+              label="相关用户"
+              min-width="200"
+              show-overflow-tooltip
+            />
           </el-table>
         </el-card>
       </el-col>

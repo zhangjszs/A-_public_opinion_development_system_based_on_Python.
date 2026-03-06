@@ -1,16 +1,30 @@
 <template>
-  <div class="responsive-table" :class="{ 'mobile-mode': isMobile }">
-    <div v-if="isMobile && showCard" class="table-cards">
+  <div
+    class="responsive-table"
+    :class="{ 'mobile-mode': isMobile }"
+  >
+    <div
+      v-if="isMobile && showCard"
+      class="table-cards"
+    >
       <div
         v-for="(row, index) in data"
         :key="index"
         class="table-card"
         @click="$emit('row-click', row)"
       >
-        <div v-for="col in columns" :key="col.prop" class="card-item">
+        <div
+          v-for="col in columns"
+          :key="col.prop"
+          class="card-item"
+        >
           <span class="card-label">{{ col.label }}</span>
           <span class="card-value">
-            <slot :name="'cell-' + col.prop" :row="row" :value="row[col.prop]">
+            <slot
+              :name="'cell-' + col.prop"
+              :row="row"
+              :value="row[col.prop]"
+            >
               {{ row[col.prop] }}
             </slot>
           </span>
@@ -18,7 +32,12 @@
       </div>
     </div>
 
-    <el-table v-else :data="data" v-bind="$attrs" @row-click="$emit('row-click', $event)">
+    <el-table
+      v-else
+      :data="data"
+      v-bind="$attrs"
+      @row-click="$emit('row-click', $event)"
+    >
       <el-table-column
         v-for="col in columns"
         :key="col.prop"
@@ -29,7 +48,11 @@
         :align="col.align || 'left'"
       >
         <template #default="scope">
-          <slot :name="'cell-' + col.prop" :row="scope.row" :value="scope.row[col.prop]">
+          <slot
+            :name="'cell-' + col.prop"
+            :row="scope.row"
+            :value="scope.row[col.prop]"
+          >
             {{ scope.row[col.prop] }}
           </slot>
         </template>

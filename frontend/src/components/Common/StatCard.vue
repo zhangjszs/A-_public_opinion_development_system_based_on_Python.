@@ -1,5 +1,8 @@
 <template>
-  <el-card class="stat-card" :body-style="{ padding: '24px' }">
+  <el-card
+    class="stat-card"
+    :body-style="{ padding: '24px' }"
+  >
     <div class="stat-content">
       <div
         class="stat-icon"
@@ -13,11 +16,21 @@
         </el-icon>
       </div>
       <div class="stat-info">
-        <div class="stat-label">{{ label }}</div>
-        <div class="stat-value" :title="formattedValue">{{ formattedValue }}</div>
+        <div class="stat-label">
+          {{ label }}
+        </div>
+        <div
+          class="stat-value"
+          :title="formattedValue"
+        >
+          {{ formattedValue }}
+        </div>
       </div>
     </div>
-    <div v-if="$slots.footer" class="stat-footer">
+    <div
+      v-if="$slots.footer"
+      class="stat-footer"
+    >
       <slot name="footer" />
     </div>
   </el-card>

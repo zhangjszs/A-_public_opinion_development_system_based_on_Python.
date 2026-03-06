@@ -1,6 +1,12 @@
 <template>
-  <div class="tab-bar" @wheel.prevent="onWheel">
-    <div class="tab-list" ref="tabListRef">
+  <div
+    class="tab-bar"
+    @wheel.prevent="onWheel"
+  >
+    <div
+      ref="tabListRef"
+      class="tab-list"
+    >
       <div
         v-for="tab in tabsStore.tabs"
         :key="tab.name"
@@ -14,11 +20,18 @@
         @keydown.enter.prevent="handleTabClick(tab)"
         @contextmenu.prevent="showContextMenu($event, tab)"
       >
-        <el-icon v-if="tab.icon" class="tab-icon">
+        <el-icon
+          v-if="tab.icon"
+          class="tab-icon"
+        >
           <component :is="tab.icon" />
         </el-icon>
         <span class="tab-title">{{ tab.title }}</span>
-        <el-icon v-if="tab.closable" class="tab-close" @click.stop="handleClose(tab.name)">
+        <el-icon
+          v-if="tab.closable"
+          class="tab-close"
+          @click.stop="handleClose(tab.name)"
+        >
           <Close />
         </el-icon>
       </div>
@@ -28,13 +41,28 @@
     <div
       v-if="contextMenu.visible"
       ref="contextMenuRef"
+      v-click-outside="hideContextMenu"
       class="context-menu"
       :style="{ top: contextMenu.y + 'px', left: contextMenu.x + 'px' }"
-      v-click-outside="hideContextMenu"
     >
-      <div class="context-menu-item" @click="closeCurrentTab">关闭当前</div>
-      <div class="context-menu-item" @click="closeOtherTabs">关闭其他</div>
-      <div class="context-menu-item" @click="closeAllTabs">关闭全部</div>
+      <div
+        class="context-menu-item"
+        @click="closeCurrentTab"
+      >
+        关闭当前
+      </div>
+      <div
+        class="context-menu-item"
+        @click="closeOtherTabs"
+      >
+        关闭其他
+      </div>
+      <div
+        class="context-menu-item"
+        @click="closeAllTabs"
+      >
+        关闭全部
+      </div>
     </div>
   </div>
 </template>

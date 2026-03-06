@@ -5,7 +5,10 @@
         <el-icon><HomeFilled /></el-icon>
         首页
       </el-breadcrumb-item>
-      <el-breadcrumb-item v-for="(item, index) in breadcrumbs" :key="index">
+      <el-breadcrumb-item
+        v-for="(item, index) in breadcrumbs"
+        :key="index"
+      >
         <span v-if="item.path">
           <router-link :to="item.path">{{ item.title }}</router-link>
         </span>

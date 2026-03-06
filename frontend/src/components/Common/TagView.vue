@@ -1,7 +1,13 @@
 <template>
-  <div class="tag-view" v-if="show">
+  <div
+    v-if="show"
+    class="tag-view"
+  >
     <div class="tag-scroll">
-      <div class="tag-list" ref="tagListRef">
+      <div
+        ref="tagListRef"
+        class="tag-list"
+      >
         <router-link
           v-for="tag in visitedViews"
           :key="tag.path"
@@ -12,14 +18,22 @@
           @contextmenu.prevent="openMenu(tag, $event)"
         >
           {{ tag.title }}
-          <el-icon v-if="!tag.meta.affix" class="tag-close" @click.prevent.stop="closeTag(tag)">
+          <el-icon
+            v-if="!tag.meta.affix"
+            class="tag-close"
+            @click.prevent.stop="closeTag(tag)"
+          >
             <Close />
           </el-icon>
         </router-link>
       </div>
     </div>
 
-    <el-dropdown class="tag-more" trigger="click" @command="handleCommand">
+    <el-dropdown
+      class="tag-more"
+      trigger="click"
+      @command="handleCommand"
+    >
       <el-icon><MoreFilled /></el-icon>
       <template #dropdown>
         <el-dropdown-menu>
@@ -51,7 +65,10 @@
         <el-icon><Refresh /></el-icon>
         刷新
       </li>
-      <li v-if="!isAffix" @click="closeSelectedTag">
+      <li
+        v-if="!isAffix"
+        @click="closeSelectedTag"
+      >
         <el-icon><Close /></el-icon>
         关闭
       </li>

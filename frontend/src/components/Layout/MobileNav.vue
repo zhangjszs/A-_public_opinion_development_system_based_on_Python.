@@ -1,5 +1,8 @@
 <template>
-  <div class="mobile-nav" v-if="isMobile">
+  <div
+    v-if="isMobile"
+    class="mobile-nav"
+  >
     <router-link
       v-for="item in navItems"
       :key="item.path"
@@ -16,15 +19,8 @@
 </template>
 
 <script setup>
-  import { ref, computed, onMounted, onUnmounted } from 'vue'
+  import { ref, onMounted, onUnmounted } from 'vue'
   import { useRoute } from 'vue-router'
-  import {
-    HomeFilled,
-    DataAnalysis,
-    ChatDotRound,
-    TrendCharts,
-    Bell,
-  } from '@element-plus/icons-vue'
 
   const route = useRoute()
   const isMobile = ref(false)

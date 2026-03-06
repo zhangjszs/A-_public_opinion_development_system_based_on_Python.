@@ -4,8 +4,6 @@ import {
   formatPercent,
   formatDate,
   formatRelativeTime,
-  debounce,
-  throttle,
   copyToClipboard,
 } from '@/utils'
 
@@ -87,7 +85,6 @@ export function useCopyToClipboard() {
       }, 2000)
       return true
     } catch (error) {
-      console.error('复制失败:', error)
       return false
     }
   }
@@ -104,7 +101,6 @@ export function useLocalStorage() {
       const item = localStorage.getItem(key)
       return item ? JSON.parse(item) : defaultValue
     } catch (error) {
-      console.error('读取 localStorage 失败:', error)
       return defaultValue
     }
   }
@@ -114,7 +110,6 @@ export function useLocalStorage() {
       localStorage.setItem(key, JSON.stringify(value))
       return true
     } catch (error) {
-      console.error('写入 localStorage 失败:', error)
       return false
     }
   }
@@ -124,7 +119,6 @@ export function useLocalStorage() {
       localStorage.removeItem(key)
       return true
     } catch (error) {
-      console.error('删除 localStorage 失败:', error)
       return false
     }
   }

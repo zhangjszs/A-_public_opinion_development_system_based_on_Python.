@@ -1,9 +1,21 @@
 <template>
   <div class="alert-notification">
-    <el-popover placement="bottom" :width="380" trigger="click" v-model:visible="popoverVisible">
+    <el-popover
+      v-model:visible="popoverVisible"
+      placement="bottom"
+      :width="380"
+      trigger="click"
+    >
       <template #reference>
-        <el-badge :value="unreadCount" :hidden="unreadCount === 0" :max="99">
-          <el-button :icon="Bell" circle />
+        <el-badge
+          :value="unreadCount"
+          :hidden="unreadCount === 0"
+          :max="99"
+        >
+          <el-button
+            :icon="Bell"
+            circle
+          />
         </el-badge>
       </template>
 
@@ -14,19 +26,31 @@
             type="primary"
             link
             size="small"
-            @click="handleMarkAllRead"
             :disabled="unreadCount === 0"
+            @click="handleMarkAllRead"
           >
             全部已读
           </el-button>
         </div>
 
-        <el-tabs v-model="activeTab" class="alert-tabs">
-          <el-tab-pane label="全部" name="all" />
-          <el-tab-pane label="未读" name="unread" />
+        <el-tabs
+          v-model="activeTab"
+          class="alert-tabs"
+        >
+          <el-tab-pane
+            label="全部"
+            name="all"
+          />
+          <el-tab-pane
+            label="未读"
+            name="unread"
+          />
         </el-tabs>
 
-        <div class="alert-list" v-loading="loading">
+        <div
+          v-loading="loading"
+          class="alert-list"
+        >
           <template v-if="alerts.length > 0">
             <div
               v-for="alert in alerts"
@@ -41,17 +65,33 @@
                 </el-icon>
               </div>
               <div class="alert-content">
-                <div class="alert-title">{{ alert.title }}</div>
-                <div class="alert-message">{{ alert.message }}</div>
-                <div class="alert-time">{{ formatTime(alert.created_at) }}</div>
+                <div class="alert-title">
+                  {{ alert.title }}
+                </div>
+                <div class="alert-message">
+                  {{ alert.message }}
+                </div>
+                <div class="alert-time">
+                  {{ formatTime(alert.created_at) }}
+                </div>
               </div>
             </div>
           </template>
-          <el-empty v-else description="暂无预警" :image-size="60" />
+          <el-empty
+            v-else
+            description="暂无预警"
+            :image-size="60"
+          />
         </div>
 
         <div class="alert-footer">
-          <el-button type="primary" link @click="goToAlertCenter"> 查看全部预警 </el-button>
+          <el-button
+            type="primary"
+            link
+            @click="goToAlertCenter"
+          >
+            查看全部预警
+          </el-button>
         </div>
       </div>
     </el-popover>
@@ -59,14 +99,13 @@
 </template>
 
 <script setup>
-  import { ref, computed, onMounted, onUnmounted } from 'vue'
+  import { ref, onMounted, onUnmounted } from 'vue'
   import { useRouter } from 'vue-router'
   import { ElMessage } from 'element-plus'
   import {
     Bell,
     Warning,
     InfoFilled,
-    CircleCheckFilled,
     CircleCloseFilled,
   } from '@element-plus/icons-vue'
   import { getAlertHistory, getUnreadCount, markAlertRead, markAllAlertsRead } from '@/api/alert'
@@ -123,7 +162,7 @@
         alerts.value = res.data.alerts
       }
     } catch (error) {
-      console.error('获取预警失败:', error)
+      // 获取预警失败，静默处理
     } finally {
       loading.value = false
     }
@@ -136,7 +175,7 @@
         unreadCount.value = res.data.unread_count
       }
     } catch (error) {
-      console.error('获取未读数量失败:', error)
+      // 获取未读数量失败，静默处理
     }
   }
 
@@ -147,7 +186,7 @@
         alert.is_read = true
         unreadCount.value = Math.max(0, unreadCount.value - 1)
       } catch (error) {
-        console.error('标记已读失败:', error)
+        // 标记已读失败，静默处理
       }
     }
   }
@@ -171,8 +210,6 @@
   }
 
   const handleWebSocketMessage = (data) => {
-    console.log('收到WebSocket消息:', data)
-
     if (data.type === 'alert') {
       alerts.value.unshift(data.data)
       if (!data.data.is_read) {
@@ -189,7 +226,6 @@
   const connectWebSocket = () => {
     const token = userStore.token
     if (!token) {
-      console.warn('未登录，跳过WebSocket连接')
       return
     }
 

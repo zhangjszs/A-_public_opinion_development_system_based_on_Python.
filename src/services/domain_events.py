@@ -10,7 +10,7 @@ import logging
 import threading
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Callable, Dict, List, Type, TypeVar
+from typing import Callable, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +40,11 @@ class DomainEventBus:
     """线程安全的进程内事件总线"""
 
     def __init__(self):
-        self._subscribers: Dict[Type[DomainEvent], List[EventHandler]] = {}
+        self._subscribers: dict[type[DomainEvent], list[EventHandler]] = {}
         self._lock = threading.Lock()
 
     def subscribe(
-        self, event_type: Type[EventType], handler: Callable[[EventType], None]
+        self, event_type: type[EventType], handler: Callable[[EventType], None]
     ) -> None:
         with self._lock:
             handlers = self._subscribers.setdefault(event_type, [])
@@ -52,7 +52,7 @@ class DomainEventBus:
                 handlers.append(handler)  # type: ignore[arg-type]
 
     def publish(self, event: DomainEvent) -> None:
-        handlers: List[EventHandler] = []
+        handlers: list[EventHandler] = []
         with self._lock:
             for event_type, subscribed_handlers in self._subscribers.items():
                 if isinstance(event, event_type):

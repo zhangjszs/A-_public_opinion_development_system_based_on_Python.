@@ -10,7 +10,7 @@
 
 import os
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -89,7 +89,7 @@ class TestSentimentBatchAnalysis:
         """批量结果应该包含必要字段"""
         texts = ["很好", "一般", "很差"]
         results = SentimentService.analyze_batch(texts, mode="simple")
-        
+
         for result in results:
             assert isinstance(result, dict)
             assert "label" in result
@@ -102,7 +102,7 @@ class TestSentimentBatchAnalysis:
         results = SentimentService.analyze_batch(texts, mode="simple")
         assert isinstance(results, list)
         assert len(results) == 5
-        
+
         for result in results:
             assert "label" in result
             assert "score" in result

@@ -156,12 +156,14 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+# JetBrains / PyCharm IDE
+# See https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+target/
 
 # Frontend Development
 node_modules/
@@ -207,10 +209,10 @@ pip-audit-report.json
 # Legacy conda environment (use docs/env/environment.yml instead)
 environment.yml
 
-# Project specific - IDE
-.idea/
+# Other IDEs and editors
 .vscode/
 *.swp
 *.swo
 *~
+.DS_Store
 

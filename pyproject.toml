@@ -131,6 +131,6 @@ select = [
 ]
 ignore = [
     "E501",   # line too long (handled by black)
-    "B008",   # do not perform function calls in argument defaults
-    "B905",   # zip without explicit strict
+    "B008",   # do not perform function calls in argument defaults - 现有代码大量使用此模式，重构风险高
+    "B905",   # zip without explicit strict - 现有代码大量使用zip()，添加strict=True可能引入行为变化
 ]

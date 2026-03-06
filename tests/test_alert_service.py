@@ -326,9 +326,9 @@ class TestCheckAlerts:
             "total_count": 100,
             "time_window_minutes": 30,
         }
-        
+
         alerts = engine.check_alerts(metrics)
-        
+
         # 应该触发负面舆情激增预警
         assert len(alerts) > 0
         assert any(a.alert_type == AlertType.NEGATIVE_SURGE for a in alerts)
@@ -341,9 +341,9 @@ class TestCheckAlerts:
             "baseline_count": 10,  # 倍数 = 5，超过默认阈值3.0
             "time_window_minutes": 60,
         }
-        
+
         alerts = engine.check_alerts(metrics)
-        
+
         # 应该触发讨论量异常增长预警
         assert len(alerts) > 0
         assert any(a.alert_type == AlertType.VOLUME_SPIKE for a in alerts)
@@ -356,9 +356,9 @@ class TestCheckAlerts:
             "previous_sentiment": 0.6,  # 变化 = 0.4，超过默认阈值0.3
             "time_window_minutes": 30,
         }
-        
+
         alerts = engine.check_alerts(metrics)
-        
+
         # 应该触发情感倾向突变预警
         assert len(alerts) > 0
         assert any(a.alert_type == AlertType.SENTIMENT_SHIFT for a in alerts)
@@ -371,9 +371,9 @@ class TestCheckAlerts:
             "topic_name": "测试话题",
             "time_window_minutes": 60,
         }
-        
+
         alerts = engine.check_alerts(metrics)
-        
+
         # 应该触发热点话题预警
         assert len(alerts) > 0
         assert any(a.alert_type == AlertType.HOT_TOPIC for a in alerts)
@@ -383,16 +383,16 @@ class TestCheckAlerts:
         # 禁用所有默认规则
         for rule_id in list(engine.rules.keys()):
             engine.update_rule(rule_id, enabled=False)
-        
+
         # 设置本应触发预警的指标
         metrics = {
             "negative_count": 100,
             "total_count": 150,
             "time_window_minutes": 30,
         }
-        
+
         alerts = engine.check_alerts(metrics)
-        
+
         # 不应该触发任何预警
         assert len(alerts) == 0
 
@@ -404,9 +404,9 @@ class TestCheckAlerts:
             "total_count": 100,
             "time_window_minutes": 30,
         }
-        
+
         alerts = engine.check_alerts(metrics)
-        
+
         # 负面舆情激增不应该触发（但其他规则可能触发）
         negative_surge_alerts = [a for a in alerts if a.alert_type == AlertType.NEGATIVE_SURGE]
         assert len(negative_surge_alerts) == 0
@@ -418,9 +418,9 @@ class TestCheckAlerts:
             "total_count": 100,
             "time_window_minutes": 30,
         }
-        
+
         alerts = engine.check_alerts(metrics)
-        
+
         # 验证返回的是 Alert 对象
         for alert in alerts:
             assert isinstance(alert, Alert)
@@ -440,7 +440,7 @@ class TestCheckAlerts:
             enabled=True,
         )
         engine.add_rule(high_priority_rule)
-        
+
         # 设置能触发多个规则的指标
         metrics = {
             "negative_count": 60,
@@ -449,9 +449,9 @@ class TestCheckAlerts:
             "current_count": 50,
             "baseline_count": 10,
         }
-        
+
         alerts = engine.check_alerts(metrics)
-        
+
         # 验证返回了预警
         assert len(alerts) > 0
 

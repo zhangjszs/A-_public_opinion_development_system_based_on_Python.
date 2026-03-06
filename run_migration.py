@@ -1,8 +1,10 @@
 """Create audit_log table for security audit logging."""
 import sys
+
 sys.path.insert(0, 'src')
 
 import pymysql
+
 from config.settings import Config
 
 conn = pymysql.connect(

@@ -10,7 +10,6 @@
 import os
 import sys
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -55,13 +54,13 @@ class TestPropagationGraph:
     def test_add_edge(self):
         """应该能添加边"""
         graph = PropagationGraph()
-        
+
         # 添加两个节点
         node1 = PropagationNode(id="node_1", user_id="user_1", username="用户1")
         node2 = PropagationNode(id="node_2", user_id="user_2", username="用户2")
         graph.add_node(node1)
         graph.add_node(node2)
-        
+
         # 添加边
         edge = PropagationEdge(
             source_id="node_1",
@@ -74,19 +73,19 @@ class TestPropagationGraph:
     def test_get_children(self):
         """应该能获取子节点"""
         graph = PropagationGraph()
-        
+
         node1 = PropagationNode(id="node_1", user_id="user_1", username="用户1")
         node2 = PropagationNode(id="node_2", user_id="user_2", username="用户2")
         graph.add_node(node1)
         graph.add_node(node2)
-        
+
         edge = PropagationEdge(
             source_id="node_1",
             target_id="node_2",
             timestamp=datetime.now(),
         )
         graph.add_edge(edge)
-        
+
         children = graph.get_children("node_1")
         assert "node_2" in children
 
@@ -190,7 +189,7 @@ class TestPropagationTracer:
     def test_add_propagation_forward(self):
         """应该能添加转发节点"""
         tracer = PropagationTracer()
-        
+
         # 先添加原始节点
         tracer.add_propagation(
             post_id="post_1",
@@ -198,7 +197,7 @@ class TestPropagationTracer:
             username="用户1",
             parent_id=None,
         )
-        
+
         # 添加转发节点
         node = tracer.add_propagation(
             post_id="post_2",
@@ -213,12 +212,12 @@ class TestPropagationTracer:
     def test_trace_upstream(self):
         """应该能追溯上游路径"""
         tracer = PropagationTracer()
-        
+
         # 构建传播链
         tracer.add_propagation("post_1", "user_1", "用户1", None)
         tracer.add_propagation("post_2", "user_2", "用户2", "post_1")
         tracer.add_propagation("post_3", "user_3", "用户3", "post_2")
-        
+
         path = tracer.trace_upstream("post_3")
         assert "post_3" in path
         assert "post_2" in path
@@ -227,14 +226,14 @@ class TestPropagationTracer:
     def test_trace_path_linear_chain(self):
         """DFS 应该能追踪线性传播链"""
         tracer = PropagationTracer()
-        
+
         # 构建线性链: post_1 -> post_2 -> post_3
         tracer.add_propagation("post_1", "user_1", "用户1", None)
         tracer.add_propagation("post_2", "user_2", "用户2", "post_1")
         tracer.add_propagation("post_3", "user_3", "用户3", "post_2")
-        
+
         paths = tracer.trace_path("post_1")
-        
+
         # 应该找到一条路径
         assert len(paths) == 1
         assert paths[0].nodes == ["post_1", "post_2", "post_3"]
@@ -243,14 +242,14 @@ class TestPropagationTracer:
     def test_trace_path_branching(self):
         """DFS 应该能处理分支结构"""
         tracer = PropagationTracer()
-        
+
         # 构建分支结构: post_1 -> post_2, post_3
         tracer.add_propagation("post_1", "user_1", "用户1", None)
         tracer.add_propagation("post_2", "user_2", "用户2", "post_1")
         tracer.add_propagation("post_3", "user_3", "用户3", "post_1")
-        
+
         paths = tracer.trace_path("post_1")
-        
+
         # 应该找到两条路径
         assert len(paths) == 2
         path_nodes = [p.nodes for p in paths]
@@ -260,17 +259,17 @@ class TestPropagationTracer:
     def test_trace_path_max_depth_limit(self):
         """DFS 应该遵守最大深度限制"""
         tracer = PropagationTracer()
-        
+
         # 构建长链: post_1 -> post_2 -> post_3 -> post_4 -> post_5
         tracer.add_propagation("post_1", "user_1", "用户1", None)
         tracer.add_propagation("post_2", "user_2", "用户2", "post_1")
         tracer.add_propagation("post_3", "user_3", "用户3", "post_2")
         tracer.add_propagation("post_4", "user_4", "用户4", "post_3")
         tracer.add_propagation("post_5", "user_5", "用户5", "post_4")
-        
+
         # 限制深度为 2
         paths = tracer.trace_path("post_1", max_depth=2)
-        
+
         # 所有路径深度都不应该超过 2
         for path in paths:
             assert path.total_depth <= 2
@@ -278,21 +277,21 @@ class TestPropagationTracer:
     def test_trace_path_empty_graph(self):
         """DFS 在空图上应该返回空列表"""
         tracer = PropagationTracer()
-        
+
         # 不添加任何节点
         paths = tracer.trace_path("non_existent")
-        
+
         assert paths == []
 
     def test_trace_path_single_node(self):
         """DFS 对单节点应该返回空路径列表（没有边）"""
         tracer = PropagationTracer()
-        
+
         # 只添加一个节点
         tracer.add_propagation("post_1", "user_1", "用户1", None)
-        
+
         paths = tracer.trace_path("post_1")
-        
+
         # 单节点没有路径（路径需要至少两个节点）
         assert len(paths) == 0
 
@@ -303,19 +302,19 @@ class TestKeyNodeIdentifier:
     def test_calculate_degree_centrality(self):
         """应该能计算度中心性"""
         graph = PropagationGraph()
-        
+
         # 构建简单图
         node1 = PropagationNode(id="node_1", user_id="user_1", username="用户1")
         node2 = PropagationNode(id="node_2", user_id="user_2", username="用户2")
         node3 = PropagationNode(id="node_3", user_id="user_3", username="用户3")
-        
+
         graph.add_node(node1)
         graph.add_node(node2)
         graph.add_node(node3)
-        
+
         graph.add_edge(PropagationEdge("node_1", "node_2", datetime.now()))
         graph.add_edge(PropagationEdge("node_1", "node_3", datetime.now()))
-        
+
         identifier = KeyNodeIdentifier(graph)
         centrality = identifier.calculate_degree_centrality("node_1")
         assert isinstance(centrality, float)
@@ -324,19 +323,19 @@ class TestKeyNodeIdentifier:
     def test_identify_key_nodes(self):
         """应该能识别关键节点"""
         graph = PropagationGraph()
-        
+
         # 构建图
         node1 = PropagationNode(id="node_1", user_id="user_1", username="用户1", node_type=NodeType.ORIGIN)
         node2 = PropagationNode(id="node_2", user_id="user_2", username="用户2")
         node3 = PropagationNode(id="node_3", user_id="user_3", username="用户3")
-        
+
         graph.add_node(node1)
         graph.add_node(node2)
         graph.add_node(node3)
-        
+
         graph.add_edge(PropagationEdge("node_1", "node_2", datetime.now()))
         graph.add_edge(PropagationEdge("node_1", "node_3", datetime.now()))
-        
+
         identifier = KeyNodeIdentifier(graph)
         key_nodes = identifier.identify_key_nodes(threshold=0.1)
         assert isinstance(key_nodes, list)
@@ -350,16 +349,16 @@ class TestPropagationSpeedAnalyzer:
     def test_calculate_propagation_speed(self):
         """应该能计算传播速度"""
         graph = PropagationGraph()
-        
+
         # 添加带时间戳的边
         base_time = datetime.now()
         node1 = PropagationNode(id="node_1", user_id="user_1", username="用户1")
         node2 = PropagationNode(id="node_2", user_id="user_2", username="用户2")
-        
+
         graph.add_node(node1)
         graph.add_node(node2)
         graph.add_edge(PropagationEdge("node_1", "node_2", base_time + timedelta(minutes=10)))
-        
+
         analyzer = PropagationSpeedAnalyzer(graph)
         speed = analyzer.calculate_propagation_speed()
         assert isinstance(speed, float)
@@ -368,14 +367,14 @@ class TestPropagationSpeedAnalyzer:
     def test_get_propagation_timeline(self):
         """应该能获取传播时间线"""
         graph = PropagationGraph()
-        
+
         base_time = datetime.now()
         node1 = PropagationNode(id="node_1", user_id="user_1", username="用户1", created_at=base_time)
         node2 = PropagationNode(id="node_2", user_id="user_2", username="用户2", created_at=base_time + timedelta(minutes=10))
-        
+
         graph.add_node(node1)
         graph.add_node(node2)
-        
+
         analyzer = PropagationSpeedAnalyzer(graph)
         timeline = analyzer.get_propagation_timeline(interval_minutes=5)
         assert isinstance(timeline, list)
@@ -404,11 +403,11 @@ class TestPropagationAnalysisService:
     def test_get_full_analysis(self):
         """应该能获取完整分析"""
         service = PropagationAnalysisService()
-        
+
         # 添加一些数据
         service.add_propagation("post_1", "user_1", "用户1", None)
         service.add_propagation("post_2", "user_2", "用户2", "post_1")
-        
+
         analysis = service.get_full_analysis(origin_id="post_1")
         assert isinstance(analysis, dict)
         assert "stats" in analysis
@@ -418,11 +417,11 @@ class TestPropagationAnalysisService:
     def test_get_visualization_data(self):
         """应该能获取可视化数据"""
         service = PropagationAnalysisService()
-        
+
         # 添加一些数据
         service.add_propagation("post_1", "user_1", "用户1", None)
         service.add_propagation("post_2", "user_2", "用户2", "post_1")
-        
+
         viz_data = service.get_visualization_data(root_id="post_1")
         assert isinstance(viz_data, dict)
         assert "nodes" in viz_data
@@ -433,13 +432,13 @@ class TestPropagationAnalysisService:
     def test_clear(self):
         """应该能清空数据"""
         service = PropagationAnalysisService()
-        
+
         # 添加数据
         service.add_propagation("post_1", "user_1", "用户1", None)
-        
+
         # 清空
         service.clear()
-        
+
         # 验证清空
         viz_data = service.get_visualization_data()
         assert viz_data["total_nodes"] == 0
@@ -448,32 +447,32 @@ class TestPropagationAnalysisService:
     def test_clear_and_readd_data(self):
         """clear() 后应该能重新添加数据并正常工作 - 回归测试"""
         service = PropagationAnalysisService()
-        
+
         # 第一轮：添加数据并验证
         service.add_propagation("post_1", "user_1", "用户1", None)
         service.add_propagation("post_2", "user_2", "用户2", "post_1")
-        
+
         viz_data_1 = service.get_visualization_data()
         assert viz_data_1["total_nodes"] == 2
         assert viz_data_1["total_edges"] == 1
-        
+
         # 清空数据
         service.clear()
-        
+
         viz_data_cleared = service.get_visualization_data()
         assert viz_data_cleared["total_nodes"] == 0
         assert viz_data_cleared["total_edges"] == 0
-        
+
         # 第二轮：重新添加数据（使用不同的ID）
         service.add_propagation("new_post_1", "new_user_1", "新用户1", None)
         service.add_propagation("new_post_2", "new_user_2", "新用户2", "new_post_1")
         service.add_propagation("new_post_3", "new_user_3", "新用户3", "new_post_2")
-        
+
         # 验证新数据正确
         viz_data_2 = service.get_visualization_data()
         assert viz_data_2["total_nodes"] == 3
         assert viz_data_2["total_edges"] == 2
-        
+
         # 验证可以获取完整分析
         analysis = service.get_full_analysis(origin_id="new_post_1")
         assert analysis["stats"]["total_nodes"] == 3
@@ -482,22 +481,22 @@ class TestPropagationAnalysisService:
     def test_clear_and_readd_same_ids(self):
         """clear() 后使用相同ID重新添加数据应该正常工作"""
         service = PropagationAnalysisService()
-        
+
         # 第一轮：添加数据
         service.add_propagation("post_1", "user_1", "用户1", None)
         service.add_propagation("post_2", "user_2", "用户2", "post_1")
-        
+
         # 清空
         service.clear()
-        
+
         # 第二轮：使用相同ID重新添加
         service.add_propagation("post_1", "user_1_new", "用户1新", None)
         service.add_propagation("post_2", "user_2_new", "用户2新", "post_1")
-        
+
         # 验证数据正确
         viz_data = service.get_visualization_data()
         assert viz_data["total_nodes"] == 2
-        
+
         # 验证是新数据
         node = service.graph.get_node("post_1")
         assert node.username == "用户1新"
@@ -505,26 +504,26 @@ class TestPropagationAnalysisService:
     def test_clear_preserves_service_state(self):
         """clear() 后服务实例应该保持可用状态"""
         service = PropagationAnalysisService()
-        
+
         # 添加数据后清空
         for i in range(10):
             service.add_propagation(f"post_{i}", f"user_{i}", f"用户{i}",
                                    parent_id=None if i == 0 else f"post_{i-1}")
-        
+
         service.clear()
-        
+
         # 验证所有方法仍然可用
         # 1. 可以添加新数据
         service.add_propagation("test_1", "test_user", "测试用户", None)
-        
+
         # 2. 可以获取可视化数据
         viz = service.get_visualization_data()
         assert viz["total_nodes"] == 1
-        
+
         # 3. 可以获取完整分析
         analysis = service.get_full_analysis(origin_id="test_1")
         assert "stats" in analysis
-        
+
         # 4. 可以追踪传播
         trace = service.trace_propagation("test_1")
         assert "post_id" in trace
